@@ -2,13 +2,14 @@
 	
 	import { onMount } from 'svelte';
 	import { beforeUpdate, afterUpdate } from 'svelte';
-
+	import Linkpreview from './components/Linkpreview.svelte'
 	let name;
 	let currentuser = name;
 	let div;
 	let autoscroll;
 	let input;
 	const serveradd = "https://webchay.herokuapp.com"
+	//const serveradd = "http://127.0.0.1:5000"
 
 	import io from 'socket.io-client';
 	const socket = io(serveradd);
@@ -82,7 +83,12 @@
         comments = comments.concat({
 				author: json.author,
 				text: json.commend,
-				time: json.time
+				time: json.time,
+				type: json.type,
+				title: json.title,
+				description: json.description,
+				image: json.image
+
 			});
 		
 
@@ -109,8 +115,19 @@
 				{/if}
 				{/if}
 				<article class="{comment.author=== name? "user":"other"}">
-					<span>{comment.text}</span>
-					<input class="nothing" type="button">
+					{#if comment.type ==="link"}
+						<span>
+						<Linkpreview 
+							title={comment.title} 
+							image={comment.image}
+							description={comment.description}
+							url={comment.text}/>
+																		
+						</span>
+					{:else}
+						<span>{comment.text}</span>
+						
+					{/if}<input class="nothing" type="button">
 					<div id="commentdate">
 						{comment.time}
 					</div>
@@ -182,7 +199,7 @@
 
 	.headdiv label {
 		padding:1em;
-		
+
 
 	}
 
@@ -215,6 +232,7 @@
 	article {
 		margin: 0 0 0.3em 0;
 		position: relative;
+	
 
 	
 		
@@ -227,14 +245,19 @@
 
 	}
 	.nothing{
+
 		opacity: 0;
 		top:0;
 		left:0;
 		width:100%;
 		position: absolute;
-		cursor: pointer;
+	
 		transition: all 5s ease-out; 
 		-webkit-transition: all 5s ease-in-out;
+		-webkit-user-select: all;  /* Chrome all / Safari all */
+		-moz-user-select: all;     /* Firefox all */
+		-ms-user-select: all;      /* IE 10+ */
+ 		user-select: all; 
 	}
 
 
@@ -285,7 +308,7 @@
 		width: 100%;
 		float:right;
 		position: absolute;
-		cursor: pointer;
+
 		
 	}
 	
