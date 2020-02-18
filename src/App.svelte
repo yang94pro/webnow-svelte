@@ -3,25 +3,36 @@
 	import { onMount } from 'svelte';
 	import { beforeUpdate, afterUpdate } from 'svelte';
 	import Linkpreview from './components/Linkpreview.svelte'
-	let name;
-	let currentuser = name;
+	$: name = asda()
+	$: addCookie(name)
+	function asda(){
+		if (document.cookie){
+			var cookieValue = document.cookie.replace(/(?:(?:^|.*;\s*)username\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+			console.log(cookieValue);
+			return cookieValue
+		}else{
+			return 'Guest'
+	}};
+	
+	function addCookie(item){
+		document.cookie = "username="+item
+	};
+
+	var currentuser;
 	let div;
 	let autoscroll;
 	let input;
-	const serveradd = "https://webchay.herokuapp.com"
-	//const serveradd = "http://127.0.0.1:5000"
 
+	const serveradd = "https://webchay.herokuapp.com"
+	// const serveradd = "http://127.0.0.1:5000"
 	import io from 'socket.io-client';
 	const socket = io(serveradd);
 
-
-	
 	beforeUpdate(() => {
-		autoscroll = div && (div.offsetHeight + div.scrollTop) > (div.scrollHeight - 20);
-	});
+		autoscroll = div && (div.offsetHeight + div.scrollTop) > (div.scrollHeight - 20);});
 
 	afterUpdate(() => {
-		if (autoscroll) div.scrollTo(0, div.scrollHeight);
+		if (autoscroll) div.scrollTo(0,div.scrollHeight);
 	});
 
 	function dateformat(){
@@ -50,9 +61,6 @@
 		};
 	};
 	
-	
-
-	
 	var formdata = new FormData();
 	var requestOptions = {
 		method: 'GET',
@@ -61,20 +69,26 @@
 		};
 	let comments=[];
 	onMount(async() => { 
+	
+		
 		const res = await fetch(serveradd+"/api/chat", requestOptions);
 		let results = await res.json();
 		await results.reverse().forEach(result => {
 			comments = comments.concat({
 					author: result.author,
 					text: result.commend,
-					time: result.time
+					time: result.time,
+					type: result.type,
+					title: result.title,
+					description: result.description,
+					image: result.image
+
 
 				});
 
 		});
 
 	});
-	
 	
 	
 	socket.on('chat message', function (json) {
@@ -94,11 +108,16 @@
 
       });
 
-
 </script>
 
 <main>
 <div class="title"> <h1>Hello {name} !</h1></div>
+<div class="side_note">
+	<p>* Please insert your name as your username</p>
+	<p>* This is an open chat</p>
+	<p>* Chat responsibly and be considerate</p>
+</div>
+
 <div class="headdiv">
 	<label><h2>Name:</h2> </label>
 	<input type="text" bind:value={name} class="user_input"/>
@@ -132,8 +151,6 @@
 						{comment.time}
 					</div>
 				</article>
-				
-				 
 			{/if}
 		{:else}
 
@@ -141,9 +158,7 @@
 			<center><p>Comments are loading...</p></center>
 		{/each}
 	</div>
-
 	<input bind:this={input} on:keydown={handleKeydown}/> <button  type="submit" on:click={handleKeydown}>Send</button>
-
 </div>
 	
 	
@@ -161,10 +176,25 @@
 		padding:auto;	
 
 	}
+	.side_note{
+	
+		margin:0;
+		position: relative;
+		padding: 0;
+		display: block;
+		height: 60px;
+		
+
+	}
+	.side_note > p{
+	
+		padding:0;
+		margin:0;
+	}
 	h1 {
 		color: #ff3e00;
 		text-transform: uppercase;
-		font-size: 2.5em;
+		font-size: 2.7em;
 		font-weight: bold;
 		text-align: center;
 
@@ -172,7 +202,14 @@
 		
 	}
 	.title{
-		width: 50vw;
+		margin:auto;
+	}
+	.title > h1{
+		
+		align-content: center;
+		width: 80vw;
+		max-width: 450px;
+		position: relative;
 	}
 
 	
@@ -186,20 +223,17 @@
 		color: rgb(151, 151, 151);
 	}
 	.headdiv{
-
-		display: flex;
+		position: relative;
+		display: inline-flex;
 		justify-content: space-around;
 		height: 50px;
-		margin: auto;
-		max-width: 100px;
 		align-items: center;
-	
 		
 	}
 
 	.headdiv label {
 		padding:1em;
-
+		position: relative;
 
 	}
 
@@ -208,10 +242,10 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		height: 50vh;
+		height: 60vh;
 		max-height: 600px;
-		max-width: 440px;
-		width:80%;
+		max-width: 450px;
+		width:90%;
 		justify-content: center;
 		word-wrap: break-word;
 		
@@ -225,7 +259,8 @@
 		margin: 0 0 0.5em 0;
 		overflow-y: auto;
 		word-wrap: break-word;
-		font-size: 1em;
+		font-size: 1.1em;
+		position: relative;
 		
 	}
 
@@ -233,9 +268,6 @@
 		margin: 0 0 0.3em 0;
 		position: relative;
 	
-
-	
-		
 	}
 	#commentdate{
 		display: none;
@@ -252,8 +284,6 @@
 		width:100%;
 		position: absolute;
 	
-		transition: all 5s ease-out; 
-		-webkit-transition: all 5s ease-in-out;
 		-webkit-user-select: all;  /* Chrome all / Safari all */
 		-moz-user-select: all;     /* Firefox all */
 		-ms-user-select: all;      /* IE 10+ */
@@ -264,6 +294,7 @@
 	.nothing:focus + div#commentdate{
 		display:block;
 		color: dimgrey;
+
 	}
 
 	.user {
@@ -299,6 +330,7 @@
 		margin:0.5em 0 0.3em 0.5em;
 		color: #34495E ;
 		font-weight: bold;
+		max-width: 200px;
 	}
 
 	.user input.nothing{
@@ -313,9 +345,13 @@
 	}
 	
 
-	@media only screen and (max-width: 400px) {
+	@media only screen and (max-width: 500px) {
 		.headdiv{
 			max-height: 100px;
+		}
+		.title >h1{
+			width: 80vw;
+			align-content: center;
 		}
 	}
 </style>
