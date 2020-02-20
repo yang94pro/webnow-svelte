@@ -8573,7 +8573,7 @@ var app = (function () {
     	return child_ctx;
     }
 
-    // (155:2) {:else}
+    // (230:2) {:else}
     function create_else_block_2(ctx) {
     	let center;
     	let p;
@@ -8583,8 +8583,8 @@ var app = (function () {
     			center = element("center");
     			p = element("p");
     			p.textContent = "Comments are loading...";
-    			add_location(p, file$1, 157, 11, 3583);
-    			add_location(center, file$1, 157, 3, 3575);
+    			add_location(p, file$1, 232, 11, 5671);
+    			add_location(center, file$1, 232, 3, 5663);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, center, anchor);
@@ -8599,14 +8599,14 @@ var app = (function () {
     		block,
     		id: create_else_block_2.name,
     		type: "else",
-    		source: "(155:2) {:else}",
+    		source: "(230:2) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (131:3) {:else}
+    // (206:3) {:else}
     function create_else_block(ctx) {
     	let t0;
     	let article;
@@ -8643,18 +8643,18 @@ var app = (function () {
     			div_1 = element("div");
     			t2 = text(t2_value);
     			t3 = space();
-    			attr_dev(input_1, "class", "nothing svelte-ybsrck");
+    			attr_dev(input_1, "class", "nothing svelte-w0xy88");
     			attr_dev(input_1, "type", "button");
-    			add_location(input_1, file$1, 148, 10, 3382);
+    			add_location(input_1, file$1, 223, 10, 5470);
     			attr_dev(div_1, "id", "commentdate");
-    			attr_dev(div_1, "class", "svelte-ybsrck");
-    			add_location(div_1, file$1, 149, 5, 3425);
+    			attr_dev(div_1, "class", "svelte-w0xy88");
+    			add_location(div_1, file$1, 224, 5, 5513);
 
     			attr_dev(article, "class", article_class_value = "" + (null_to_empty(/*comment*/ ctx[13].author === /*name*/ ctx[3]
     			? "user"
-    			: "other") + " svelte-ybsrck"));
+    			: "other") + " svelte-w0xy88"));
 
-    			add_location(article, file$1, 135, 4, 3031);
+    			add_location(article, file$1, 210, 4, 5119);
     		},
     		m: function mount(target, anchor) {
     			if (if_block0) if_block0.m(target, anchor);
@@ -8710,7 +8710,7 @@ var app = (function () {
 
     			if (!current || dirty & /*comments, name*/ 12 && article_class_value !== (article_class_value = "" + (null_to_empty(/*comment*/ ctx[13].author === /*name*/ ctx[3]
     			? "user"
-    			: "other") + " svelte-ybsrck"))) {
+    			: "other") + " svelte-w0xy88"))) {
     				attr_dev(article, "class", article_class_value);
     			}
     		},
@@ -8735,14 +8735,14 @@ var app = (function () {
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(131:3) {:else}",
+    		source: "(206:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (129:3) {#if comment.author==="system"}
+    // (204:3) {#if comment.author==="system"}
     function create_if_block(ctx) {
     	let span;
     	let t_value = /*comment*/ ctx[13].text + "";
@@ -8752,8 +8752,8 @@ var app = (function () {
     		c: function create() {
     			span = element("span");
     			t = text(t_value);
-    			attr_dev(span, "class", "systemsg svelte-ybsrck");
-    			add_location(span, file$1, 129, 4, 2816);
+    			attr_dev(span, "class", "systemsg svelte-w0xy88");
+    			add_location(span, file$1, 204, 4, 4904);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -8773,14 +8773,14 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(129:3) {#if comment.author===\\\"system\\\"}",
+    		source: "(204:3) {#if comment.author===\\\"system\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (132:4) {#if comment.author != name}
+    // (207:4) {#if comment.author != name}
     function create_if_block_2(ctx) {
     	let if_block_anchor;
     	let if_block = /*i*/ ctx[15] != 0 && /*comment*/ ctx[13].author != /*comments*/ ctx[2][/*i*/ ctx[15] - 1].author && create_if_block_3(ctx);
@@ -8818,14 +8818,14 @@ var app = (function () {
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(132:4) {#if comment.author != name}",
+    		source: "(207:4) {#if comment.author != name}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (132:32) {#if i!=0 && comment.author != comments[i-1].author}
+    // (207:32) {#if i!=0 && comment.author != comments[i-1].author}
     function create_if_block_3(ctx) {
     	let p;
     	let t0_value = /*comment*/ ctx[13].author + "";
@@ -8837,8 +8837,8 @@ var app = (function () {
     			p = element("p");
     			t0 = text(t0_value);
     			t1 = text(":");
-    			attr_dev(p, "class", "otherusert svelte-ybsrck");
-    			add_location(p, file$1, 132, 5, 2963);
+    			attr_dev(p, "class", "otherusert svelte-w0xy88");
+    			add_location(p, file$1, 207, 5, 5051);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -8857,14 +8857,14 @@ var app = (function () {
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(132:32) {#if i!=0 && comment.author != comments[i-1].author}",
+    		source: "(207:32) {#if i!=0 && comment.author != comments[i-1].author}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (146:5) {:else}
+    // (221:5) {:else}
     function create_else_block_1(ctx) {
     	let span;
     	let t0_value = /*comment*/ ctx[13].text + "";
@@ -8876,8 +8876,8 @@ var app = (function () {
     			span = element("span");
     			t0 = text(t0_value);
     			t1 = space();
-    			attr_dev(span, "class", "svelte-ybsrck");
-    			add_location(span, file$1, 146, 6, 3337);
+    			attr_dev(span, "class", "svelte-w0xy88");
+    			add_location(span, file$1, 221, 6, 5425);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -8899,14 +8899,14 @@ var app = (function () {
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(146:5) {:else}",
+    		source: "(221:5) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (137:5) {#if comment.type ==="link"}
+    // (212:5) {#if comment.type ==="link"}
     function create_if_block_1(ctx) {
     	let span;
     	let t;
@@ -8927,8 +8927,8 @@ var app = (function () {
     			span = element("span");
     			create_component(linkpreview.$$.fragment);
     			t = space();
-    			attr_dev(span, "class", "svelte-ybsrck");
-    			add_location(span, file$1, 137, 6, 3130);
+    			attr_dev(span, "class", "svelte-w0xy88");
+    			add_location(span, file$1, 212, 6, 5218);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -8964,14 +8964,14 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(137:5) {#if comment.type ===\\\"link\\\"}",
+    		source: "(212:5) {#if comment.type ===\\\"link\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (128:2) {#each comments as comment, i}
+    // (203:2) {#each comments as comment, i}
     function create_each_block(ctx) {
     	let current_block_type_index;
     	let if_block;
@@ -9042,7 +9042,7 @@ var app = (function () {
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(128:2) {#each comments as comment, i}",
+    		source: "(203:2) {#each comments as comment, i}",
     		ctx
     	});
 
@@ -9057,6 +9057,7 @@ var app = (function () {
     	let t1;
     	let t2;
     	let t3;
+    	let div2;
     	let div1;
     	let p0;
     	let t5;
@@ -9064,14 +9065,14 @@ var app = (function () {
     	let t7;
     	let p2;
     	let t9;
-    	let div2;
+    	let div3;
     	let label;
     	let h2;
     	let t11;
     	let input0;
     	let t12;
+    	let div5;
     	let div4;
-    	let div3;
     	let t13;
     	let input1;
     	let t14;
@@ -9104,6 +9105,7 @@ var app = (function () {
     			t1 = text(/*name*/ ctx[3]);
     			t2 = text(" !");
     			t3 = space();
+    			div2 = element("div");
     			div1 = element("div");
     			p0 = element("p");
     			p0.textContent = "* Please insert your name as your username";
@@ -9112,17 +9114,17 @@ var app = (function () {
     			p1.textContent = "* This is an open chat";
     			t7 = space();
     			p2 = element("p");
-    			p2.textContent = "* Chat responsibly and be considerate";
+    			p2.textContent = "* Chat responsibly and be considerate :)";
     			t9 = space();
-    			div2 = element("div");
+    			div3 = element("div");
     			label = element("label");
     			h2 = element("h2");
     			h2.textContent = "Name:";
     			t11 = space();
     			input0 = element("input");
     			t12 = space();
+    			div5 = element("div");
     			div4 = element("div");
-    			div3 = element("div");
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].c();
@@ -9137,35 +9139,38 @@ var app = (function () {
     			t14 = space();
     			button = element("button");
     			button.textContent = "Send";
-    			attr_dev(h1, "class", "svelte-ybsrck");
-    			add_location(h1, file$1, 113, 20, 2372);
-    			attr_dev(div0, "class", "title svelte-ybsrck");
-    			add_location(div0, file$1, 113, 0, 2352);
-    			attr_dev(p0, "class", "svelte-ybsrck");
-    			add_location(p0, file$1, 115, 1, 2427);
-    			attr_dev(p1, "class", "svelte-ybsrck");
-    			add_location(p1, file$1, 116, 1, 2478);
-    			attr_dev(p2, "class", "svelte-ybsrck");
-    			add_location(p2, file$1, 117, 1, 2509);
-    			attr_dev(div1, "class", "side_note svelte-ybsrck");
-    			add_location(div1, file$1, 114, 0, 2402);
-    			add_location(h2, file$1, 121, 8, 2592);
-    			attr_dev(label, "class", "svelte-ybsrck");
-    			add_location(label, file$1, 121, 1, 2585);
+    			attr_dev(h1, "class", "svelte-w0xy88");
+    			add_location(h1, file$1, 187, 20, 4428);
+    			attr_dev(div0, "class", "title svelte-w0xy88");
+    			add_location(div0, file$1, 187, 0, 4408);
+    			attr_dev(p0, "class", "svelte-w0xy88");
+    			add_location(p0, file$1, 190, 1, 4506);
+    			attr_dev(p1, "class", "svelte-w0xy88");
+    			add_location(p1, file$1, 191, 1, 4557);
+    			attr_dev(p2, "class", "svelte-w0xy88");
+    			add_location(p2, file$1, 192, 1, 4588);
+    			attr_dev(div1, "class", "side_note svelte-w0xy88");
+    			add_location(div1, file$1, 189, 0, 4481);
+    			attr_dev(div2, "id", "typewriter");
+    			attr_dev(div2, "class", "svelte-w0xy88");
+    			add_location(div2, file$1, 188, 0, 4458);
+    			add_location(h2, file$1, 196, 8, 4680);
+    			attr_dev(label, "class", "svelte-w0xy88");
+    			add_location(label, file$1, 196, 1, 4673);
     			attr_dev(input0, "type", "text");
     			attr_dev(input0, "class", "user_input");
-    			add_location(input0, file$1, 122, 1, 2617);
-    			attr_dev(div2, "class", "headdiv svelte-ybsrck");
-    			add_location(div2, file$1, 120, 0, 2562);
-    			attr_dev(div3, "class", "scrollable svelte-ybsrck");
-    			add_location(div3, file$1, 126, 1, 2703);
-    			add_location(input1, file$1, 160, 1, 3642);
+    			add_location(input0, file$1, 197, 1, 4705);
+    			attr_dev(div3, "class", "headdiv svelte-w0xy88");
+    			add_location(div3, file$1, 195, 0, 4650);
+    			attr_dev(div4, "class", "scrollable svelte-w0xy88");
+    			add_location(div4, file$1, 201, 1, 4791);
+    			add_location(input1, file$1, 235, 1, 5730);
     			attr_dev(button, "type", "submit");
-    			add_location(button, file$1, 160, 55, 3696);
-    			attr_dev(div4, "class", "chat svelte-ybsrck");
-    			add_location(div4, file$1, 125, 0, 2683);
-    			attr_dev(main, "class", "svelte-ybsrck");
-    			add_location(main, file$1, 112, 0, 2345);
+    			add_location(button, file$1, 235, 55, 5784);
+    			attr_dev(div5, "class", "chat svelte-w0xy88");
+    			add_location(div5, file$1, 200, 0, 4771);
+    			attr_dev(main, "class", "svelte-w0xy88");
+    			add_location(main, file$1, 186, 0, 4401);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -9178,37 +9183,38 @@ var app = (function () {
     			append_dev(h1, t1);
     			append_dev(h1, t2);
     			append_dev(main, t3);
-    			append_dev(main, div1);
+    			append_dev(main, div2);
+    			append_dev(div2, div1);
     			append_dev(div1, p0);
     			append_dev(div1, t5);
     			append_dev(div1, p1);
     			append_dev(div1, t7);
     			append_dev(div1, p2);
     			append_dev(main, t9);
-    			append_dev(main, div2);
-    			append_dev(div2, label);
+    			append_dev(main, div3);
+    			append_dev(div3, label);
     			append_dev(label, h2);
-    			append_dev(div2, t11);
-    			append_dev(div2, input0);
+    			append_dev(div3, t11);
+    			append_dev(div3, input0);
     			set_input_value(input0, /*name*/ ctx[3]);
     			append_dev(main, t12);
-    			append_dev(main, div4);
-    			append_dev(div4, div3);
+    			append_dev(main, div5);
+    			append_dev(div5, div4);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(div3, null);
+    				each_blocks[i].m(div4, null);
     			}
 
     			if (each_1_else) {
-    				each_1_else.m(div3, null);
+    				each_1_else.m(div4, null);
     			}
 
-    			/*div3_binding*/ ctx[11](div3);
-    			append_dev(div4, t13);
-    			append_dev(div4, input1);
+    			/*div4_binding*/ ctx[11](div4);
+    			append_dev(div5, t13);
+    			append_dev(div5, input1);
     			/*input1_binding*/ ctx[12](input1);
-    			append_dev(div4, t14);
-    			append_dev(div4, button);
+    			append_dev(div5, t14);
+    			append_dev(div5, button);
     			current = true;
 
     			dispose = [
@@ -9238,7 +9244,7 @@ var app = (function () {
     						each_blocks[i] = create_each_block(child_ctx);
     						each_blocks[i].c();
     						transition_in(each_blocks[i], 1);
-    						each_blocks[i].m(div3, null);
+    						each_blocks[i].m(div4, null);
     					}
     				}
 
@@ -9259,7 +9265,7 @@ var app = (function () {
     			} else if (!each_1_else) {
     				each_1_else = create_else_block_2(ctx);
     				each_1_else.c();
-    				each_1_else.m(div3, null);
+    				each_1_else.m(div4, null);
     			}
     		},
     		i: function intro(local) {
@@ -9284,7 +9290,7 @@ var app = (function () {
     			if (detaching) detach_dev(main);
     			destroy_each(each_blocks, detaching);
     			if (each_1_else) each_1_else.d();
-    			/*div3_binding*/ ctx[11](null);
+    			/*div4_binding*/ ctx[11](null);
     			/*input1_binding*/ ctx[12](null);
     			run_all(dispose);
     		}
@@ -9323,6 +9329,73 @@ var app = (function () {
     	const dateLocal = new Date(now.getTime() - offsetMs);
     	let str = dateLocal.toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " ");
     	return str;
+    }
+
+    function setupTypewriter(t) {
+    	var HTML = t.innerHTML;
+    	t.innerHTML = "";
+
+    	var cursorPosition = 0,
+    		tag = "",
+    		writingTag = true,
+    		tagOpen = true,
+    		typeSpeed = 10,
+    		tempTypeSpeed = 0;
+
+    	var type = function () {
+    		if (writingTag === true) {
+    			tag += HTML[cursorPosition];
+    		}
+
+    		if (HTML[cursorPosition] === "<") {
+    			tempTypeSpeed = 0;
+
+    			if (tagOpen) {
+    				tagOpen = false;
+    				writingTag = true;
+    			} else {
+    				tag = "";
+    				tagOpen = true;
+    				writingTag = true;
+    				tag += HTML[cursorPosition];
+    			}
+    		}
+
+    		if (!writingTag && tagOpen) {
+    			tag.innerHTML += HTML[cursorPosition];
+    		}
+
+    		if (!writingTag && !tagOpen) {
+    			if (HTML[cursorPosition] === " ") {
+    				tempTypeSpeed = 0;
+    			} else {
+    				tempTypeSpeed = Math.random() * typeSpeed + 50;
+    			}
+
+    			t.innerHTML += HTML[cursorPosition];
+    		}
+
+    		if (writingTag === true && HTML[cursorPosition] === ">") {
+    			tempTypeSpeed = Math.random() * typeSpeed + 50;
+    			writingTag = false;
+
+    			if (tagOpen) {
+    				var newSpan = document.createElement("span");
+    				t.appendChild(newSpan);
+    				newSpan.innerHTML = tag;
+    				tag = newSpan.firstChild;
+    				tag.style.margin = 0;
+    			}
+    		}
+
+    		cursorPosition += 1;
+
+    		if (cursorPosition < HTML.length - 1) {
+    			setTimeout(type, tempTypeSpeed);
+    		}
+    	};
+
+    	return { type };
     }
 
     function instance$1($$self, $$props, $$invalidate) {
@@ -9398,12 +9471,18 @@ var app = (function () {
     		}));
     	});
 
+    	window.onload = () => {
+    		var tyy = document.getElementById("typewriter");
+    		var typewriter = setupTypewriter(tyy);
+    		typewriter.type();
+    	};
+
     	function input0_input_handler() {
     		name = this.value;
     		$$invalidate(3, name);
     	}
 
-    	function div3_binding($$value) {
+    	function div4_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
     			$$invalidate(0, div = $$value);
     		});
@@ -9452,7 +9531,7 @@ var app = (function () {
     		formdata,
     		requestOptions,
     		input0_input_handler,
-    		div3_binding,
+    		div4_binding,
     		input1_binding
     	];
     }
