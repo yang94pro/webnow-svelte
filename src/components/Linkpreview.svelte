@@ -24,20 +24,21 @@
 
     img{
         width: auto;
-        height: 80px;
+        height: 120px;
         float: left;
         position: relative;
     }
     .webtitle{
+
         margin:0;
         font: 700;
-        font-size: 10px;
+        font-size: 12px;
 
 
     }
     p{
         margin:0;
-        font-size: 8px;
+        font-size: 12px;
     }
 
 </style>

@@ -3,6 +3,9 @@
 	import { onMount } from 'svelte';
 	import { beforeUpdate, afterUpdate } from 'svelte';
 	import Linkpreview from './components/Linkpreview.svelte'
+	import Theme from './components/Theme.svelte'
+
+	let name;
 	$: name = asda()
 	$: addCookie(name)
 	function asda(){
@@ -160,6 +163,7 @@
 					
 					tag = newSpan.firstChild;
 					tag.style.margin = 0;
+					tag.style.color = "var(--default-text-color)";
                 }
             }
 
@@ -183,7 +187,9 @@
 
    
 </script>
-
+<svelte:head>
+<link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+</svelte:head>
 <main>
 <div class="title"> <h1>Hello {name} !</h1></div>
 <div id ="typewriter">
@@ -196,6 +202,9 @@
 <div class="headdiv">
 	<label><h2>Name:</h2> </label>
 	<input type="text" bind:value={name} class="user_input"/>
+	<div class="theme"><Theme/>
+	</div>
+	
 </div>
 
 <div class="chat">
@@ -230,18 +239,40 @@
 		{:else}
 
 			<!-- this block renders when photos.length === 0 -->
-			<center><p>Comments are loading...</p></center>
+			 <center><p>Comments are loading...</p></center>
 		{/each}
 	</div>
-	<input bind:this={input} on:keydown={handleKeydown}/> <button  type="submit" on:click={handleKeydown}>Send</button>
+	<input bind:this={input} on:keydown={handleKeydown} /> <button  type="submit" on:click={handleKeydown}>Send</button>
 </div>
-	
 	
 
 </main>
 
 <style>
-
+	:global(:root){
+		--default-bg-color: pink;
+		--default-span-color: rgb(230, 95, 95);
+		--default-text-color: #5D6D7E;
+		--default-othertext-color:#5D6D7E;
+		--default-usertext-color: white;
+		--default-user-color: white;
+		--default-otherspan-color:  #eee ;
+	}
+	:global(body){
+		margin:0;
+		padding:0;
+		background:var(--default-bg-color);
+		height:100vh;
+	}
+	input{
+		background:var(--default-bg-color);
+		border: 2px solid var(--default-text-color);
+		color: var(--default-text-color);
+	}
+	p{
+		color: var(--default-text-color)
+	}
+	
 	main{
 		display: grid;
 		justify-items: center;
@@ -249,6 +280,9 @@
 		width: 95vw;
 		margin:auto;
 		padding:auto;	
+		background:var(--default-bg-color);
+		font-family: 'Roboto';
+
 
 	}
 	.side_note{
@@ -265,15 +299,15 @@
 		margin:0 auto;
 		padding:0;
 	}
-	.side_note > p{
-	
+	.side_note  p{
+		color: var(--default-text-color);
 		padding:0;
 		margin:0;
 	}
 	
 	
 	h1 {
-		color: #ff3e00;
+		color: var(--default-text-color);
 		text-transform: uppercase;
 		font-size: 2.7em;
 		font-weight: bold;
@@ -293,7 +327,11 @@
 		position: relative;
 	}
 
-	
+	.user_input{
+		background:var(--default-bg-color);
+		border: 2px solid var(--default-text-color);
+		color: var(--default-text-color);
+	}
 	.systemsg{
 		text-align: center;
 		display: flex;
@@ -315,6 +353,7 @@
 	.headdiv label {
 		padding:1em;
 		position: relative;
+		color: var(--default-text-color);
 
 	}
 
@@ -329,6 +368,7 @@
 		width:90%;
 		justify-content: center;
 		word-wrap: break-word;
+
 		
 		
 		
@@ -342,6 +382,7 @@
 		word-wrap: break-word;
 		font-size: 1.1em;
 		position: relative;
+		scroll-behavior: smooth;
 		
 	}
 
@@ -389,27 +430,33 @@
 	}
 
 	.other span {
-		background-color: #eee;
+		background-color: var(--default-otherspan-color);
 		border-radius: 1em 1em 1em 0;
-		max-width: 250px;
+		max-width: 70%;
+		
 		word-wrap: break-word;
-		color:#5D6D7E  ;
+		color:var(--default-othertext-color);
+		
+	}
+	::-webkit-scrollbar{
+		width: 2px;
+		
 		
 	}
 
 	.user span {
-		background-color: #0074D9;
-		color: white;
+		background-color: var(--default-span-color);
+		color:var(--default-usertext-color);
 		border-radius: 1em 1em 0 1em;
 		text-align: left;
-		max-width: 250px;
+		max-width: 70%;
 		word-wrap: break-word;
 
 	}
 	.otherusert {
 		
 		margin:0.5em 0 0.3em 0.5em;
-		color: #34495E ;
+		color: var(--default-text-color) ;
 		font-weight: bold;
 		max-width: 200px;
 	}
