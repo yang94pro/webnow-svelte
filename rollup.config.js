@@ -1,5 +1,5 @@
 import svelte from 'rollup-plugin-svelte';
-import resolve from '@rollup/plugin-node-resolve';
+import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
@@ -27,7 +27,8 @@ export default {
 		}),
 		postcss({
 			extensions: ['.scss', '.sass','.css'],
-            extract: false,
+			extract: false,
+			emitCss: true,
             minimize: true,
             use: [
                 ['sass', {
@@ -48,7 +49,9 @@ export default {
 			browser: true,
 			dedupe: importee => importee === 'svelte' || importee.startsWith('svelte/')
 		}),
-		commonjs(),
+		commonjs({
+			include: /node_modules/
+		  }),
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated

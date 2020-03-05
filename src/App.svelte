@@ -26,8 +26,8 @@
 	let autoscroll;
 	let input;
 
-	const serveradd = "https://webchay.herokuapp.com";
-	// const serveradd = "http://127.0.0.1:5000";
+	// const serveradd = "https://webchay.herokuapp.com";
+	const serveradd = "http://127.0.0.1:5000";
 	import io from 'socket.io-client';
 	const socket = io(serveradd);
 
@@ -35,15 +35,20 @@
 		autoscroll = div && (div.offsetHeight + div.scrollTop) > (div.scrollHeight - 20);});
 
 	afterUpdate(() => {
-		if (autoscroll) div.scrollTo(0,div.scrollHeight);
+		if (autoscroll) div.scrollTo(0,(div.scrollHeight));
 	});
 
-	function dateformat(){
-		let now = new Date();
+	function dateformat(date){
+
+		
+		let now = new Date(date);
+		console.log(date, now.getTime())
 		const offsetMs = now.getTimezoneOffset() * 60 * 1000;
-		const dateLocal = new Date(now.getTime() - offsetMs);
-		let str =dateLocal.toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " ");
-		return str;
+		var dateLocal = new Date(now.getTime() - offsetMs);
+		let str =((dateLocal.toString().slice(0,25)))
+		
+		
+		return str
 	};
 
 	function handleKeydown() {
@@ -56,7 +61,7 @@
 			socket.emit('chat message', {
 				"author": name, 
 				"commend": text, 
-				"time": dateformat(),
+				"clienttime": dateformat(Date()),
 			});
 			
 			console.log(comments);
@@ -80,7 +85,7 @@
 			comments = comments.concat({
 					author: result.author,
 					text: result.commend,
-					time: result.time,
+					time: dateformat(result.time),
 					type: result.type,
 					title: result.title,
 					description: result.description,
@@ -96,11 +101,11 @@
 	
 	socket.on('chat message', function (json) {
 		json = JSON.parse(json);
-		
+		console.log(json)
         comments = comments.concat({
 				author: json.author,
 				text: json.commend,
-				time: json.time,
+				time: dateformat(json.time),
 				type: json.type,
 				title: json.title,
 				description: json.description,
@@ -164,6 +169,9 @@
 					tag = newSpan.firstChild;
 					tag.style.margin = 0;
 					tag.style.color = "var(--default-text-color)";
+					tag.style.letterSpacing= "1px";
+					tag.style.alignItems = "center";
+					
                 }
             }
 
@@ -178,16 +186,41 @@
             type: type
         };
     }
-
+	
 	window.onload = ()=> {
 		var tyy = document.getElementById('typewriter');
 		var typewriter = setupTypewriter(tyy);
-    	typewriter.type();
+		typewriter.type();
+		window.addEventListener('resize',function(){
+			console.log(window.innerHeight);
+			if (window.innerHeight < 680){
+				tyy.style.height="0";
+				
+				document.getElementById("msg-input").style.marginBottom="5px";
+				div.scrollTo(0,div.scrollHeight)
+			} else{
+				tyy.style.height ="70px";
+				document.getElementById("chat").style.height = "70vh";
+				document.getElementById("msg-input").style.marginBottom="15px";	
+			}
+		});
+
 	};
+	
 
    
 </script>
 <svelte:head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-158899098-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-158899098-1');
+</script>
+
 <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
 </svelte:head>
 <main>
@@ -196,26 +229,30 @@
 <div class="side_note">
 	<p>* Please insert your name as your username</p>
 	<p>* This is an open chat</p>
-	<p>* Chat responsibly and be considerate :)</p>
+	<p>* AI bot in trainning. Currently offline.</p>
 </div></div>
 
 <div class="headdiv">
-	<label><h2>Name:</h2> </label>
+	<center><label><h4>Name:</h4> </label></center>
 	<input type="text" bind:value={name} class="user_input"/>
 	<div class="theme"><Theme/>
 	</div>
 	
 </div>
 
-<div class="chat">
+<div class="chat" id="chat">
 	<div class="scrollable" bind:this={div}>
 		{#each comments as comment, i}
 			{#if comment.author==="system"}
 				<span class="systemsg">{comment.text}</span>
 			{:else}
-				{#if comment.author != name}{#if i!=0 && comment.author != comments[i-1].author} 
-					<p class='otherusert'>{comment.author}:</p>
-				{/if}
+				{#if i!=0 && comment.author != comments[i-1].author} 
+					{#if comment.type ==="bot"}
+						<p class="bot_respond">{comment.author}:</p>
+					{:else if comment.author != name}
+						<p class='otherusert'>{comment.author}:</p>
+					
+					{/if}
 				{/if}
 				<article class="{comment.author=== name? "user":"other"}">
 					{#if comment.type ==="link"}
@@ -227,6 +264,7 @@
 							url={comment.text}/>
 																		
 						</span>
+					
 					{:else}
 						<span>{comment.text}</span>
 						
@@ -242,7 +280,11 @@
 			 <center><p>Comments are loading...</p></center>
 		{/each}
 	</div>
-	<input bind:this={input} on:keydown={handleKeydown} /> <button  type="submit" on:click={handleKeydown}>Send</button>
+	<div class = "msg-input" id='msg-input'>
+		<input bind:this={input} on:keydown={handleKeydown} />
+		<button  type="submit" on:click={handleKeydown}>Send</button>
+
+	</div>
 </div>
 	
 
@@ -250,24 +292,29 @@
 
 <style>
 	:global(:root){
-		--default-bg-color: pink;
-		--default-span-color: rgb(230, 95, 95);
+		--default-bg-color: 'white';
+		--default-span-color: #0074D9;
 		--default-text-color: #5D6D7E;
 		--default-othertext-color:#5D6D7E;
 		--default-usertext-color: white;
-		--default-user-color: white;
+		--default-user-color: #5D6D7E;
 		--default-otherspan-color:  #eee ;
 	}
 	:global(body){
 		margin:0;
 		padding:0;
 		background:var(--default-bg-color);
-		height:100vh;
+		height:100%;
+		overflow: hidden;
+		scroll-behavior: none;
+		align-items: center;
 	}
 	input{
-		background:var(--default-bg-color);
-		border: 2px solid var(--default-text-color);
+		background:none;
+		position: relative;
 		color: var(--default-text-color);
+		margin:0;
+		font-size: 1.1em;
 	}
 	p{
 		color: var(--default-text-color)
@@ -276,12 +323,14 @@
 	main{
 		display: grid;
 		justify-items: center;
-		height: 95vh;
-		width: 95vw;
+		height: 100%;
+		width: 98vw;
 		margin:auto;
 		padding:auto;	
 		background:var(--default-bg-color);
 		font-family: 'Roboto';
+		align-content: center;
+
 
 
 	}
@@ -296,8 +345,14 @@
 
 	}
 	#typewriter{
-		margin:0 auto;
-		padding:0;
+		margin: auto;
+		overflow: hidden;
+		padding:0;	
+		align-self: center;
+		height: 70px;
+
+
+		
 	}
 	.side_note  p{
 		color: var(--default-text-color);
@@ -310,15 +365,15 @@
 		color: var(--default-text-color);
 		text-transform: uppercase;
 		font-size: 2.7em;
-		font-weight: bold;
+		font-weight: bolder;
 		text-align: center;
-
+		text-shadow:1px 1px rgb(55, 66, 78);
+		margin: 0.3em auto;
 		word-wrap: break-word;
 		
+		
 	}
-	.title{
-		margin:auto;
-	}
+
 	.title > h1{
 		
 		align-content: center;
@@ -328,44 +383,65 @@
 	}
 
 	.user_input{
-		background:var(--default-bg-color);
+		background:none;
 		border: 2px solid var(--default-text-color);
 		color: var(--default-text-color);
+		margin:0;
 	}
 	.systemsg{
 		text-align: center;
 		display: flex;
 		flex-direction: column;
 		margin: 0;
+		margin-top:0.2em;
 		padding: 0;
-		font-size: 20px;
+		font-size: 0.9em;
 		color: rgb(151, 151, 151);
 	}
 	.headdiv{
 		position: relative;
 		display: inline-flex;
 		justify-content: space-around;
-		height: 50px;
+		margin-bottom: 10px;
 		align-items: center;
+		width: 100%;
+		max-width: 350px
+		
 		
 	}
 
 	.headdiv label {
-		padding:1em;
+		padding: 0 0.3em 0 0;
 		position: relative;
 		color: var(--default-text-color);
+		margin: 0;
+		float: left;
+		
 
 	}
 
+	.headdiv label>h4{
+		padding:0;
+		margin:0;
+		
+		color: var(--default-text-color);
+		letter-spacing: .08929em;
+		text-transform: uppercase;
+		font-weight:600;
+		font-size: 1em
+
+		
+	}
 
 	.chat {
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		height: 60vh;
-		max-height: 600px;
+		height:70vh;
+		
+		margin: 0;
 		max-width: 450px;
-		width:90%;
+		width:95%;
 		justify-content: center;
 		word-wrap: break-word;
 
@@ -377,24 +453,29 @@
 	.scrollable {
 		flex: 1 1 auto;
 		border-top: 1px solid #eee;
-		margin: 0 0 0.5em 0;
+		margin: 0;
 		overflow-y: auto;
 		word-wrap: break-word;
-		font-size: 1.1em;
+		font-size: 1em;
 		position: relative;
-		scroll-behavior: smooth;
+		margin-bottom: 10px;
+		
+		overscroll-behavior: contain;
 		
 	}
 
 	article {
-		margin: 0 0 0.3em 0;
+		margin: 0 0 0.2em 0;
 		position: relative;
+		
 	
 	}
 	#commentdate{
-		display: none;
-		transition: all 5s ease-out;
-		-webkit-transition: all 5s ease-in-out;
+		height:0;
+		overflow: hidden;
+		font-size: 0.8em;
+		transition: all 0.4s ease-out;
+		-webkit-transition: all 0.4s ease-in-out;
 		margin: 0 5px 0 ;
 
 	}
@@ -404,17 +485,19 @@
 		top:0;
 		left:0;
 		width:100%;
+		height:100%;
 		position: absolute;
 	
-		-webkit-user-select: all;  /* Chrome all / Safari all */
-		-moz-user-select: all;     /* Firefox all */
-		-ms-user-select: all;      /* IE 10+ */
- 		user-select: all; 
+		-webkit-user-select: text;  /* Chrome all / Safari all */
+		-moz-user-select: text;     /* Firefox all */
+		-ms-user-select: text;      /* IE 10+ */
+ 		user-select: text; 
 	}
 
 
 	.nothing:focus + div#commentdate{
 		display:block;
+		height: 1em;
 		color: dimgrey;
 
 	}
@@ -424,9 +507,9 @@
 	}
 
 	span {
-		padding: 0.5em 1em;
+		padding: 0.4em 1em;
 		display: inline-block;
-	
+
 	}
 
 	.other span {
@@ -455,10 +538,17 @@
 	}
 	.otherusert {
 		
-		margin:0.5em 0 0.3em 0.5em;
+		margin:0.1em 0 0.1em 0.5em;
 		color: var(--default-text-color) ;
 		font-weight: bold;
 		max-width: 200px;
+	}
+	.bot_respond{
+		margin:0.5em 0 0.1em 0.5em;
+		
+		font-weight: bold;
+		max-width: 200px;
+		color: red
 	}
 
 	.user input.nothing{
@@ -471,15 +561,61 @@
 
 		
 	}
-	
+	button{
+		position: relative;
+		float: right;
+		width: 20%;
+		margin:0;
+		background: none;
+		cursor: pointer;
+		display: block;
+		font-weight: 500;
+		color: var(--default-text-color);
+		letter-spacing: .08929em;
+		text-transform: uppercase;
+		font-weight: bold;
+		border: none;
+		font-size: 1.1em;
+		padding-right:0;
+
+
+	}
+	.msg-input{
+		border: 2px solid var(--default-text-color);
+		bottom: 5px;
+		max-width: 446px;
+		height: 40px;
+		justify-items: space-around;
+		position: relative;
+		border-radius: 10px;
+	}
+	.msg-input > input{
+		position: absolute;
+		width: 80%;
+		border: none;
+		align-content: center;
+		outline: none;
+		
+		
+	}
+	.user_input{
+		width: 200px;
+		border-radius: 10px;
+		height: 35px;
+
+	}
 
 	@media only screen and (max-width: 500px) {
 		.headdiv{
-			max-height: 100px;
+			max-height: 50px;
 		}
+	
 		.title >h1{
 			width: 80vw;
 			align-content: center;
+		}
+		.scrollable{
+			font-size: 0.95em;
 		}
 	}
 </style>

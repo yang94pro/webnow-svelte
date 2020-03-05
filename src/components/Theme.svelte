@@ -1,13 +1,13 @@
 <script>
-    import Dialog, {Title, Content, Actions, InitialFocus} from '@smui/dialog';
+    import Dialog , {Title, Content, Actions} from '@smui/dialog';
     import Button, {Label} from '@smui/button';
     import List, {Item, Graphic, Text} from '@smui/list';
     import Radio from '@smui/radio';
-    $: selection= userprefer();
+    $: selection= userprefer() ;
     $: addUserprefer(selection);
     function userprefer(){
         if (document.cookie){
-			var cookieTheme = document.cookie.replace(/(?:(?:^|.*;\s*)theme\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+			      var cookieTheme = document.cookie.replace(/(?:(?:^|.*;\s*)theme\s*\=\s*([^;]*).*$)|^.*$/, "$1");
             console.log(cookieTheme);
             chgtheme(cookieTheme);
 			return cookieTheme
@@ -32,7 +32,7 @@
             
         }else if (color === 'dark'){
             theme("--default-bg-color","#5D6D7E");
-            theme("--default-text-color","white");
+            theme("--default-text-color","#c2c2c2");
             theme("--default-span-color","#283747");
         }else if (color === 'pink'){
             theme("--default-bg-color","	#FFB6C1");
@@ -52,12 +52,12 @@
         selected = selection;
         chgtheme(selected);
         }
-    selection = userprefer();
+    
     };
 
     let listSelectionDialog;
-    let selection;
-    let selected = 'theme1';
+    let selection ;
+    let selected;
 
 </script>
 
@@ -73,7 +73,7 @@
       <Title id="list-selection-title">Theme</Title>
       <Content id="list-selection-content">
         <List radioList>
-          <Item use={[InitialFocus]}>
+          <Item >
             <Graphic>
               <Radio bind:group={selection} value="dark" />
             </Graphic>
@@ -109,8 +109,15 @@
 <style>
     h4{
         color:var(--default-text-color);
-        margin:auto;
+        margin: 0;
+        font-weight: 500;
+        color: var(--default-text-color);
+        letter-spacing: .08929em;
+        text-transform: uppercase;
+        font-weight: bold;
+        font-size: 1.1em
+            
 
     }
-    
+
 </style>

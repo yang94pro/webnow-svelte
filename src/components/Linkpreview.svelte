@@ -1,5 +1,6 @@
 <script>
     export let title, url, description, image
+    import 'lazysizes'
 
 
 
@@ -27,6 +28,7 @@
         height: 120px;
         float: left;
         position: relative;
+        border-radius: 15px;
     }
     .webtitle{
 
@@ -40,11 +42,15 @@
         margin:0;
         font-size: 12px;
     }
+    h5{
+        margin: 0;
+    }
 
 </style>
 <a href={url} target="_blank">
 <span class="linkp" href={url}>
-    <img await src={image} alt="Web logo">
+    <img await src={image} class ='lazyload'alt="Web logo">
     <h3 class="webtitle">{title}</h3>
     <p>{description}</p>
+    <h5>{url}</h5>
 </span></a>
