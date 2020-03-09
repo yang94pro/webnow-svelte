@@ -4,6 +4,7 @@
 	import { beforeUpdate, afterUpdate } from 'svelte';
 	import Linkpreview from './components/Linkpreview.svelte'
 	import Theme from './components/Theme.svelte'
+	import Emoji  from './components/emoji.svelte'
 
 	let name;
 	$: name = asda()
@@ -24,10 +25,10 @@
 	var currentuser;
 	let div;
 	let autoscroll;
-	let input;
+	let input1;
 
-	// const serveradd = "https://webchay.herokuapp.com";
-	const serveradd = "http://127.0.0.1:5000";
+	const serveradd = "https://webchay.herokuapp.com";
+	// const serveradd = "http://127.0.0.1:5000";
 	import io from 'socket.io-client';
 	const socket = io(serveradd);
 
@@ -42,7 +43,7 @@
 
 		
 		let now = new Date(date);
-		console.log(date, now.getTime())
+
 		const offsetMs = now.getTimezoneOffset() * 60 * 1000;
 		var dateLocal = new Date(now.getTime() - offsetMs);
 		let str =((dateLocal.toString().slice(0,25)))
@@ -52,12 +53,12 @@
 	};
 
 	function handleKeydown() {
-
+		
 		if (event.which === 13 || event.type === "click") {
-
-			const text = input.value;
+			console.log("dasdasd")
+			const text = input1.innerHTML;
 			if (!text) return;
-			
+			console.log(text)
 			socket.emit('chat message', {
 				"author": name, 
 				"commend": text, 
@@ -65,7 +66,7 @@
 			});
 			
 			console.log(comments);
-			input.value = '';
+			input1.innerHTML= '';
 		};
 	};
 	
@@ -196,21 +197,25 @@
 			if (window.innerHeight < 680){
 				tyy.style.height="0";
 				
-				document.getElementById("msg-input").style.marginBottom="5px";
 				div.scrollTo(0,div.scrollHeight)
 			} else{
 				tyy.style.height ="70px";
 				document.getElementById("chat").style.height = "70vh";
-				document.getElementById("msg-input").style.marginBottom="15px";	
 			}
 		});
 
 	};
 	
+	function alertmsg(event){
+
+		input1.innerHTML+=  event.detail.detail
+		console.log(input1)
+	}
 
    
 </script>
 <svelte:head>
+<script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-158899098-1"></script>
 <script>
@@ -238,7 +243,7 @@
 	<div class="theme"><Theme/>
 	</div>
 	
-</div>
+</div> 
 
 <div class="chat" id="chat">
 	<div class="scrollable" bind:this={div}>
@@ -266,7 +271,7 @@
 						</span>
 					
 					{:else}
-						<span>{comment.text}</span>
+						<span>{@html comment.text}</span>
 						
 					{/if}<input class="nothing" type="button">
 					<div id="commentdate">
@@ -277,20 +282,30 @@
 		{:else}
 
 			<!-- this block renders when photos.length === 0 -->
-			 <center><p>Comments are loading...</p></center>
+			<center><p>Comments are loading...</p></center>
 		{/each}
 	</div>
 	<div class = "msg-input" id='msg-input'>
-		<input bind:this={input} on:keydown={handleKeydown} />
+		<div contenteditable="true" bind:this={input1}  on:keydown={handleKeydown}></div>
+		<!-- <input bind:this={input1} on:keydown={handleKeydown} /> -->
 		<button  type="submit" on:click={handleKeydown}>Send</button>
+
+		<div class='emojicontainer'>
+			<Emoji on:emojiClicked={alertmsg}/>
+		</div>
 
 	</div>
 </div>
-	
+
+	 	
+
+
 
 </main>
 
 <style>
+
+
 	:global(:root){
 		--default-bg-color: 'white';
 		--default-span-color: #0074D9;
@@ -305,7 +320,7 @@
 		padding:0;
 		background:var(--default-bg-color);
 		height:100%;
-		overflow: hidden;
+		
 		scroll-behavior: none;
 		align-items: center;
 	}
@@ -316,6 +331,7 @@
 		margin:0;
 		font-size: 1.1em;
 	}
+
 	p{
 		color: var(--default-text-color)
 	}
@@ -345,7 +361,7 @@
 
 	}
 	#typewriter{
-		margin: auto;
+		margin-top: 1em;
 		overflow: hidden;
 		padding:0;	
 		align-self: center;
@@ -368,7 +384,7 @@
 		font-weight: bolder;
 		text-align: center;
 		text-shadow:1px 1px rgb(55, 66, 78);
-		margin: 0.3em auto;
+		margin: 0;
 		word-wrap: break-word;
 		
 		
@@ -438,12 +454,14 @@
 		display: flex;
 		flex-direction: column;
 		height:70vh;
-		
+
+		border-radius: 15px;
 		margin: 0;
 		max-width: 450px;
 		width:95%;
 		justify-content: center;
 		word-wrap: break-word;
+		margin-bottom: 10px;
 
 		
 		
@@ -564,8 +582,8 @@
 	button{
 		position: relative;
 		float: right;
-		width: 20%;
-		margin:0;
+		width: 12%;
+		margin:auto 5px;
 		background: none;
 		cursor: pointer;
 		display: block;
@@ -576,28 +594,68 @@
 		font-weight: bold;
 		border: none;
 		font-size: 1.1em;
-		padding-right:0;
+		padding: 0;
+		height:100%;
+
 
 
 	}
 	.msg-input{
 		border: 2px solid var(--default-text-color);
-		bottom: 5px;
+
 		max-width: 446px;
 		height: 40px;
 		justify-items: space-around;
 		position: relative;
 		border-radius: 10px;
 	}
-	.msg-input > input{
+	.emojicontainer{
+		float: right;
+		width: 7%;
+		position: relative;
+		height:100%;
+		margin:auto;
+	}
+	.msg-input > [contenteditable]{
 		position: absolute;
-		width: 80%;
+		width: 75%;
 		border: none;
-		align-content: center;
+		
 		outline: none;
 		
 		
 	}
+	[contenteditable] {
+		height: 100%;
+	
+		overflow: hidden;
+		margin: auto 10px;
+		display:flex;
+		background:none;
+		position: relative;
+		color: var(--default-text-color);
+		align-items: center;
+		font-size: 1.1em;
+
+		text-overflow: ellipsis;
+	
+	}
+	:global([contenteditable] > .emoji){
+	
+		height: 1em;
+		width: 1em;
+		margin: 0 .05em 0 .1em;
+		vertical-align: -0.1em;
+
+	}
+
+	:global(article > span > .emoji ){
+		height: 1em;
+		width: 1em;
+		margin: 0 .05em 0 .1em;
+		vertical-align: -0.1em;
+	}
+	
 	.user_input{
 		width: 200px;
 		border-radius: 10px;

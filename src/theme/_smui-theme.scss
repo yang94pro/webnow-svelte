@@ -1,8 +1,25 @@
 .mdc-button{
-    margin: 0 0 0 10px;
+    
     padding:0;
+    min-width: 24px;
 }
 
 .mdc-button::before, .mdc-button::after{
     background: none;
+    
+}
+
+
+.mdc-menu, .mdc-list{
+
+    width: 400px;
+    
+}
+
+.emojicontainer > .mdc-button{
+    min-width: 10px;
+}
+
+.mdc-list{
+    height: 300px;
 }

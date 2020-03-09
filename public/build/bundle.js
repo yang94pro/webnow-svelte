@@ -288,6 +288,96 @@ var app = (function () {
     }
 
     const globals = (typeof window !== 'undefined' ? window : global);
+    function outro_and_destroy_block(block, lookup) {
+        transition_out(block, 1, 1, () => {
+            lookup.delete(block.key);
+        });
+    }
+    function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block, next, get_context) {
+        let o = old_blocks.length;
+        let n = list.length;
+        let i = o;
+        const old_indexes = {};
+        while (i--)
+            old_indexes[old_blocks[i].key] = i;
+        const new_blocks = [];
+        const new_lookup = new Map();
+        const deltas = new Map();
+        i = n;
+        while (i--) {
+            const child_ctx = get_context(ctx, list, i);
+            const key = get_key(child_ctx);
+            let block = lookup.get(key);
+            if (!block) {
+                block = create_each_block(key, child_ctx);
+                block.c();
+            }
+            else if (dynamic) {
+                block.p(child_ctx, dirty);
+            }
+            new_lookup.set(key, new_blocks[i] = block);
+            if (key in old_indexes)
+                deltas.set(key, Math.abs(i - old_indexes[key]));
+        }
+        const will_move = new Set();
+        const did_move = new Set();
+        function insert(block) {
+            transition_in(block, 1);
+            block.m(node, next);
+            lookup.set(block.key, block);
+            next = block.first;
+            n--;
+        }
+        while (o && n) {
+            const new_block = new_blocks[n - 1];
+            const old_block = old_blocks[o - 1];
+            const new_key = new_block.key;
+            const old_key = old_block.key;
+            if (new_block === old_block) {
+                // do nothing
+                next = new_block.first;
+                o--;
+                n--;
+            }
+            else if (!new_lookup.has(old_key)) {
+                // remove old block
+                destroy(old_block, lookup);
+                o--;
+            }
+            else if (!lookup.has(new_key) || will_move.has(new_key)) {
+                insert(new_block);
+            }
+            else if (did_move.has(old_key)) {
+                o--;
+            }
+            else if (deltas.get(new_key) > deltas.get(old_key)) {
+                did_move.add(new_key);
+                insert(new_block);
+            }
+            else {
+                will_move.add(old_key);
+                o--;
+            }
+        }
+        while (o--) {
+            const old_block = old_blocks[o];
+            if (!new_lookup.has(old_block.key))
+                destroy(old_block, lookup);
+        }
+        while (n)
+            insert(new_blocks[n - 1]);
+        return new_blocks;
+    }
+    function validate_each_keys(ctx, list, get_context, get_key) {
+        const keys = new Set();
+        for (let i = 0; i < list.length; i++) {
+            const key = get_key(get_context(ctx, list, i));
+            if (keys.has(key)) {
+                throw new Error(`Cannot have duplicate keys in a keyed each`);
+            }
+            keys.add(key);
+        }
+    }
 
     function get_spread_update(levels, updates) {
         const update = {};
@@ -1505,7 +1595,7 @@ var app = (function () {
       }
     }
 
-    var css = ".mdc-button{margin:0 0 0 10px;padding:0}.mdc-button:after,.mdc-button:before{background:none}.mdc-dialog,.mdc-dialog__scrim{position:fixed;top:0;left:0;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%}.mdc-dialog{display:none;z-index:7}.mdc-dialog .mdc-dialog__surface{background-color:#fff;background-color:var(--mdc-theme-surface,#fff)}.mdc-dialog .mdc-dialog__scrim{background-color:rgba(0,0,0,.32)}.mdc-dialog .mdc-dialog__title{color:rgba(0,0,0,.87)}.mdc-dialog .mdc-dialog__content{color:rgba(0,0,0,.6)}.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__actions,.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__title{border-color:rgba(0,0,0,.12)}.mdc-dialog .mdc-dialog__surface{min-width:280px}@media (max-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:calc(100vw - 32px)}}@media (min-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:560px}}.mdc-dialog .mdc-dialog__surface{max-height:calc(100% - 32px)}.mdc-dialog .mdc-dialog__surface{border-radius:4px}.mdc-dialog__scrim{opacity:0;z-index:-1}.mdc-dialog__container{display:flex;flex-direction:row;align-items:center;justify-content:space-around;box-sizing:border-box;height:100%;transform:scale(.8);opacity:0;pointer-events:none}.mdc-dialog__surface{box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);display:flex;flex-direction:column;flex-grow:0;flex-shrink:0;box-sizing:border-box;max-width:100%;max-height:100%;pointer-events:auto;overflow-y:auto}.mdc-dialog[dir=rtl] .mdc-dialog__surface,[dir=rtl] .mdc-dialog .mdc-dialog__surface{text-align:right}.mdc-dialog__title{line-height:normal;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1.25rem;line-height:2rem;font-weight:500;letter-spacing:.0125em;text-decoration:inherit;text-transform:inherit;display:block;position:relative;flex-shrink:0;box-sizing:border-box;margin:0;padding:0 24px 9px;border-bottom:1px solid transparent}.mdc-dialog__title:before{display:inline-block;width:0;height:40px;content:\"\";vertical-align:0}.mdc-dialog[dir=rtl] .mdc-dialog__title,[dir=rtl] .mdc-dialog .mdc-dialog__title{text-align:right}.mdc-dialog--scrollable .mdc-dialog__title{padding-bottom:15px}.mdc-dialog__content{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.5rem;font-weight:400;letter-spacing:.03125em;text-decoration:inherit;text-transform:inherit;flex-grow:1;box-sizing:border-box;margin:0;padding:20px 24px;overflow:auto;-webkit-overflow-scrolling:touch}.mdc-dialog__content>:first-child{margin-top:0}.mdc-dialog__content>:last-child{margin-bottom:0}.mdc-dialog__title+.mdc-dialog__content{padding-top:0}.mdc-dialog--scrollable .mdc-dialog__content{padding-top:8px;padding-bottom:8px}.mdc-dialog__content .mdc-list:first-child:last-child{padding:6px 0 0}.mdc-dialog--scrollable .mdc-dialog__content .mdc-list:first-child:last-child{padding:0}.mdc-dialog__actions{display:flex;position:relative;flex-shrink:0;flex-wrap:wrap;align-items:center;justify-content:flex-end;box-sizing:border-box;min-height:52px;margin:0;padding:8px;border-top:1px solid transparent}.mdc-dialog--stacked .mdc-dialog__actions{flex-direction:column;align-items:flex-end}.mdc-dialog__button{margin-left:8px;margin-right:0;max-width:100%;text-align:right}.mdc-dialog__button[dir=rtl],[dir=rtl] .mdc-dialog__button{margin-left:0;margin-right:8px}.mdc-dialog__button:first-child,.mdc-dialog__button:first-child[dir=rtl],[dir=rtl] .mdc-dialog__button:first-child{margin-left:0;margin-right:0}.mdc-dialog[dir=rtl] .mdc-dialog__button,[dir=rtl] .mdc-dialog .mdc-dialog__button{text-align:left}.mdc-dialog--stacked .mdc-dialog__button:not(:first-child){margin-top:12px}.mdc-dialog--closing,.mdc-dialog--open,.mdc-dialog--opening{display:flex}.mdc-dialog--opening .mdc-dialog__scrim{transition:opacity .15s linear}.mdc-dialog--opening .mdc-dialog__container{transition:opacity 75ms linear,transform .15s cubic-bezier(0,0,.2,1) 0ms}.mdc-dialog--closing .mdc-dialog__container,.mdc-dialog--closing .mdc-dialog__scrim{transition:opacity 75ms linear}.mdc-dialog--closing .mdc-dialog__container{transform:scale(1)}.mdc-dialog--open .mdc-dialog__scrim{opacity:1}.mdc-dialog--open .mdc-dialog__container{transform:scale(1);opacity:1}.mdc-dialog-scroll-lock{overflow:hidden}";
+    var css = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-dialog,.mdc-dialog__scrim{position:fixed;top:0;left:0;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%}.mdc-dialog{display:none;z-index:7}.mdc-dialog .mdc-dialog__surface{background-color:#fff;background-color:var(--mdc-theme-surface,#fff)}.mdc-dialog .mdc-dialog__scrim{background-color:rgba(0,0,0,.32)}.mdc-dialog .mdc-dialog__title{color:rgba(0,0,0,.87)}.mdc-dialog .mdc-dialog__content{color:rgba(0,0,0,.6)}.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__actions,.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__title{border-color:rgba(0,0,0,.12)}.mdc-dialog .mdc-dialog__surface{min-width:280px}@media (max-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:calc(100vw - 32px)}}@media (min-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:560px}}.mdc-dialog .mdc-dialog__surface{max-height:calc(100% - 32px)}.mdc-dialog .mdc-dialog__surface{border-radius:4px}.mdc-dialog__scrim{opacity:0;z-index:-1}.mdc-dialog__container{display:flex;flex-direction:row;align-items:center;justify-content:space-around;box-sizing:border-box;height:100%;transform:scale(.8);opacity:0;pointer-events:none}.mdc-dialog__surface{box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);display:flex;flex-direction:column;flex-grow:0;flex-shrink:0;box-sizing:border-box;max-width:100%;max-height:100%;pointer-events:auto;overflow-y:auto}.mdc-dialog[dir=rtl] .mdc-dialog__surface,[dir=rtl] .mdc-dialog .mdc-dialog__surface{text-align:right}.mdc-dialog__title{line-height:normal;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1.25rem;line-height:2rem;font-weight:500;letter-spacing:.0125em;text-decoration:inherit;text-transform:inherit;display:block;position:relative;flex-shrink:0;box-sizing:border-box;margin:0;padding:0 24px 9px;border-bottom:1px solid transparent}.mdc-dialog__title:before{display:inline-block;width:0;height:40px;content:\"\";vertical-align:0}.mdc-dialog[dir=rtl] .mdc-dialog__title,[dir=rtl] .mdc-dialog .mdc-dialog__title{text-align:right}.mdc-dialog--scrollable .mdc-dialog__title{padding-bottom:15px}.mdc-dialog__content{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.5rem;font-weight:400;letter-spacing:.03125em;text-decoration:inherit;text-transform:inherit;flex-grow:1;box-sizing:border-box;margin:0;padding:20px 24px;overflow:auto;-webkit-overflow-scrolling:touch}.mdc-dialog__content>:first-child{margin-top:0}.mdc-dialog__content>:last-child{margin-bottom:0}.mdc-dialog__title+.mdc-dialog__content{padding-top:0}.mdc-dialog--scrollable .mdc-dialog__content{padding-top:8px;padding-bottom:8px}.mdc-dialog__content .mdc-list:first-child:last-child{padding:6px 0 0}.mdc-dialog--scrollable .mdc-dialog__content .mdc-list:first-child:last-child{padding:0}.mdc-dialog__actions{display:flex;position:relative;flex-shrink:0;flex-wrap:wrap;align-items:center;justify-content:flex-end;box-sizing:border-box;min-height:52px;margin:0;padding:8px;border-top:1px solid transparent}.mdc-dialog--stacked .mdc-dialog__actions{flex-direction:column;align-items:flex-end}.mdc-dialog__button{margin-left:8px;margin-right:0;max-width:100%;text-align:right}.mdc-dialog__button[dir=rtl],[dir=rtl] .mdc-dialog__button{margin-left:0;margin-right:8px}.mdc-dialog__button:first-child,.mdc-dialog__button:first-child[dir=rtl],[dir=rtl] .mdc-dialog__button:first-child{margin-left:0;margin-right:0}.mdc-dialog[dir=rtl] .mdc-dialog__button,[dir=rtl] .mdc-dialog .mdc-dialog__button{text-align:left}.mdc-dialog--stacked .mdc-dialog__button:not(:first-child){margin-top:12px}.mdc-dialog--closing,.mdc-dialog--open,.mdc-dialog--opening{display:flex}.mdc-dialog--opening .mdc-dialog__scrim{transition:opacity .15s linear}.mdc-dialog--opening .mdc-dialog__container{transition:opacity 75ms linear,transform .15s cubic-bezier(0,0,.2,1) 0ms}.mdc-dialog--closing .mdc-dialog__container,.mdc-dialog--closing .mdc-dialog__scrim{transition:opacity 75ms linear}.mdc-dialog--closing .mdc-dialog__container{transform:scale(1)}.mdc-dialog--open .mdc-dialog__scrim{opacity:1}.mdc-dialog--open .mdc-dialog__container{transform:scale(1);opacity:1}.mdc-dialog-scroll-lock{overflow:hidden}";
     styleInject(css);
 
     var candidateSelectors = [
@@ -2055,6 +2145,7 @@ var app = (function () {
         [].forEach.call(els, function (el) { return tops.add(el.offsetTop); });
         return tops.size > 1;
     }
+    //# sourceMappingURL=util.js.map
 
     /*! *****************************************************************************
     Copyright (c) Microsoft Corporation. All rights reserved.
@@ -2203,6 +2294,7 @@ var app = (function () {
         };
         return MDCFoundation;
     }());
+    //# sourceMappingURL=foundation.js.map
 
     /**
      * @license
@@ -2300,6 +2392,7 @@ var app = (function () {
         };
         return MDCComponent;
     }());
+    //# sourceMappingURL=component.js.map
 
     /**
      * @license
@@ -2346,6 +2439,7 @@ var app = (function () {
             || element.msMatchesSelector;
         return nativeMatches.call(element, selector);
     }
+    //# sourceMappingURL=ponyfill.js.map
 
     /**
      * @license
@@ -2397,6 +2491,7 @@ var app = (function () {
         }
         return supportsPassive_ ? { passive: true } : false;
     }
+    //# sourceMappingURL=events.js.map
 
     /**
      * @license
@@ -2445,6 +2540,7 @@ var app = (function () {
         PADDING: 10,
         TAP_DELAY_MS: 300,
     };
+    //# sourceMappingURL=constants.js.map
 
     /**
      * Stores result from supportsCssVariables to avoid redundant processing to
@@ -2520,6 +2616,7 @@ var app = (function () {
         }
         return { x: normalizedX, y: normalizedY };
     }
+    //# sourceMappingURL=util.js.map
 
     /**
      * @license
@@ -2974,6 +3071,7 @@ var app = (function () {
         };
         return MDCRippleFoundation;
     }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
 
     /**
      * @license
@@ -3079,6 +3177,7 @@ var app = (function () {
         };
         return MDCRipple;
     }(MDCComponent));
+    //# sourceMappingURL=component.js.map
 
     /**
      * @license
@@ -3134,6 +3233,7 @@ var app = (function () {
         DIALOG_ANIMATION_CLOSE_TIME_MS: 75,
         DIALOG_ANIMATION_OPEN_TIME_MS: 150,
     };
+    //# sourceMappingURL=constants.js.map
 
     /**
      * @license
@@ -3387,6 +3487,7 @@ var app = (function () {
         };
         return MDCDialogFoundation;
     }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
 
     /**
      * @license
@@ -3564,6 +3665,7 @@ var app = (function () {
         };
         return MDCDialog;
     }(MDCComponent));
+    //# sourceMappingURL=component.js.map
 
     function forwardEventsBuilder(component, additionalEvents = []) {
       const events = [
@@ -4727,7 +4829,7 @@ var app = (function () {
       }
     });
 
-    var css$1 = ".mdc-button{margin:0 0 0 10px;padding:0}.mdc-button:after,.mdc-button:before{background:none}.mdc-button{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;padding:0 8px;display:inline-flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:64px;height:36px;border:none;outline:none;line-height:inherit;user-select:none;-webkit-appearance:none;overflow:hidden;vertical-align:middle;border-radius:4px}.mdc-button::-moz-focus-inner{padding:0;border:0}.mdc-button:active{outline:none}.mdc-button:hover{cursor:pointer}.mdc-button:disabled{background-color:transparent;color:rgba(0,0,0,.37);cursor:default;pointer-events:none}.mdc-button.mdc-button--dense{border-radius:4px}.mdc-button:not(:disabled){background-color:transparent}.mdc-button .mdc-button__icon{margin-left:0;margin-right:8px;display:inline-block;width:18px;height:18px;font-size:18px;vertical-align:top}.mdc-button .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button .mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button:not(:disabled){color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-button__label+.mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button__label+.mdc-button__icon{margin-left:0;margin-right:8px}svg.mdc-button__icon{fill:currentColor}.mdc-button--outlined .mdc-button__icon,.mdc-button--raised .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--outlined .mdc-button__icon[dir=rtl],.mdc-button--outlined .mdc-button__label+.mdc-button__icon,.mdc-button--raised .mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon,.mdc-button--unelevated .mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--outlined .mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__icon{margin-left:8px;margin-right:-4px}.mdc-button--outlined .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--outlined .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__label+.mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--raised,.mdc-button--unelevated{padding:0 16px}.mdc-button--raised:disabled,.mdc-button--unelevated:disabled{background-color:rgba(0,0,0,.12);color:rgba(0,0,0,.37)}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-primary,#fff)}.mdc-button--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);transition:box-shadow .28s cubic-bezier(.4,0,.2,1)}.mdc-button--raised:focus,.mdc-button--raised:hover{box-shadow:0 2px 4px -1px rgba(0,0,0,.2),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)}.mdc-button--raised:active{box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)}.mdc-button--raised:disabled{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.mdc-button--outlined{border-style:solid;padding:0 15px;border-width:1px}.mdc-button--outlined:disabled{border-color:rgba(0,0,0,.37)}.mdc-button--outlined:not(:disabled){border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-button--dense{height:32px;font-size:.8125rem}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-button{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}.mdc-button:after,.mdc-button:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-button:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-button.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-button.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-button.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-button.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-button.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-button:after,.mdc-button:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-button.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-button:after,.mdc-button:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button:after,.mdc-button:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button:hover:before{opacity:.04}.mdc-button.mdc-ripple-upgraded--background-focused:before,.mdc-button:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-button:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-button.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-primary,#fff)}}.mdc-button--raised:hover:before,.mdc-button--unelevated:hover:before{opacity:.08}.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.mdc-button--raised:not(.mdc-ripple-upgraded):after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.mdc-button--raised.mdc-ripple-upgraded,.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary:not(:disabled){color:#018786;color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-secondary,#fff)}.smui-button--color-secondary.mdc-button--outlined:not(:disabled){border-color:#018786;border-color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary:hover:before{opacity:.04}.smui-button--color-secondary.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.smui-button--color-secondary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.smui-button--color-secondary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-secondary,#fff)}}.smui-button--color-secondary.mdc-button--raised:hover:before,.smui-button--color-secondary.mdc-button--unelevated:hover:before{opacity:.08}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.smui-button__group{display:inline-flex}.smui-button__group>.mdc-button,.smui-button__group>.smui-button__group-item>.mdc-button{margin-left:0;margin-right:0}.smui-button__group>.mdc-button:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button{border-top-right-radius:0;border-bottom-right-radius:0}.smui-button__group>.mdc-button:not(:first-child),.smui-button__group>.smui-button__group-item:not(:first-child)>.mdc-button{border-top-left-radius:0;border-bottom-left-radius:0}.smui-button__group.smui-button__group--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised,.smui-button__group>.smui-button__group-item>.mdc-button--raised{border-radius:4px;box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised.mdc-button--dense,.smui-button__group>.smui-button__group-item>.mdc-button--raised.mdc-button--dense{border-radius:4px}.smui-button__group>.mdc-button--raised:active,.smui-button__group>.mdc-button--raised:disabled,.smui-button__group>.mdc-button--raised:focus,.smui-button__group>.mdc-button--raised:hover,.smui-button__group>.smui-button__group-item>.mdc-button--raised:active,.smui-button__group>.smui-button__group-item>.mdc-button--raised:disabled,.smui-button__group>.smui-button__group-item>.mdc-button--raised:focus,.smui-button__group>.smui-button__group-item>.mdc-button--raised:hover{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--outlined:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button--outlined{border-right-width:0}";
+    var css$1 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-button{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;padding:0 8px;display:inline-flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:64px;height:36px;border:none;outline:none;line-height:inherit;user-select:none;-webkit-appearance:none;overflow:hidden;vertical-align:middle;border-radius:4px}.mdc-button::-moz-focus-inner{padding:0;border:0}.mdc-button:active{outline:none}.mdc-button:hover{cursor:pointer}.mdc-button:disabled{background-color:transparent;color:rgba(0,0,0,.37);cursor:default;pointer-events:none}.mdc-button.mdc-button--dense{border-radius:4px}.mdc-button:not(:disabled){background-color:transparent}.mdc-button .mdc-button__icon{margin-left:0;margin-right:8px;display:inline-block;width:18px;height:18px;font-size:18px;vertical-align:top}.mdc-button .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button .mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button:not(:disabled){color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-button__label+.mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button__label+.mdc-button__icon{margin-left:0;margin-right:8px}svg.mdc-button__icon{fill:currentColor}.mdc-button--outlined .mdc-button__icon,.mdc-button--raised .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--outlined .mdc-button__icon[dir=rtl],.mdc-button--outlined .mdc-button__label+.mdc-button__icon,.mdc-button--raised .mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon,.mdc-button--unelevated .mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--outlined .mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__icon{margin-left:8px;margin-right:-4px}.mdc-button--outlined .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--outlined .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__label+.mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--raised,.mdc-button--unelevated{padding:0 16px}.mdc-button--raised:disabled,.mdc-button--unelevated:disabled{background-color:rgba(0,0,0,.12);color:rgba(0,0,0,.37)}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-primary,#fff)}.mdc-button--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);transition:box-shadow .28s cubic-bezier(.4,0,.2,1)}.mdc-button--raised:focus,.mdc-button--raised:hover{box-shadow:0 2px 4px -1px rgba(0,0,0,.2),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)}.mdc-button--raised:active{box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)}.mdc-button--raised:disabled{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.mdc-button--outlined{border-style:solid;padding:0 15px;border-width:1px}.mdc-button--outlined:disabled{border-color:rgba(0,0,0,.37)}.mdc-button--outlined:not(:disabled){border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-button--dense{height:32px;font-size:.8125rem}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-button{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}.mdc-button:after,.mdc-button:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-button:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-button.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-button.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-button.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-button.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-button.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-button:after,.mdc-button:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-button.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-button:after,.mdc-button:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button:after,.mdc-button:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button:hover:before{opacity:.04}.mdc-button.mdc-ripple-upgraded--background-focused:before,.mdc-button:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-button:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-button.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-primary,#fff)}}.mdc-button--raised:hover:before,.mdc-button--unelevated:hover:before{opacity:.08}.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.mdc-button--raised:not(.mdc-ripple-upgraded):after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.mdc-button--raised.mdc-ripple-upgraded,.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary:not(:disabled){color:#018786;color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-secondary,#fff)}.smui-button--color-secondary.mdc-button--outlined:not(:disabled){border-color:#018786;border-color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary:hover:before{opacity:.04}.smui-button--color-secondary.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.smui-button--color-secondary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.smui-button--color-secondary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-secondary,#fff)}}.smui-button--color-secondary.mdc-button--raised:hover:before,.smui-button--color-secondary.mdc-button--unelevated:hover:before{opacity:.08}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.smui-button__group{display:inline-flex}.smui-button__group>.mdc-button,.smui-button__group>.smui-button__group-item>.mdc-button{margin-left:0;margin-right:0}.smui-button__group>.mdc-button:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button{border-top-right-radius:0;border-bottom-right-radius:0}.smui-button__group>.mdc-button:not(:first-child),.smui-button__group>.smui-button__group-item:not(:first-child)>.mdc-button{border-top-left-radius:0;border-bottom-left-radius:0}.smui-button__group.smui-button__group--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised,.smui-button__group>.smui-button__group-item>.mdc-button--raised{border-radius:4px;box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised.mdc-button--dense,.smui-button__group>.smui-button__group-item>.mdc-button--raised.mdc-button--dense{border-radius:4px}.smui-button__group>.mdc-button--raised:active,.smui-button__group>.mdc-button--raised:disabled,.smui-button__group>.mdc-button--raised:focus,.smui-button__group>.mdc-button--raised:hover,.smui-button__group>.smui-button__group-item>.mdc-button--raised:active,.smui-button__group>.smui-button__group-item>.mdc-button--raised:disabled,.smui-button__group>.smui-button__group-item>.mdc-button--raised:focus,.smui-button__group>.smui-button__group-item>.mdc-button--raised:hover{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--outlined:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button--outlined{border-right-width:0}";
     styleInject(css$1);
 
     /* node_modules\@smui\common\A.svelte generated by Svelte v3.18.1 */
@@ -5745,7 +5847,253 @@ var app = (function () {
     	}
     }
 
-    var css$2 = ".mdc-button{margin:0 0 0 10px;padding:0}.mdc-button:after,.mdc-button:before{background:none}.mdc-list{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;line-height:1.5rem;margin:0;padding:8px 0;list-style-type:none;color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list:focus{outline:none}.mdc-list-item__secondary-text{color:rgba(0,0,0,.54);color:var(--mdc-theme-text-secondary-on-background,rgba(0,0,0,.54))}.mdc-list-item__graphic{background-color:transparent;color:rgba(0,0,0,.38);color:var(--mdc-theme-text-icon-on-background,rgba(0,0,0,.38))}.mdc-list-item__meta{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-hint-on-background,rgba(0,0,0,.38))}.mdc-list-group__subheader{color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list--dense{padding-top:4px;padding-bottom:4px;font-size:.812rem}.mdc-list-item{display:flex;position:relative;align-items:center;justify-content:flex-start;height:48px;padding:0 16px;overflow:hidden}.mdc-list-item:focus{outline:none}.mdc-list-item--activated,.mdc-list-item--activated .mdc-list-item__graphic,.mdc-list-item--selected,.mdc-list-item--selected .mdc-list-item__graphic{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-list-item--disabled{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-disabled-on-background,rgba(0,0,0,.38))}.mdc-list-item__graphic{margin-left:0;margin-right:32px;width:24px;height:24px;flex-shrink:0;align-items:center;justify-content:center;fill:currentColor}.mdc-list-item[dir=rtl] .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list-item__graphic{margin-left:32px;margin-right:0}.mdc-list .mdc-list-item__graphic{display:inline-flex}.mdc-list-item__meta{margin-left:auto;margin-right:0}.mdc-list-item__meta:not(.material-icons){font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.75rem;line-height:1.25rem;font-weight:400;letter-spacing:.03333em;text-decoration:inherit;text-transform:inherit}.mdc-list-item[dir=rtl] .mdc-list-item__meta,[dir=rtl] .mdc-list-item .mdc-list-item__meta{margin-left:0;margin-right:auto}.mdc-list-item__text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.mdc-list-item__text[for]{pointer-events:none}.mdc-list-item__primary-text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;margin-bottom:-20px;display:block}.mdc-list-item__primary-text:before{display:inline-block;width:0;height:32px;content:\"\";vertical-align:0}.mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list--dense .mdc-list-item__primary-text{display:block;margin-top:0;line-height:normal;margin-bottom:-20px}.mdc-list--dense .mdc-list-item__primary-text:before{display:inline-block;width:0;height:24px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list-item__secondary-text{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:1.25rem;font-weight:400;letter-spacing:.01786em;text-decoration:inherit;text-transform:inherit;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;display:block}.mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__secondary-text{display:block;margin-top:0;line-height:normal;font-size:inherit}.mdc-list--dense .mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item{height:40px}.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:36px;width:20px;height:20px}.mdc-list-item[dir=rtl] .mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--dense .mdc-list-item__graphic{margin-left:36px;margin-right:0}.mdc-list--avatar-list .mdc-list-item{height:56px}.mdc-list--avatar-list .mdc-list-item__graphic{margin-left:0;margin-right:16px;width:40px;height:40px;border-radius:50%}.mdc-list-item[dir=rtl] .mdc-list--avatar-list .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list .mdc-list-item__graphic{margin-left:16px;margin-right:0}.mdc-list--two-line .mdc-list-item__text{align-self:flex-start}.mdc-list--two-line .mdc-list-item{height:72px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item,.mdc-list--two-line.mdc-list--dense .mdc-list-item{height:60px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:20px;width:36px;height:36px}.mdc-list-item[dir=rtl] .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:20px;margin-right:0}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{cursor:pointer}a.mdc-list-item{color:inherit;text-decoration:none}.mdc-list-divider{height:0;margin:0;border:none;border-bottom:1px solid;border-bottom-color:rgba(0,0,0,.12)}.mdc-list-divider--padded{margin:0 16px}.mdc-list-divider--inset{margin-left:72px;margin-right:0;width:calc(100% - 72px)}.mdc-list-group[dir=rtl] .mdc-list-divider--inset,[dir=rtl] .mdc-list-group .mdc-list-divider--inset{margin-left:0;margin-right:72px}.mdc-list-divider--inset.mdc-list-divider--padded{width:calc(100% - 88px)}.mdc-list-group .mdc-list{padding:0}.mdc-list-group__subheader{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;margin:.75rem 16px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{background-color:#000}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:hover:before{opacity:.04}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:hover:before{opacity:.16}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{opacity:.08}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:hover:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.2}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{background-color:#000}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-list--three-line .mdc-list-item__text{align-self:flex-start}.smui-list--three-line .mdc-list-item{height:88px}.smui-list--three-line.mdc-list--dense .mdc-list-item{height:76px}";
+    /* node_modules\@smui\common\Icon.svelte generated by Svelte v3.18.1 */
+    const file$8 = "node_modules\\@smui\\common\\Icon.svelte";
+
+    function create_fragment$a(ctx) {
+    	let i;
+    	let useActions_action;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[10].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[9], null);
+
+    	let i_levels = [
+    		{
+    			class: "\n    " + /*className*/ ctx[1] + "\n    " + (/*context*/ ctx[7] === "button"
+    			? "mdc-button__icon"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "fab" ? "mdc-fab__icon" : "") + "\n    " + (/*context*/ ctx[7] === "icon-button"
+    			? "mdc-icon-button__icon"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "icon-button" && /*on*/ ctx[2]
+    			? "mdc-icon-button__icon--on"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "chip" ? "mdc-chip__icon" : "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*leading*/ ctx[3]
+    			? "mdc-chip__icon--leading"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*leadingHidden*/ ctx[4]
+    			? "mdc-chip__icon--leading-hidden"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*trailing*/ ctx[5]
+    			? "mdc-chip__icon--trailing"
+    			: "") + "\n    " + (/*context*/ ctx[7] === "tab" ? "mdc-tab__icon" : "") + "\n  "
+    		},
+    		{ "aria-hidden": "true" },
+    		exclude(/*$$props*/ ctx[8], ["use", "class", "on", "leading", "leadingHidden", "trailing"])
+    	];
+
+    	let i_data = {};
+
+    	for (let i = 0; i < i_levels.length; i += 1) {
+    		i_data = assign(i_data, i_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			i = element("i");
+    			if (default_slot) default_slot.c();
+    			set_attributes(i, i_data);
+    			add_location(i, file$8, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, i, anchor);
+
+    			if (default_slot) {
+    				default_slot.m(i, null);
+    			}
+
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, i, /*use*/ ctx[0])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[6].call(null, i))
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 512) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[9], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[9], dirty, null));
+    			}
+
+    			set_attributes(i, get_spread_update(i_levels, [
+    				dirty & /*className, context, on, leading, leadingHidden, trailing*/ 190 && {
+    					class: "\n    " + /*className*/ ctx[1] + "\n    " + (/*context*/ ctx[7] === "button"
+    					? "mdc-button__icon"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "fab" ? "mdc-fab__icon" : "") + "\n    " + (/*context*/ ctx[7] === "icon-button"
+    					? "mdc-icon-button__icon"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "icon-button" && /*on*/ ctx[2]
+    					? "mdc-icon-button__icon--on"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "chip" ? "mdc-chip__icon" : "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*leading*/ ctx[3]
+    					? "mdc-chip__icon--leading"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*leadingHidden*/ ctx[4]
+    					? "mdc-chip__icon--leading-hidden"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "chip" && /*trailing*/ ctx[5]
+    					? "mdc-chip__icon--trailing"
+    					: "") + "\n    " + (/*context*/ ctx[7] === "tab" ? "mdc-tab__icon" : "") + "\n  "
+    				},
+    				{ "aria-hidden": "true" },
+    				dirty & /*exclude, $$props*/ 256 && exclude(/*$$props*/ ctx[8], ["use", "class", "on", "leading", "leadingHidden", "trailing"])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*use*/ 1) useActions_action.update.call(null, /*use*/ ctx[0]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(i);
+    			if (default_slot) default_slot.d(detaching);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$a.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$a($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { on = false } = $$props;
+    	let { leading = false } = $$props;
+    	let { leadingHidden = false } = $$props;
+    	let { trailing = false } = $$props;
+    	const context = getContext("SMUI:icon:context");
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(8, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(0, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(1, className = $$new_props.class);
+    		if ("on" in $$new_props) $$invalidate(2, on = $$new_props.on);
+    		if ("leading" in $$new_props) $$invalidate(3, leading = $$new_props.leading);
+    		if ("leadingHidden" in $$new_props) $$invalidate(4, leadingHidden = $$new_props.leadingHidden);
+    		if ("trailing" in $$new_props) $$invalidate(5, trailing = $$new_props.trailing);
+    		if ("$$scope" in $$new_props) $$invalidate(9, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			on,
+    			leading,
+    			leadingHidden,
+    			trailing
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(8, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(0, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(1, className = $$new_props.className);
+    		if ("on" in $$props) $$invalidate(2, on = $$new_props.on);
+    		if ("leading" in $$props) $$invalidate(3, leading = $$new_props.leading);
+    		if ("leadingHidden" in $$props) $$invalidate(4, leadingHidden = $$new_props.leadingHidden);
+    		if ("trailing" in $$props) $$invalidate(5, trailing = $$new_props.trailing);
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		use,
+    		className,
+    		on,
+    		leading,
+    		leadingHidden,
+    		trailing,
+    		forwardEvents,
+    		context,
+    		$$props,
+    		$$scope,
+    		$$slots
+    	];
+    }
+
+    class Icon extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$a, create_fragment$a, safe_not_equal, {
+    			use: 0,
+    			class: 1,
+    			on: 2,
+    			leading: 3,
+    			leadingHidden: 4,
+    			trailing: 5
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Icon",
+    			options,
+    			id: create_fragment$a.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get on() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set on(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get leading() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set leading(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get leadingHidden() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set leadingHidden(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get trailing() {
+    		throw new Error("<Icon>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set trailing(value) {
+    		throw new Error("<Icon>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    var css$2 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;line-height:1.5rem;margin:0;padding:8px 0;list-style-type:none;color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list:focus{outline:none}.mdc-list-item__secondary-text{color:rgba(0,0,0,.54);color:var(--mdc-theme-text-secondary-on-background,rgba(0,0,0,.54))}.mdc-list-item__graphic{background-color:transparent;color:rgba(0,0,0,.38);color:var(--mdc-theme-text-icon-on-background,rgba(0,0,0,.38))}.mdc-list-item__meta{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-hint-on-background,rgba(0,0,0,.38))}.mdc-list-group__subheader{color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list--dense{padding-top:4px;padding-bottom:4px;font-size:.812rem}.mdc-list-item{display:flex;position:relative;align-items:center;justify-content:flex-start;height:48px;padding:0 16px;overflow:hidden}.mdc-list-item:focus{outline:none}.mdc-list-item--activated,.mdc-list-item--activated .mdc-list-item__graphic,.mdc-list-item--selected,.mdc-list-item--selected .mdc-list-item__graphic{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-list-item--disabled{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-disabled-on-background,rgba(0,0,0,.38))}.mdc-list-item__graphic{margin-left:0;margin-right:32px;width:24px;height:24px;flex-shrink:0;align-items:center;justify-content:center;fill:currentColor}.mdc-list-item[dir=rtl] .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list-item__graphic{margin-left:32px;margin-right:0}.mdc-list .mdc-list-item__graphic{display:inline-flex}.mdc-list-item__meta{margin-left:auto;margin-right:0}.mdc-list-item__meta:not(.material-icons){font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.75rem;line-height:1.25rem;font-weight:400;letter-spacing:.03333em;text-decoration:inherit;text-transform:inherit}.mdc-list-item[dir=rtl] .mdc-list-item__meta,[dir=rtl] .mdc-list-item .mdc-list-item__meta{margin-left:0;margin-right:auto}.mdc-list-item__text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.mdc-list-item__text[for]{pointer-events:none}.mdc-list-item__primary-text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;margin-bottom:-20px;display:block}.mdc-list-item__primary-text:before{display:inline-block;width:0;height:32px;content:\"\";vertical-align:0}.mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list--dense .mdc-list-item__primary-text{display:block;margin-top:0;line-height:normal;margin-bottom:-20px}.mdc-list--dense .mdc-list-item__primary-text:before{display:inline-block;width:0;height:24px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list-item__secondary-text{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:1.25rem;font-weight:400;letter-spacing:.01786em;text-decoration:inherit;text-transform:inherit;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;display:block}.mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__secondary-text{display:block;margin-top:0;line-height:normal;font-size:inherit}.mdc-list--dense .mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item{height:40px}.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:36px;width:20px;height:20px}.mdc-list-item[dir=rtl] .mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--dense .mdc-list-item__graphic{margin-left:36px;margin-right:0}.mdc-list--avatar-list .mdc-list-item{height:56px}.mdc-list--avatar-list .mdc-list-item__graphic{margin-left:0;margin-right:16px;width:40px;height:40px;border-radius:50%}.mdc-list-item[dir=rtl] .mdc-list--avatar-list .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list .mdc-list-item__graphic{margin-left:16px;margin-right:0}.mdc-list--two-line .mdc-list-item__text{align-self:flex-start}.mdc-list--two-line .mdc-list-item{height:72px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item,.mdc-list--two-line.mdc-list--dense .mdc-list-item{height:60px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:20px;width:36px;height:36px}.mdc-list-item[dir=rtl] .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:20px;margin-right:0}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{cursor:pointer}a.mdc-list-item{color:inherit;text-decoration:none}.mdc-list-divider{height:0;margin:0;border:none;border-bottom:1px solid;border-bottom-color:rgba(0,0,0,.12)}.mdc-list-divider--padded{margin:0 16px}.mdc-list-divider--inset{margin-left:72px;margin-right:0;width:calc(100% - 72px)}.mdc-list-group[dir=rtl] .mdc-list-divider--inset,[dir=rtl] .mdc-list-group .mdc-list-divider--inset{margin-left:0;margin-right:72px}.mdc-list-divider--inset.mdc-list-divider--padded{width:calc(100% - 88px)}.mdc-list-group .mdc-list{padding:0}.mdc-list-group__subheader{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;margin:.75rem 16px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{background-color:#000}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:hover:before{opacity:.04}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:hover:before{opacity:.16}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{opacity:.08}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:hover:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.2}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{background-color:#000}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-list--three-line .mdc-list-item__text{align-self:flex-start}.smui-list--three-line .mdc-list-item{height:88px}.smui-list--three-line.mdc-list--dense .mdc-list-item{height:76px}";
     styleInject(css$2);
 
     /**
@@ -5797,6 +6145,7 @@ var app = (function () {
     var numbers$2 = {
         UNSET_INDEX: -1,
     };
+    //# sourceMappingURL=constants.js.map
 
     /**
      * @license
@@ -6254,6 +6603,7 @@ var app = (function () {
         };
         return MDCListFoundation;
     }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
 
     /**
      * @license
@@ -6502,9 +6852,10 @@ var app = (function () {
         };
         return MDCList;
     }(MDCComponent));
+    //# sourceMappingURL=component.js.map
 
     /* node_modules\@smui\list\List.svelte generated by Svelte v3.18.1 */
-    const file$8 = "node_modules\\@smui\\list\\List.svelte";
+    const file$9 = "node_modules\\@smui\\list\\List.svelte";
 
     // (18:0) {:else}
     function create_else_block(ctx) {
@@ -6539,7 +6890,7 @@ var app = (function () {
     			ul = element("ul");
     			if (default_slot) default_slot.c();
     			set_attributes(ul, ul_data);
-    			add_location(ul, file$8, 18, 2, 478);
+    			add_location(ul, file$9, 18, 2, 478);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, ul, anchor);
@@ -6636,7 +6987,7 @@ var app = (function () {
     			nav_1 = element("nav");
     			if (default_slot) default_slot.c();
     			set_attributes(nav_1, nav_1_data);
-    			add_location(nav_1, file$8, 1, 2, 12);
+    			add_location(nav_1, file$9, 1, 2, 12);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, nav_1, anchor);
@@ -6700,7 +7051,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$a(ctx) {
+    function create_fragment$b(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
@@ -6749,7 +7100,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$a.name,
+    		id: create_fragment$b.name,
     		type: "component",
     		source: "",
     		ctx
@@ -6758,7 +7109,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$a($$self, $$props, $$invalidate) {
+    function instance$b($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, ["MDCList:action"]);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -7021,8 +7372,8 @@ var app = (function () {
     		init(
     			this,
     			options,
-    			instance$a,
-    			create_fragment$a,
+    			instance$b,
+    			create_fragment$b,
     			safe_not_equal,
     			{
     				use: 0,
@@ -7049,7 +7400,7 @@ var app = (function () {
     			component: this,
     			tagName: "List",
     			options,
-    			id: create_fragment$a.name
+    			id: create_fragment$b.name
     		});
     	}
 
@@ -7183,7 +7534,7 @@ var app = (function () {
     }
 
     /* node_modules\@smui\list\Item.svelte generated by Svelte v3.18.1 */
-    const file$9 = "node_modules\\@smui\\list\\Item.svelte";
+    const file$a = "node_modules\\@smui\\list\\Item.svelte";
 
     // (40:0) {:else}
     function create_else_block$1(ctx) {
@@ -7228,7 +7579,7 @@ var app = (function () {
     			li = element("li");
     			if (default_slot) default_slot.c();
     			set_attributes(li, li_data);
-    			add_location(li, file$9, 40, 2, 1053);
+    			add_location(li, file$a, 40, 2, 1053);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, li, anchor);
@@ -7345,7 +7696,7 @@ var app = (function () {
     			span = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$9, 21, 2, 547);
+    			add_location(span, file$a, 21, 2, 547);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -7451,7 +7802,7 @@ var app = (function () {
     			a = element("a");
     			if (default_slot) default_slot.c();
     			set_attributes(a, a_data);
-    			add_location(a, file$9, 1, 2, 20);
+    			add_location(a, file$a, 1, 2, 20);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, a, anchor);
@@ -7526,7 +7877,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$b(ctx) {
+    function create_fragment$c(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
@@ -7598,7 +7949,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$b.name,
+    		id: create_fragment$c.name,
     		type: "component",
     		source: "",
     		ctx
@@ -7609,7 +7960,7 @@ var app = (function () {
 
     let counter = 0;
 
-    function instance$b($$self, $$props, $$invalidate) {
+    function instance$c($$self, $$props, $$invalidate) {
     	const dispatch = createEventDispatcher();
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let checked = false;
@@ -7843,7 +8194,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$b, create_fragment$b, safe_not_equal, {
+    		init(this, options, instance$c, create_fragment$c, safe_not_equal, {
     			use: 1,
     			class: 2,
     			ripple: 3,
@@ -7862,7 +8213,7 @@ var app = (function () {
     			component: this,
     			tagName: "Item",
     			options,
-    			id: create_fragment$b.name
+    			id: create_fragment$c.name
     		});
     	}
 
@@ -7964,9 +8315,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\Span.svelte generated by Svelte v3.18.1 */
-    const file$a = "node_modules\\@smui\\common\\Span.svelte";
+    const file$b = "node_modules\\@smui\\common\\Span.svelte";
 
-    function create_fragment$c(ctx) {
+    function create_fragment$d(ctx) {
     	let span;
     	let useActions_action;
     	let forwardEvents_action;
@@ -7986,7 +8337,7 @@ var app = (function () {
     			span = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$a, 0, 0, 0);
+    			add_location(span, file$b, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8031,7 +8382,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$c.name,
+    		id: create_fragment$d.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8040,7 +8391,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$c($$self, $$props, $$invalidate) {
+    function instance$d($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -8067,13 +8418,13 @@ var app = (function () {
     class Span extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$c, create_fragment$c, safe_not_equal, { use: 0 });
+    		init(this, options, instance$d, create_fragment$d, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Span",
     			options,
-    			id: create_fragment$c.name
+    			id: create_fragment$d.name
     		});
     	}
 
@@ -8123,9 +8474,9 @@ var app = (function () {
     });
 
     /* node_modules\@smui\common\H3.svelte generated by Svelte v3.18.1 */
-    const file$b = "node_modules\\@smui\\common\\H3.svelte";
+    const file$c = "node_modules\\@smui\\common\\H3.svelte";
 
-    function create_fragment$d(ctx) {
+    function create_fragment$e(ctx) {
     	let h3;
     	let useActions_action;
     	let forwardEvents_action;
@@ -8145,7 +8496,7 @@ var app = (function () {
     			h3 = element("h3");
     			if (default_slot) default_slot.c();
     			set_attributes(h3, h3_data);
-    			add_location(h3, file$b, 0, 0, 0);
+    			add_location(h3, file$c, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8190,7 +8541,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$d.name,
+    		id: create_fragment$e.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8199,7 +8550,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$d($$self, $$props, $$invalidate) {
+    function instance$e($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -8226,13 +8577,13 @@ var app = (function () {
     class H3 extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$d, create_fragment$d, safe_not_equal, { use: 0 });
+    		init(this, options, instance$e, create_fragment$e, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "H3",
     			options,
-    			id: create_fragment$d.name
+    			id: create_fragment$e.name
     		});
     	}
 
@@ -8280,6 +8631,7 @@ var app = (function () {
         DISABLED: 'mdc-radio--disabled',
         ROOT: 'mdc-radio',
     };
+    //# sourceMappingURL=constants.js.map
 
     /**
      * @license
@@ -8345,6 +8697,7 @@ var app = (function () {
         };
         return MDCRadioFoundation;
     }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
 
     /**
      * @license
@@ -8456,6 +8809,7 @@ var app = (function () {
         });
         return MDCRadio;
     }(MDCComponent));
+    //# sourceMappingURL=component.js.map
 
     function prefixFilter(obj, prefix) {
       let names = Object.getOwnPropertyNames(obj);
@@ -8472,9 +8826,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\radio\Radio.svelte generated by Svelte v3.18.1 */
-    const file$c = "node_modules\\@smui\\radio\\Radio.svelte";
+    const file$d = "node_modules\\@smui\\radio\\Radio.svelte";
 
-    function create_fragment$e(ctx) {
+    function create_fragment$f(ctx) {
     	let div3;
     	let input;
     	let useActions_action;
@@ -8532,15 +8886,15 @@ var app = (function () {
     			t1 = space();
     			div1 = element("div");
     			set_attributes(input, input_data);
-    			add_location(input, file$c, 11, 2, 256);
+    			add_location(input, file$d, 11, 2, 256);
     			attr_dev(div0, "class", "mdc-radio__outer-circle");
-    			add_location(div0, file$c, 24, 4, 642);
+    			add_location(div0, file$d, 24, 4, 642);
     			attr_dev(div1, "class", "mdc-radio__inner-circle");
-    			add_location(div1, file$c, 25, 4, 690);
+    			add_location(div1, file$d, 25, 4, 690);
     			attr_dev(div2, "class", "mdc-radio__background");
-    			add_location(div2, file$c, 23, 2, 602);
+    			add_location(div2, file$d, 23, 2, 602);
     			set_attributes(div3, div3_data);
-    			add_location(div3, file$c, 0, 0, 0);
+    			add_location(div3, file$d, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8603,7 +8957,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$e.name,
+    		id: create_fragment$f.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8612,7 +8966,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$e($$self, $$props, $$invalidate) {
+    function instance$f($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
 
     	let uninitializedValue = () => {
@@ -8790,7 +9144,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$e, create_fragment$e, safe_not_equal, {
+    		init(this, options, instance$f, create_fragment$f, safe_not_equal, {
     			use: 0,
     			class: 1,
     			disabled: 2,
@@ -8806,7 +9160,7 @@ var app = (function () {
     			component: this,
     			tagName: "Radio",
     			options,
-    			id: create_fragment$e.name
+    			id: create_fragment$f.name
     		});
     	}
 
@@ -8884,7 +9238,7 @@ var app = (function () {
     }
 
     /* src\components\Theme.svelte generated by Svelte v3.18.1 */
-    const file$d = "src\\components\\Theme.svelte";
+    const file$e = "src\\components\\Theme.svelte";
 
     // (73:6) <Title id="list-selection-title">
     function create_default_slot_18(ctx) {
@@ -9925,7 +10279,7 @@ var app = (function () {
     			h4 = element("h4");
     			h4.textContent = "Theme";
     			attr_dev(h4, "class", "svelte-11h90ix");
-    			add_location(h4, file$d, 105, 56, 3150);
+    			add_location(h4, file$e, 105, 56, 3150);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, h4, anchor);
@@ -9946,7 +10300,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$f(ctx) {
+    function create_fragment$g(ctx) {
     	let div;
     	let t;
     	let current;
@@ -9978,7 +10332,7 @@ var app = (function () {
     			create_component(dialog.$$.fragment);
     			t = space();
     			create_component(button.$$.fragment);
-    			add_location(div, file$d, 63, 1, 1984);
+    			add_location(div, file$e, 63, 1, 1984);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10027,7 +10381,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$f.name,
+    		id: create_fragment$g.name,
     		type: "component",
     		source: "",
     		ctx
@@ -10077,7 +10431,7 @@ var app = (function () {
     	}
     }
 
-    function instance$f($$self, $$props, $$invalidate) {
+    function instance$g($$self, $$props, $$invalidate) {
     	
     	
 
@@ -10150,13 +10504,7102 @@ var app = (function () {
     class Theme extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$f, create_fragment$f, safe_not_equal, {});
+    		init(this, options, instance$g, create_fragment$g, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Theme",
     			options,
-    			id: create_fragment$f.name
+    			id: create_fragment$g.name
+    		});
+    	}
+    }
+
+    var temoji = [{"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f600.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f603.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f604.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f601.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f606.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f605.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f923.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f602.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f642.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f643.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f609.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f607.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f970.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f929.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f618.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f617.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u263a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/263a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f619.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f911.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f917.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f914.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f910.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f928.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f610.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f611.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f636.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f612.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f644.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f925.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f614.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f924.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f634.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f637.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f912.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f915.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f922.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f927.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f975.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f976.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f974.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f635.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f920.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f973.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f913.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d0.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f615.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f641.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2639\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2639.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f632.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f633.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f626.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f627.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f628.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f630.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f625.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f622.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f631.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f616.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f623.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f613.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f629.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f971.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f624.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f621.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f620.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f608.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f480.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2620\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2620.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a9.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f921.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f479.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f916.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f638.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f639.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f640.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f648.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f649.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f498.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f496.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f497.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f493.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f495.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2763\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2763.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f494.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2764\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2764.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e1.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f499.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a4.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4af.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a2.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a5.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ab.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a6.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a8.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f573.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a3.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ac.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f441.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e8.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5ef.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcad\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ad.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a4.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f590.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f596.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f918.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f919.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f448.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f449.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f446.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f595.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f447.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u261d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/261d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f450.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f932.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f485.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f933.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4aa.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9be.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bf.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f442.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bb.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f443.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e0.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f440.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f445.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f444.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f476.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d2.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f466.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f467.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d1.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f471.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f468.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f469.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f474.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f475.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f645.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f646.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f481.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddcf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9cf.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f647.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f926.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f937.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f575.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f482.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f477.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f934.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f478.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f473.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f472.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f935.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f470.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f930.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f931.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f385.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f936.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b8.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9da.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9db.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9dc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9dd.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9de.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9df.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f486.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f487.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddcd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9cd.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ce.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f483.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f57a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f574.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c2.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ca.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cb.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f938.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f939.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d8.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c0.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f491.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f464.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f465.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f463.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fb.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fc.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fd.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fe.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ff.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b0.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b1.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b3.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b2.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f435.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f412.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a7.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f436.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f415.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ae.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f429.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f431.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f408.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f981.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f405.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f406.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f434.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f984.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f993.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f402.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f403.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f404.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f437.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f416.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f417.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f411.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f410.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f999.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f992.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f418.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f401.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f400.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f439.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f430.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f407.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f994.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f987.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f428.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a5.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a6.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a8.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f998.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a1.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f983.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f414.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f413.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f423.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f424.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f425.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f426.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f427.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f985.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f986.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a2.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f989.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a9.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f438.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f422.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f432.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f409.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f995.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f996.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f433.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f420.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f421.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f988.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f419.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f997.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f577.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f578.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f982.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a0.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f490.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f338.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ae.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f5.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f339.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f940.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f337.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f331.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f332.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f333.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f334.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f335.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2618\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2618.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f340.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f341.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f342.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f343.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f347.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f348.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f349.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f350.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f351.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f352.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f353.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f345.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f965.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f951.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f346.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f954.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f955.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f336.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f952.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f966.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c4.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c5.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f344.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f330.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f950.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f956.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f968.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c7.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c0.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f356.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f357.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f969.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f953.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f354.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f355.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f959.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c6.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f373.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f958.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f372.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f963.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f957.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c8.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c2.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f371.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f358.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f359.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f360.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f362.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f363.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f364.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f365.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f361.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f960.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f961.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f980.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f990.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f991.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9aa.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f366.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f367.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f368.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f369.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f382.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f370.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c1.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f967.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2615\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2615.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f375.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f376.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f377.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f378.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f379.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f942.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f943.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f964.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c3.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c9.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ca.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f962.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f374.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f944.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fa.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f310.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fe.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udded\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ed.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3dc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3dd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3de.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3df.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3db.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3da.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ea.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3eb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ec.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfed\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ed.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ef.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f492.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ea.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26e9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26fa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f301.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f303.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f304.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f305.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f306.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f307.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f309.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2668\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2668.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f488.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3aa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f682.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f683.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f684.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f685.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f686.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f687.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f688.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f689.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f690.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f691.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f692.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f693.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f694.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f695.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f696.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f697.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f698.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f699.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ce.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udefa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26fd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26fd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2693\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2693.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2708\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2708.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6eb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ec.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa82.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ba.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f681.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f680.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udece\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ce.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u231b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/231b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u231a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/231a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f570.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f567.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f550.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f551.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f552.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f553.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f554.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f560.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f555.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f561.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f556.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f562.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f557.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f563.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f558.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f564.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f559.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f565.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f566.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f311.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f312.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f313.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f314.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f315.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f316.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f317.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f318.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f319.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f321.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2600\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2600.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa90.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b50.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f320.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2601\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2601.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f324.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f325.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f326.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f327.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f328.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f329.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f300.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f308.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f302.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2602\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2602.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2614\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2614.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26a1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2744\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2744.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2603\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2603.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2604\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2604.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f525.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f383.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f384.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f386.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f387.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2728\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2728.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f388.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f389.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38a.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38b.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38d.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f390.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f391.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e7.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f380.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f381.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f397.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ab.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f396.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c6.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c5.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f947.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f948.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f949.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26bd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26bd.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26be\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26be.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c9.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3be.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d1.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d2.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94d.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94a.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94b.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f945.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bd.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f7.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94c.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3af.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa80.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa81.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b1.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ff.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ae.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f579.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b2.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e9.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2660\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2660.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2665\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2665.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2666\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2666.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2663\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2663.png\"/>", "group": "Activities"}, {"code": "\u265f", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udccf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f0cf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udc04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f004.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b4.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfad\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ad.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5bc.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f5.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f6.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f453.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f576.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ba.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f454.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f455.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f456.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f457.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f458.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa71.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa72.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa73.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f459.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f392.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f460.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f461.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa70.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f462.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f451.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f452.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f393.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ff.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f484.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f507.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f508.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f509.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ef.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f514.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f515.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f399.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ba.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa95.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f941.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u260e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/260e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4de.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4df.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2328\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2328.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5b2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4be.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ac.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f56f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f526.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa94.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4da.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4dc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5de.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f516.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fe.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2709\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2709.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udceb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4eb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ea.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ec.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udced\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ed.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5f3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2712\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2712.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4dd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ca.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ce.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f587.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2702\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2702.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f512.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f513.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f510.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f511.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udddd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5dd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f528.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa93.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26cf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2692\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2692.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2694\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2694.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f527.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f529.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2699\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2699.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udddc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5dc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2696\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2696.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9af.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f517.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2697\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2697.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ea.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9eb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ec.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f489.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa78.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa79.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa7a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6aa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa91.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa92.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ef.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ac.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26b0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26b0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26b1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5ff.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ae.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ba.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bc.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6be.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26a0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26a0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udead\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ad.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6af.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2622\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2622.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2623\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2623.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b06.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2197\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2197.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27a1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27a1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2198\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2198.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b07.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2199\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2199.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b05.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2196\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2196.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2195\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2195.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2194\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2194.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u21a9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/21a9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u21aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/21aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2934\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2934.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2935\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2935.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f503.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f504.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f519.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u269b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/269b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f549.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2721\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2721.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2638\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2638.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u271d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/271d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2626\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2626.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2648\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2648.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2649\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2649.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2650\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2650.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2651\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2651.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2652\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2652.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2653\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2653.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ce.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f500.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f501.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f502.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25b6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25b6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23e9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23e9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ed\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ed.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ef.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25c0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25c0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ea.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ee.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23eb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23eb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ec.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23fa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23fa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23cf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23cf.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f505.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f506.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2640\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2640.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2642\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2642.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2695\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2695.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u269c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/269c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f531.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4db.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f530.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b55.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2705\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2705.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2611\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2611.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2714\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2714.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2716\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2716.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u274c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/274c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u274e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/274e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2795\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2795.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2796\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2796.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2797\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2797.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27b0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27b0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27bf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27bf.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u303d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/303d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2733\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2733.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2734\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2734.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2747\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2747.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u203c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/203c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2049\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2049.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2753\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2753.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2754\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2754.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2755\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2755.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2757\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2757.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3030\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3030.png\"/>", "group": "Symbols"}, {"code": "\u00a9", "group": "Symbols"}, {"code": "\u00ae", "group": "Symbols"}, {"code": "\u2122", "group": "Symbols"}, {"code": "#", "group": "Symbols"}, {"code": "*", "group": "Symbols"}, {"code": "0", "group": "Symbols"}, {"code": "1", "group": "Symbols"}, {"code": "2", "group": "Symbols"}, {"code": "3", "group": "Symbols"}, {"code": "4", "group": "Symbols"}, {"code": "5", "group": "Symbols"}, {"code": "6", "group": "Symbols"}, {"code": "7", "group": "Symbols"}, {"code": "8", "group": "Symbols"}, {"code": "9", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f520.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f521.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f522.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f523.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f524.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f170.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f18e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f171.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f191.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f192.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f193.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2139\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2139.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f194.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u24c2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/24c2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f195.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f196.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f17e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f197.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f17f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f198.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f199.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f19a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f201.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f202.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f237.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f236.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f22f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f250.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f239.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f21a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f232.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f251.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f238.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f234.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f233.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3297\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3297.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3299\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3299.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f23a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f235.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f534.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f535.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7ea.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7eb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b1b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b1c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fc.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fe.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fd.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25ab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f536.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f537.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f538.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f539.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f518.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f533.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f532.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c1.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38c.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f4.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f3.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e6.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e7.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e8.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ea.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1eb.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ec.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udded\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ed.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ee.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ef.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f0.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f1.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f2.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f3.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f4.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f5.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f6.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f7.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f8.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fa.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fb.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fc.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fd.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fe.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ff.png\"/>", "group": "Flags"}];
+
+    /* src\components\emojitab.svelte generated by Svelte v3.18.1 */
+    const file$f = "src\\components\\emojitab.svelte";
+
+    function get_each_context(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[3] = list[i];
+    	return child_ctx;
+    }
+
+    // (10:16) {#each emoji as emo}
+    function create_each_block(ctx) {
+    	let span;
+    	let raw_value = /*emo*/ ctx[3].code + "";
+    	let dispose;
+
+    	function click_handler(...args) {
+    		return /*click_handler*/ ctx[2](/*emo*/ ctx[3], ...args);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			span = element("span");
+    			attr_dev(span, "class", "svelte-13ox7h6");
+    			add_location(span, file$f, 10, 23, 232);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, span, anchor);
+    			span.innerHTML = raw_value;
+    			dispose = listen_dev(span, "click", click_handler, false, false, false);
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*emoji*/ 1 && raw_value !== (raw_value = /*emo*/ ctx[3].code + "")) span.innerHTML = raw_value;		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(span);
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(10:16) {#each emoji as emo}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$h(ctx) {
+    	let div;
+    	let each_value = /*emoji*/ ctx[0];
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			attr_dev(div, "id", "emojii");
+    			attr_dev(div, "class", "svelte-13ox7h6");
+    			add_location(div, file$f, 8, 4, 152);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(div, null);
+    			}
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (dirty & /*dispatch, emoji*/ 3) {
+    				each_value = /*emoji*/ ctx[0];
+    				let i;
+
+    				for (i = 0; i < each_value.length; i += 1) {
+    					const child_ctx = get_each_context(ctx, each_value, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(div, null);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value.length;
+    			}
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			destroy_each(each_blocks, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$h.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$h($$self, $$props, $$invalidate) {
+    	let { emoji } = $$props;
+    	const dispatch = createEventDispatcher();
+    	const writable_props = ["emoji"];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Emojitab> was created with unknown prop '${key}'`);
+    	});
+
+    	const click_handler = emo => dispatch("emojiClicked", { detail: emo.code });
+
+    	$$self.$set = $$props => {
+    		if ("emoji" in $$props) $$invalidate(0, emoji = $$props.emoji);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return { emoji };
+    	};
+
+    	$$self.$inject_state = $$props => {
+    		if ("emoji" in $$props) $$invalidate(0, emoji = $$props.emoji);
+    	};
+
+    	return [emoji, dispatch, click_handler];
+    }
+
+    class Emojitab extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$h, create_fragment$h, safe_not_equal, { emoji: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Emojitab",
+    			options,
+    			id: create_fragment$h.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*emoji*/ ctx[0] === undefined && !("emoji" in props)) {
+    			console.warn("<Emojitab> was created without expected prop 'emoji'");
+    		}
+    	}
+
+    	get emoji() {
+    		throw new Error("<Emojitab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set emoji(value) {
+    		throw new Error("<Emojitab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    var css$3 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-tab{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;position:relative;display:flex;flex:1 0 auto;justify-content:center;box-sizing:border-box;height:48px;margin:0;padding:0 24px;border:none;outline:none;background:none;text-align:center;white-space:nowrap;cursor:pointer;-webkit-appearance:none;z-index:1}.mdc-tab .mdc-tab__text-label{color:rgba(0,0,0,.6)}.mdc-tab .mdc-tab__icon{color:rgba(0,0,0,.54);fill:currentColor}.mdc-tab::-moz-focus-inner{padding:0;border:0}.mdc-tab--min-width{flex:0 1 auto}.mdc-tab__content{position:relative;display:flex;align-items:center;justify-content:center;height:inherit;pointer-events:none}.mdc-tab__icon,.mdc-tab__text-label{transition:color .15s linear;display:inline-block;line-height:1;z-index:2}.mdc-tab--stacked{height:72px}.mdc-tab--stacked .mdc-tab__content{flex-direction:column;align-items:center;justify-content:space-between}.mdc-tab--stacked .mdc-tab__icon{padding-top:12px}.mdc-tab--stacked .mdc-tab__text-label{padding-bottom:16px}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-tab--active .mdc-tab__icon{fill:currentColor}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{transition-delay:.1s}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:8px;padding-right:0}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label[dir=rtl],[dir=rtl] .mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:0;padding-right:8px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-tab__ripple{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden}.mdc-tab__ripple:after,.mdc-tab__ripple:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-tab__ripple:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-tab__ripple.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-tab__ripple.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple:after,.mdc-tab__ripple:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-tab__ripple.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-tab__ripple:hover:before{opacity:.04}.mdc-tab__ripple.mdc-ripple-upgraded--background-focused:before,.mdc-tab__ripple:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-tab__ripple:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-tab__ripple:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-tab__ripple.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-tab-indicator{display:flex;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-tab-indicator .mdc-tab-indicator__content--icon{color:#018786;color:var(--mdc-theme-secondary,#018786)}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-top-width:2px}.mdc-tab-indicator .mdc-tab-indicator__content--icon{height:34px;font-size:34px}.mdc-tab-indicator__content{transform-origin:left;opacity:0}.mdc-tab-indicator__content--underline{align-self:flex-end;box-sizing:border-box;width:100%;border-top-style:solid}.mdc-tab-indicator__content--icon{align-self:center;margin:0 auto}.mdc-tab-indicator--active .mdc-tab-indicator__content{opacity:1}.mdc-tab-indicator .mdc-tab-indicator__content{transition:transform .25s cubic-bezier(.4,0,.2,1)}.mdc-tab-indicator--no-transition .mdc-tab-indicator__content{transition:none}.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition:opacity .15s linear}.mdc-tab-indicator--active.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition-delay:.1s}";
+    styleInject(css$3);
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses$4 = {
+        ACTIVE: 'mdc-tab-indicator--active',
+        FADE: 'mdc-tab-indicator--fade',
+        NO_TRANSITION: 'mdc-tab-indicator--no-transition',
+    };
+    var strings$5 = {
+        CONTENT_SELECTOR: '.mdc-tab-indicator__content',
+    };
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabIndicatorFoundation = /** @class */ (function (_super) {
+        __extends(MDCTabIndicatorFoundation, _super);
+        function MDCTabIndicatorFoundation(adapter) {
+            return _super.call(this, __assign({}, MDCTabIndicatorFoundation.defaultAdapter, adapter)) || this;
+        }
+        Object.defineProperty(MDCTabIndicatorFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses$4;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabIndicatorFoundation, "strings", {
+            get: function () {
+                return strings$5;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabIndicatorFoundation, "defaultAdapter", {
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    addClass: function () { return undefined; },
+                    removeClass: function () { return undefined; },
+                    computeContentClientRect: function () { return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 }); },
+                    setContentStyleProperty: function () { return undefined; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCTabIndicatorFoundation.prototype.computeContentClientRect = function () {
+            return this.adapter_.computeContentClientRect();
+        };
+        return MDCTabIndicatorFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    /* istanbul ignore next: subclass is not a branch statement */
+    var MDCFadingTabIndicatorFoundation = /** @class */ (function (_super) {
+        __extends(MDCFadingTabIndicatorFoundation, _super);
+        function MDCFadingTabIndicatorFoundation() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCFadingTabIndicatorFoundation.prototype.activate = function () {
+            this.adapter_.addClass(MDCTabIndicatorFoundation.cssClasses.ACTIVE);
+        };
+        MDCFadingTabIndicatorFoundation.prototype.deactivate = function () {
+            this.adapter_.removeClass(MDCTabIndicatorFoundation.cssClasses.ACTIVE);
+        };
+        return MDCFadingTabIndicatorFoundation;
+    }(MDCTabIndicatorFoundation));
+    //# sourceMappingURL=fading-foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    /* istanbul ignore next: subclass is not a branch statement */
+    var MDCSlidingTabIndicatorFoundation = /** @class */ (function (_super) {
+        __extends(MDCSlidingTabIndicatorFoundation, _super);
+        function MDCSlidingTabIndicatorFoundation() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCSlidingTabIndicatorFoundation.prototype.activate = function (previousIndicatorClientRect) {
+            // Early exit if no indicator is present to handle cases where an indicator
+            // may be activated without a prior indicator state
+            if (!previousIndicatorClientRect) {
+                this.adapter_.addClass(MDCTabIndicatorFoundation.cssClasses.ACTIVE);
+                return;
+            }
+            // This animation uses the FLIP approach. You can read more about it at the link below:
+            // https://aerotwist.com/blog/flip-your-animations/
+            // Calculate the dimensions based on the dimensions of the previous indicator
+            var currentClientRect = this.computeContentClientRect();
+            var widthDelta = previousIndicatorClientRect.width / currentClientRect.width;
+            var xPosition = previousIndicatorClientRect.left - currentClientRect.left;
+            this.adapter_.addClass(MDCTabIndicatorFoundation.cssClasses.NO_TRANSITION);
+            this.adapter_.setContentStyleProperty('transform', "translateX(" + xPosition + "px) scaleX(" + widthDelta + ")");
+            // Force repaint before updating classes and transform to ensure the transform properly takes effect
+            this.computeContentClientRect();
+            this.adapter_.removeClass(MDCTabIndicatorFoundation.cssClasses.NO_TRANSITION);
+            this.adapter_.addClass(MDCTabIndicatorFoundation.cssClasses.ACTIVE);
+            this.adapter_.setContentStyleProperty('transform', '');
+        };
+        MDCSlidingTabIndicatorFoundation.prototype.deactivate = function () {
+            this.adapter_.removeClass(MDCTabIndicatorFoundation.cssClasses.ACTIVE);
+        };
+        return MDCSlidingTabIndicatorFoundation;
+    }(MDCTabIndicatorFoundation));
+    //# sourceMappingURL=sliding-foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabIndicator = /** @class */ (function (_super) {
+        __extends(MDCTabIndicator, _super);
+        function MDCTabIndicator() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabIndicator.attachTo = function (root) {
+            return new MDCTabIndicator(root);
+        };
+        MDCTabIndicator.prototype.initialize = function () {
+            this.content_ = this.root_.querySelector(MDCTabIndicatorFoundation.strings.CONTENT_SELECTOR);
+        };
+        MDCTabIndicator.prototype.computeContentClientRect = function () {
+            return this.foundation_.computeContentClientRect();
+        };
+        MDCTabIndicator.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                addClass: function (className) { return _this.root_.classList.add(className); },
+                removeClass: function (className) { return _this.root_.classList.remove(className); },
+                computeContentClientRect: function () { return _this.content_.getBoundingClientRect(); },
+                setContentStyleProperty: function (prop, value) { return _this.content_.style.setProperty(prop, value); },
+            };
+            // tslint:enable:object-literal-sort-keys
+            if (this.root_.classList.contains(MDCTabIndicatorFoundation.cssClasses.FADE)) {
+                return new MDCFadingTabIndicatorFoundation(adapter);
+            }
+            // Default to the sliding indicator
+            return new MDCSlidingTabIndicatorFoundation(adapter);
+        };
+        MDCTabIndicator.prototype.activate = function (previousIndicatorClientRect) {
+            this.foundation_.activate(previousIndicatorClientRect);
+        };
+        MDCTabIndicator.prototype.deactivate = function () {
+            this.foundation_.deactivate();
+        };
+        return MDCTabIndicator;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses$5 = {
+        ACTIVE: 'mdc-tab--active',
+    };
+    var strings$6 = {
+        ARIA_SELECTED: 'aria-selected',
+        CONTENT_SELECTOR: '.mdc-tab__content',
+        INTERACTED_EVENT: 'MDCTab:interacted',
+        RIPPLE_SELECTOR: '.mdc-tab__ripple',
+        TABINDEX: 'tabIndex',
+        TAB_INDICATOR_SELECTOR: '.mdc-tab-indicator',
+    };
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabFoundation = /** @class */ (function (_super) {
+        __extends(MDCTabFoundation, _super);
+        function MDCTabFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCTabFoundation.defaultAdapter, adapter)) || this;
+            _this.focusOnActivate_ = true;
+            return _this;
+        }
+        Object.defineProperty(MDCTabFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses$5;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabFoundation, "strings", {
+            get: function () {
+                return strings$6;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabFoundation, "defaultAdapter", {
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    addClass: function () { return undefined; },
+                    removeClass: function () { return undefined; },
+                    hasClass: function () { return false; },
+                    setAttr: function () { return undefined; },
+                    activateIndicator: function () { return undefined; },
+                    deactivateIndicator: function () { return undefined; },
+                    notifyInteracted: function () { return undefined; },
+                    getOffsetLeft: function () { return 0; },
+                    getOffsetWidth: function () { return 0; },
+                    getContentOffsetLeft: function () { return 0; },
+                    getContentOffsetWidth: function () { return 0; },
+                    focus: function () { return undefined; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCTabFoundation.prototype.handleClick = function () {
+            // It's up to the parent component to keep track of the active Tab and
+            // ensure we don't activate a Tab that's already active.
+            this.adapter_.notifyInteracted();
+        };
+        MDCTabFoundation.prototype.isActive = function () {
+            return this.adapter_.hasClass(cssClasses$5.ACTIVE);
+        };
+        /**
+         * Sets whether the tab should focus itself when activated
+         */
+        MDCTabFoundation.prototype.setFocusOnActivate = function (focusOnActivate) {
+            this.focusOnActivate_ = focusOnActivate;
+        };
+        /**
+         * Activates the Tab
+         */
+        MDCTabFoundation.prototype.activate = function (previousIndicatorClientRect) {
+            this.adapter_.addClass(cssClasses$5.ACTIVE);
+            this.adapter_.setAttr(strings$6.ARIA_SELECTED, 'true');
+            this.adapter_.setAttr(strings$6.TABINDEX, '0');
+            this.adapter_.activateIndicator(previousIndicatorClientRect);
+            if (this.focusOnActivate_) {
+                this.adapter_.focus();
+            }
+        };
+        /**
+         * Deactivates the Tab
+         */
+        MDCTabFoundation.prototype.deactivate = function () {
+            // Early exit
+            if (!this.isActive()) {
+                return;
+            }
+            this.adapter_.removeClass(cssClasses$5.ACTIVE);
+            this.adapter_.setAttr(strings$6.ARIA_SELECTED, 'false');
+            this.adapter_.setAttr(strings$6.TABINDEX, '-1');
+            this.adapter_.deactivateIndicator();
+        };
+        /**
+         * Returns the dimensions of the Tab
+         */
+        MDCTabFoundation.prototype.computeDimensions = function () {
+            var rootWidth = this.adapter_.getOffsetWidth();
+            var rootLeft = this.adapter_.getOffsetLeft();
+            var contentWidth = this.adapter_.getContentOffsetWidth();
+            var contentLeft = this.adapter_.getContentOffsetLeft();
+            return {
+                contentLeft: rootLeft + contentLeft,
+                contentRight: rootLeft + contentLeft + contentWidth,
+                rootLeft: rootLeft,
+                rootRight: rootLeft + rootWidth,
+            };
+        };
+        return MDCTabFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTab = /** @class */ (function (_super) {
+        __extends(MDCTab, _super);
+        function MDCTab() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTab.attachTo = function (root) {
+            return new MDCTab(root);
+        };
+        MDCTab.prototype.initialize = function (rippleFactory, tabIndicatorFactory) {
+            if (rippleFactory === void 0) { rippleFactory = function (el, foundation) { return new MDCRipple(el, foundation); }; }
+            if (tabIndicatorFactory === void 0) { tabIndicatorFactory = function (el) { return new MDCTabIndicator(el); }; }
+            this.id = this.root_.id;
+            var rippleSurface = this.root_.querySelector(MDCTabFoundation.strings.RIPPLE_SELECTOR);
+            var rippleAdapter = __assign({}, MDCRipple.createAdapter(this), { addClass: function (className) { return rippleSurface.classList.add(className); }, removeClass: function (className) { return rippleSurface.classList.remove(className); }, updateCssVariable: function (varName, value) { return rippleSurface.style.setProperty(varName, value); } });
+            var rippleFoundation = new MDCRippleFoundation(rippleAdapter);
+            this.ripple_ = rippleFactory(this.root_, rippleFoundation);
+            var tabIndicatorElement = this.root_.querySelector(MDCTabFoundation.strings.TAB_INDICATOR_SELECTOR);
+            this.tabIndicator_ = tabIndicatorFactory(tabIndicatorElement);
+            this.content_ = this.root_.querySelector(MDCTabFoundation.strings.CONTENT_SELECTOR);
+        };
+        MDCTab.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            this.handleClick_ = function () { return _this.foundation_.handleClick(); };
+            this.listen('click', this.handleClick_);
+        };
+        MDCTab.prototype.destroy = function () {
+            this.unlisten('click', this.handleClick_);
+            this.ripple_.destroy();
+            _super.prototype.destroy.call(this);
+        };
+        MDCTab.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                setAttr: function (attr, value) { return _this.root_.setAttribute(attr, value); },
+                addClass: function (className) { return _this.root_.classList.add(className); },
+                removeClass: function (className) { return _this.root_.classList.remove(className); },
+                hasClass: function (className) { return _this.root_.classList.contains(className); },
+                activateIndicator: function (previousIndicatorClientRect) { return _this.tabIndicator_.activate(previousIndicatorClientRect); },
+                deactivateIndicator: function () { return _this.tabIndicator_.deactivate(); },
+                notifyInteracted: function () { return _this.emit(MDCTabFoundation.strings.INTERACTED_EVENT, { tabId: _this.id }, true /* bubble */); },
+                getOffsetLeft: function () { return _this.root_.offsetLeft; },
+                getOffsetWidth: function () { return _this.root_.offsetWidth; },
+                getContentOffsetLeft: function () { return _this.content_.offsetLeft; },
+                getContentOffsetWidth: function () { return _this.content_.offsetWidth; },
+                focus: function () { return _this.root_.focus(); },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCTabFoundation(adapter);
+        };
+        Object.defineProperty(MDCTab.prototype, "active", {
+            /**
+             * Getter for the active state of the tab
+             */
+            get: function () {
+                return this.foundation_.isActive();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTab.prototype, "focusOnActivate", {
+            set: function (focusOnActivate) {
+                this.foundation_.setFocusOnActivate(focusOnActivate);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Activates the tab
+         */
+        MDCTab.prototype.activate = function (computeIndicatorClientRect) {
+            this.foundation_.activate(computeIndicatorClientRect);
+        };
+        /**
+         * Deactivates the tab
+         */
+        MDCTab.prototype.deactivate = function () {
+            this.foundation_.deactivate();
+        };
+        /**
+         * Returns the indicator's client rect
+         */
+        MDCTab.prototype.computeIndicatorClientRect = function () {
+            return this.tabIndicator_.computeContentClientRect();
+        };
+        MDCTab.prototype.computeDimensions = function () {
+            return this.foundation_.computeDimensions();
+        };
+        /**
+         * Focuses the tab
+         */
+        MDCTab.prototype.focus = function () {
+            this.root_.focus();
+        };
+        return MDCTab;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /* node_modules\@smui\tab-indicator\TabIndicator.svelte generated by Svelte v3.18.1 */
+    const file$g = "node_modules\\@smui\\tab-indicator\\TabIndicator.svelte";
+
+    function create_fragment$i(ctx) {
+    	let span1;
+    	let span0;
+    	let useActions_action;
+    	let useActions_action_1;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[17].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[16], null);
+
+    	let span0_levels = [
+    		{
+    			class: "\n      mdc-tab-indicator__content\n      " + /*content$class*/ ctx[6] + "\n      " + (/*type*/ ctx[3] === "underline"
+    			? "mdc-tab-indicator__content--underline"
+    			: "") + "\n      " + (/*type*/ ctx[3] === "icon"
+    			? "mdc-tab-indicator__content--icon"
+    			: "") + "\n    "
+    		},
+    		{
+    			"aria-hidden": /*type*/ ctx[3] === "icon" ? "true" : "false"
+    		},
+    		exclude(prefixFilter(/*$$props*/ ctx[9], "content$"), ["use", "class"])
+    	];
+
+    	let span0_data = {};
+
+    	for (let i = 0; i < span0_levels.length; i += 1) {
+    		span0_data = assign(span0_data, span0_levels[i]);
+    	}
+
+    	let span1_levels = [
+    		{
+    			class: "\n    mdc-tab-indicator\n    " + /*className*/ ctx[1] + "\n    " + (/*active*/ ctx[2] ? "mdc-tab-indicator--active" : "") + "\n    " + (/*transition*/ ctx[4] === "fade"
+    			? "mdc-tab-indicator--fade"
+    			: "") + "\n  "
+    		},
+    		exclude(/*$$props*/ ctx[9], ["use", "class", "active", "type", "transition", "content$"])
+    	];
+
+    	let span1_data = {};
+
+    	for (let i = 0; i < span1_levels.length; i += 1) {
+    		span1_data = assign(span1_data, span1_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			span1 = element("span");
+    			span0 = element("span");
+    			if (default_slot) default_slot.c();
+    			set_attributes(span0, span0_data);
+    			add_location(span0, file$g, 12, 2, 322);
+    			set_attributes(span1, span1_data);
+    			add_location(span1, file$g, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, span1, anchor);
+    			append_dev(span1, span0);
+
+    			if (default_slot) {
+    				default_slot.m(span0, null);
+    			}
+
+    			/*span1_binding*/ ctx[18](span1);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, span0, /*content$use*/ ctx[5])),
+    				action_destroyer(useActions_action_1 = useActions.call(null, span1, /*use*/ ctx[0])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[8].call(null, span1))
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 65536) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[16], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[16], dirty, null));
+    			}
+
+    			set_attributes(span0, get_spread_update(span0_levels, [
+    				dirty & /*content$class, type*/ 72 && {
+    					class: "\n      mdc-tab-indicator__content\n      " + /*content$class*/ ctx[6] + "\n      " + (/*type*/ ctx[3] === "underline"
+    					? "mdc-tab-indicator__content--underline"
+    					: "") + "\n      " + (/*type*/ ctx[3] === "icon"
+    					? "mdc-tab-indicator__content--icon"
+    					: "") + "\n    "
+    				},
+    				dirty & /*type*/ 8 && {
+    					"aria-hidden": /*type*/ ctx[3] === "icon" ? "true" : "false"
+    				},
+    				dirty & /*exclude, prefixFilter, $$props*/ 512 && exclude(prefixFilter(/*$$props*/ ctx[9], "content$"), ["use", "class"])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*content$use*/ 32) useActions_action.update.call(null, /*content$use*/ ctx[5]);
+
+    			set_attributes(span1, get_spread_update(span1_levels, [
+    				dirty & /*className, active, transition*/ 22 && {
+    					class: "\n    mdc-tab-indicator\n    " + /*className*/ ctx[1] + "\n    " + (/*active*/ ctx[2] ? "mdc-tab-indicator--active" : "") + "\n    " + (/*transition*/ ctx[4] === "fade"
+    					? "mdc-tab-indicator--fade"
+    					: "") + "\n  "
+    				},
+    				dirty & /*exclude, $$props*/ 512 && exclude(/*$$props*/ ctx[9], ["use", "class", "active", "type", "transition", "content$"])
+    			]));
+
+    			if (useActions_action_1 && is_function(useActions_action_1.update) && dirty & /*use*/ 1) useActions_action_1.update.call(null, /*use*/ ctx[0]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(span1);
+    			if (default_slot) default_slot.d(detaching);
+    			/*span1_binding*/ ctx[18](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$i.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$i($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { active = false } = $$props;
+    	let { type = "underline" } = $$props;
+    	let { transition = "slide" } = $$props;
+    	let { content$use = [] } = $$props;
+    	let { content$class = "" } = $$props;
+    	let element;
+    	let tabIndicator;
+    	let instantiate = getContext("SMUI:tab-indicator:instantiate");
+    	let getInstance = getContext("SMUI:tab-indicator:getInstance");
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			tabIndicator = new MDCTabIndicator(element);
+    		} else {
+    			tabIndicator = await getInstance();
+    		}
+    	});
+
+    	onDestroy(() => {
+    		tabIndicator && tabIndicator.destroy();
+    	});
+
+    	function activate(...args) {
+    		return tabIndicator.activate(...args);
+    	}
+
+    	function deactivate(...args) {
+    		return tabIndicator.deactivate(...args);
+    	}
+
+    	function computeContentClientRect(...args) {
+    		return tabIndicator.computeContentClientRect(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function span1_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(7, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(9, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(0, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(1, className = $$new_props.class);
+    		if ("active" in $$new_props) $$invalidate(2, active = $$new_props.active);
+    		if ("type" in $$new_props) $$invalidate(3, type = $$new_props.type);
+    		if ("transition" in $$new_props) $$invalidate(4, transition = $$new_props.transition);
+    		if ("content$use" in $$new_props) $$invalidate(5, content$use = $$new_props.content$use);
+    		if ("content$class" in $$new_props) $$invalidate(6, content$class = $$new_props.content$class);
+    		if ("$$scope" in $$new_props) $$invalidate(16, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			active,
+    			type,
+    			transition,
+    			content$use,
+    			content$class,
+    			element,
+    			tabIndicator,
+    			instantiate,
+    			getInstance
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(9, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(0, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(1, className = $$new_props.className);
+    		if ("active" in $$props) $$invalidate(2, active = $$new_props.active);
+    		if ("type" in $$props) $$invalidate(3, type = $$new_props.type);
+    		if ("transition" in $$props) $$invalidate(4, transition = $$new_props.transition);
+    		if ("content$use" in $$props) $$invalidate(5, content$use = $$new_props.content$use);
+    		if ("content$class" in $$props) $$invalidate(6, content$class = $$new_props.content$class);
+    		if ("element" in $$props) $$invalidate(7, element = $$new_props.element);
+    		if ("tabIndicator" in $$props) tabIndicator = $$new_props.tabIndicator;
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		use,
+    		className,
+    		active,
+    		type,
+    		transition,
+    		content$use,
+    		content$class,
+    		element,
+    		forwardEvents,
+    		$$props,
+    		activate,
+    		deactivate,
+    		computeContentClientRect,
+    		tabIndicator,
+    		instantiate,
+    		getInstance,
+    		$$scope,
+    		$$slots,
+    		span1_binding
+    	];
+    }
+
+    class TabIndicator extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$i, create_fragment$i, safe_not_equal, {
+    			use: 0,
+    			class: 1,
+    			active: 2,
+    			type: 3,
+    			transition: 4,
+    			content$use: 5,
+    			content$class: 6,
+    			activate: 10,
+    			deactivate: 11,
+    			computeContentClientRect: 12
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "TabIndicator",
+    			options,
+    			id: create_fragment$i.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get active() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set active(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get type() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set type(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get transition() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set transition(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get content$use() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set content$use(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get content$class() {
+    		throw new Error("<TabIndicator>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set content$class(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get activate() {
+    		return this.$$.ctx[10];
+    	}
+
+    	set activate(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get deactivate() {
+    		return this.$$.ctx[11];
+    	}
+
+    	set deactivate(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get computeContentClientRect() {
+    		return this.$$.ctx[12];
+    	}
+
+    	set computeContentClientRect(value) {
+    		throw new Error("<TabIndicator>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* node_modules\@smui\tab\Tab.svelte generated by Svelte v3.18.1 */
+
+    const { Error: Error_1 } = globals;
+    const file$h = "node_modules\\@smui\\tab\\Tab.svelte";
+    const get_tab_indicator_slot_changes_1 = dirty => ({});
+    const get_tab_indicator_slot_context_1 = ctx => ({});
+    const get_tab_indicator_slot_changes = dirty => ({});
+    const get_tab_indicator_slot_context = ctx => ({});
+
+    // (24:4) {#if indicatorSpanOnlyContent}
+    function create_if_block_2(ctx) {
+    	let current;
+
+    	const tabindicator_spread_levels = [
+    		{ active: /*active*/ ctx[0] },
+    		prefixFilter(/*$$props*/ ctx[12], "tabIndicator$")
+    	];
+
+    	let tabindicator_props = {
+    		$$slots: { default: [create_default_slot_1$1] },
+    		$$scope: { ctx }
+    	};
+
+    	for (let i = 0; i < tabindicator_spread_levels.length; i += 1) {
+    		tabindicator_props = assign(tabindicator_props, tabindicator_spread_levels[i]);
+    	}
+
+    	const tabindicator = new TabIndicator({
+    			props: tabindicator_props,
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(tabindicator.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(tabindicator, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const tabindicator_changes = (dirty & /*active, prefixFilter, $$props*/ 4097)
+    			? get_spread_update(tabindicator_spread_levels, [
+    					dirty & /*active*/ 1 && { active: /*active*/ ctx[0] },
+    					dirty & /*prefixFilter, $$props*/ 4096 && get_spread_object(prefixFilter(/*$$props*/ ctx[12], "tabIndicator$"))
+    				])
+    			: {};
+
+    			if (dirty & /*$$scope*/ 536870912) {
+    				tabindicator_changes.$$scope = { dirty, ctx };
+    			}
+
+    			tabindicator.$set(tabindicator_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tabindicator.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tabindicator.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(tabindicator, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_2.name,
+    		type: "if",
+    		source: "(24:4) {#if indicatorSpanOnlyContent}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (25:6) <TabIndicator         {active}         {...prefixFilter($$props, 'tabIndicator$')}       >
+    function create_default_slot_1$1(ctx) {
+    	let current;
+    	const tab_indicator_slot_template = /*$$slots*/ ctx[27]["tab-indicator"];
+    	const tab_indicator_slot = create_slot(tab_indicator_slot_template, ctx, /*$$scope*/ ctx[29], get_tab_indicator_slot_context);
+
+    	const block = {
+    		c: function create() {
+    			if (tab_indicator_slot) tab_indicator_slot.c();
+    		},
+    		m: function mount(target, anchor) {
+    			if (tab_indicator_slot) {
+    				tab_indicator_slot.m(target, anchor);
+    			}
+
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			if (tab_indicator_slot && tab_indicator_slot.p && dirty & /*$$scope*/ 536870912) {
+    				tab_indicator_slot.p(get_slot_context(tab_indicator_slot_template, ctx, /*$$scope*/ ctx[29], get_tab_indicator_slot_context), get_slot_changes(tab_indicator_slot_template, /*$$scope*/ ctx[29], dirty, get_tab_indicator_slot_changes));
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tab_indicator_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tab_indicator_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (tab_indicator_slot) tab_indicator_slot.d(detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_1$1.name,
+    		type: "slot",
+    		source: "(25:6) <TabIndicator         {active}         {...prefixFilter($$props, 'tabIndicator$')}       >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (31:2) {#if !indicatorSpanOnlyContent}
+    function create_if_block_1$1(ctx) {
+    	let current;
+
+    	const tabindicator_spread_levels = [
+    		{ active: /*active*/ ctx[0] },
+    		prefixFilter(/*$$props*/ ctx[12], "tabIndicator$")
+    	];
+
+    	let tabindicator_props = {
+    		$$slots: { default: [create_default_slot$3] },
+    		$$scope: { ctx }
+    	};
+
+    	for (let i = 0; i < tabindicator_spread_levels.length; i += 1) {
+    		tabindicator_props = assign(tabindicator_props, tabindicator_spread_levels[i]);
+    	}
+
+    	const tabindicator = new TabIndicator({
+    			props: tabindicator_props,
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(tabindicator.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(tabindicator, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const tabindicator_changes = (dirty & /*active, prefixFilter, $$props*/ 4097)
+    			? get_spread_update(tabindicator_spread_levels, [
+    					dirty & /*active*/ 1 && { active: /*active*/ ctx[0] },
+    					dirty & /*prefixFilter, $$props*/ 4096 && get_spread_object(prefixFilter(/*$$props*/ ctx[12], "tabIndicator$"))
+    				])
+    			: {};
+
+    			if (dirty & /*$$scope*/ 536870912) {
+    				tabindicator_changes.$$scope = { dirty, ctx };
+    			}
+
+    			tabindicator.$set(tabindicator_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tabindicator.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tabindicator.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(tabindicator, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_1$1.name,
+    		type: "if",
+    		source: "(31:2) {#if !indicatorSpanOnlyContent}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (32:4) <TabIndicator       {active}       {...prefixFilter($$props, 'tabIndicator$')}     >
+    function create_default_slot$3(ctx) {
+    	let current;
+    	const tab_indicator_slot_template = /*$$slots*/ ctx[27]["tab-indicator"];
+    	const tab_indicator_slot = create_slot(tab_indicator_slot_template, ctx, /*$$scope*/ ctx[29], get_tab_indicator_slot_context_1);
+
+    	const block = {
+    		c: function create() {
+    			if (tab_indicator_slot) tab_indicator_slot.c();
+    		},
+    		m: function mount(target, anchor) {
+    			if (tab_indicator_slot) {
+    				tab_indicator_slot.m(target, anchor);
+    			}
+
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			if (tab_indicator_slot && tab_indicator_slot.p && dirty & /*$$scope*/ 536870912) {
+    				tab_indicator_slot.p(get_slot_context(tab_indicator_slot_template, ctx, /*$$scope*/ ctx[29], get_tab_indicator_slot_context_1), get_slot_changes(tab_indicator_slot_template, /*$$scope*/ ctx[29], dirty, get_tab_indicator_slot_changes_1));
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tab_indicator_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tab_indicator_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (tab_indicator_slot) tab_indicator_slot.d(detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot$3.name,
+    		type: "slot",
+    		source: "(32:4) <TabIndicator       {active}       {...prefixFilter($$props, 'tabIndicator$')}     >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (37:2) {#if ripple}
+    function create_if_block$2(ctx) {
+    	let span;
+
+    	const block = {
+    		c: function create() {
+    			span = element("span");
+    			attr_dev(span, "class", "mdc-tab__ripple");
+    			add_location(span, file$h, 37, 4, 1093);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, span, anchor);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(span);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$2.name,
+    		type: "if",
+    		source: "(37:2) {#if ripple}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$j(ctx) {
+    	let button;
+    	let span;
+    	let t0;
+    	let useActions_action;
+    	let t1;
+    	let t2;
+    	let useActions_action_1;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[27].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[29], null);
+    	let if_block0 = /*indicatorSpanOnlyContent*/ ctx[6] && create_if_block_2(ctx);
+
+    	let span_levels = [
+    		{
+    			class: "mdc-tab__content " + /*content$class*/ ctx[8]
+    		},
+    		exclude(prefixFilter(/*$$props*/ ctx[12], "content$"), ["use", "class"])
+    	];
+
+    	let span_data = {};
+
+    	for (let i = 0; i < span_levels.length; i += 1) {
+    		span_data = assign(span_data, span_levels[i]);
+    	}
+
+    	let if_block1 = !/*indicatorSpanOnlyContent*/ ctx[6] && create_if_block_1$1(ctx);
+    	let if_block2 = /*ripple*/ ctx[3] && create_if_block$2(ctx);
+
+    	let button_levels = [
+    		{
+    			class: "\n    mdc-tab\n    " + /*className*/ ctx[2] + "\n    " + (/*active*/ ctx[0] ? "mdc-tab--active" : "") + "\n    " + (/*stacked*/ ctx[4] ? "mdc-tab--stacked" : "") + "\n    " + (/*minWidth*/ ctx[5] ? "mdc-tab--min-width" : "") + "\n  "
+    		},
+    		{ role: "tab" },
+    		{ "aria-selected": /*active*/ ctx[0] },
+    		{ tabindex: /*active*/ ctx[0] ? "0" : "-1" },
+    		exclude(/*$$props*/ ctx[12], [
+    			"use",
+    			"class",
+    			"ripple",
+    			"active",
+    			"stacked",
+    			"minWidth",
+    			"indicatorSpanOnlyContent",
+    			"focusOnActivate",
+    			"content$",
+    			"tabIndicator$"
+    		])
+    	];
+
+    	let button_data = {};
+
+    	for (let i = 0; i < button_levels.length; i += 1) {
+    		button_data = assign(button_data, button_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			button = element("button");
+    			span = element("span");
+    			if (default_slot) default_slot.c();
+    			t0 = space();
+    			if (if_block0) if_block0.c();
+    			t1 = space();
+    			if (if_block1) if_block1.c();
+    			t2 = space();
+    			if (if_block2) if_block2.c();
+    			set_attributes(span, span_data);
+    			add_location(span, file$h, 17, 2, 517);
+    			set_attributes(button, button_data);
+    			add_location(button, file$h, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, button, anchor);
+    			append_dev(button, span);
+
+    			if (default_slot) {
+    				default_slot.m(span, null);
+    			}
+
+    			append_dev(span, t0);
+    			if (if_block0) if_block0.m(span, null);
+    			append_dev(button, t1);
+    			if (if_block1) if_block1.m(button, null);
+    			append_dev(button, t2);
+    			if (if_block2) if_block2.m(button, null);
+    			/*button_binding*/ ctx[28](button);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, span, /*content$use*/ ctx[7])),
+    				action_destroyer(useActions_action_1 = useActions.call(null, button, /*use*/ ctx[1])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[10].call(null, button)),
+    				listen_dev(button, "MDCTab:interacted", /*interactedHandler*/ ctx[11], false, false, false)
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 536870912) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[29], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[29], dirty, null));
+    			}
+
+    			if (/*indicatorSpanOnlyContent*/ ctx[6]) {
+    				if (if_block0) {
+    					if_block0.p(ctx, dirty);
+    					transition_in(if_block0, 1);
+    				} else {
+    					if_block0 = create_if_block_2(ctx);
+    					if_block0.c();
+    					transition_in(if_block0, 1);
+    					if_block0.m(span, null);
+    				}
+    			} else if (if_block0) {
+    				group_outros();
+
+    				transition_out(if_block0, 1, 1, () => {
+    					if_block0 = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			set_attributes(span, get_spread_update(span_levels, [
+    				dirty & /*content$class*/ 256 && {
+    					class: "mdc-tab__content " + /*content$class*/ ctx[8]
+    				},
+    				dirty & /*exclude, prefixFilter, $$props*/ 4096 && exclude(prefixFilter(/*$$props*/ ctx[12], "content$"), ["use", "class"])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*content$use*/ 128) useActions_action.update.call(null, /*content$use*/ ctx[7]);
+
+    			if (!/*indicatorSpanOnlyContent*/ ctx[6]) {
+    				if (if_block1) {
+    					if_block1.p(ctx, dirty);
+    					transition_in(if_block1, 1);
+    				} else {
+    					if_block1 = create_if_block_1$1(ctx);
+    					if_block1.c();
+    					transition_in(if_block1, 1);
+    					if_block1.m(button, t2);
+    				}
+    			} else if (if_block1) {
+    				group_outros();
+
+    				transition_out(if_block1, 1, 1, () => {
+    					if_block1 = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			if (/*ripple*/ ctx[3]) {
+    				if (!if_block2) {
+    					if_block2 = create_if_block$2(ctx);
+    					if_block2.c();
+    					if_block2.m(button, null);
+    				}
+    			} else if (if_block2) {
+    				if_block2.d(1);
+    				if_block2 = null;
+    			}
+
+    			set_attributes(button, get_spread_update(button_levels, [
+    				dirty & /*className, active, stacked, minWidth*/ 53 && {
+    					class: "\n    mdc-tab\n    " + /*className*/ ctx[2] + "\n    " + (/*active*/ ctx[0] ? "mdc-tab--active" : "") + "\n    " + (/*stacked*/ ctx[4] ? "mdc-tab--stacked" : "") + "\n    " + (/*minWidth*/ ctx[5] ? "mdc-tab--min-width" : "") + "\n  "
+    				},
+    				{ role: "tab" },
+    				dirty & /*active*/ 1 && { "aria-selected": /*active*/ ctx[0] },
+    				dirty & /*active*/ 1 && { tabindex: /*active*/ ctx[0] ? "0" : "-1" },
+    				dirty & /*exclude, $$props*/ 4096 && exclude(/*$$props*/ ctx[12], [
+    					"use",
+    					"class",
+    					"ripple",
+    					"active",
+    					"stacked",
+    					"minWidth",
+    					"indicatorSpanOnlyContent",
+    					"focusOnActivate",
+    					"content$",
+    					"tabIndicator$"
+    				])
+    			]));
+
+    			if (useActions_action_1 && is_function(useActions_action_1.update) && dirty & /*use*/ 2) useActions_action_1.update.call(null, /*use*/ ctx[1]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			transition_in(if_block0);
+    			transition_in(if_block1);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			transition_out(if_block0);
+    			transition_out(if_block1);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(button);
+    			if (default_slot) default_slot.d(detaching);
+    			if (if_block0) if_block0.d();
+    			if (if_block1) if_block1.d();
+    			if (if_block2) if_block2.d();
+    			/*button_binding*/ ctx[28](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$j.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$j($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCTab:interacted"]);
+    	let activeEntry = getContext("SMUI:tab:active");
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { tab: tabEntry } = $$props;
+    	let { ripple = true } = $$props;
+    	let { active = tabEntry === activeEntry } = $$props;
+    	let { stacked = false } = $$props;
+    	let { minWidth = false } = $$props;
+    	let { indicatorSpanOnlyContent = false } = $$props;
+    	let { focusOnActivate = true } = $$props;
+    	let { content$use = [] } = $$props;
+    	let { content$class = "" } = $$props;
+    	let element;
+    	let tab;
+    	let instantiate = getContext("SMUI:tab:instantiate");
+    	let getInstance = getContext("SMUI:tab:getInstance");
+    	let tabIndicatorPromiseResolve;
+    	let tabIndicatorPromise = new Promise(resolve => tabIndicatorPromiseResolve = resolve);
+    	setContext("SMUI:tab-indicator:instantiate", false);
+    	setContext("SMUI:tab-indicator:getInstance", getTabIndicatorInstancePromise);
+    	setContext("SMUI:label:context", "tab");
+    	setContext("SMUI:icon:context", "tab");
+
+    	if (!tabEntry) {
+    		throw new Error("The tab property is required! It should be passed down from the TabBar to the Tab.");
+    	}
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			$$invalidate(20, tab = new MDCTab(element));
+    		} else {
+    			$$invalidate(20, tab = await getInstance(tabEntry));
+    		}
+
+    		tabIndicatorPromiseResolve(tab.tabIndicator_);
+
+    		if (!ripple) {
+    			tab.ripple_ && tab.ripple_.destroy();
+    		}
+    	});
+
+    	onDestroy(() => {
+    		tab && tab.destroy();
+    	});
+
+    	function getTabIndicatorInstancePromise() {
+    		return tabIndicatorPromise;
+    	}
+
+    	function interactedHandler() {
+    		$$invalidate(0, active = tab.active);
+    	}
+
+    	function activate(...args) {
+    		$$invalidate(0, active = true);
+    		return tab.activate(...args);
+    	}
+
+    	function deactivate(...args) {
+    		$$invalidate(0, active = false);
+    		return tab.deactivate(...args);
+    	}
+
+    	function focus(...args) {
+    		return tab.focus(...args);
+    	}
+
+    	function computeIndicatorClientRect(...args) {
+    		return tab.computeIndicatorClientRect(...args);
+    	}
+
+    	function computeDimensions(...args) {
+    		return tab.computeDimensions(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function button_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(9, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(12, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(1, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(2, className = $$new_props.class);
+    		if ("tab" in $$new_props) $$invalidate(13, tabEntry = $$new_props.tab);
+    		if ("ripple" in $$new_props) $$invalidate(3, ripple = $$new_props.ripple);
+    		if ("active" in $$new_props) $$invalidate(0, active = $$new_props.active);
+    		if ("stacked" in $$new_props) $$invalidate(4, stacked = $$new_props.stacked);
+    		if ("minWidth" in $$new_props) $$invalidate(5, minWidth = $$new_props.minWidth);
+    		if ("indicatorSpanOnlyContent" in $$new_props) $$invalidate(6, indicatorSpanOnlyContent = $$new_props.indicatorSpanOnlyContent);
+    		if ("focusOnActivate" in $$new_props) $$invalidate(14, focusOnActivate = $$new_props.focusOnActivate);
+    		if ("content$use" in $$new_props) $$invalidate(7, content$use = $$new_props.content$use);
+    		if ("content$class" in $$new_props) $$invalidate(8, content$class = $$new_props.content$class);
+    		if ("$$scope" in $$new_props) $$invalidate(29, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			activeEntry,
+    			use,
+    			className,
+    			tabEntry,
+    			ripple,
+    			active,
+    			stacked,
+    			minWidth,
+    			indicatorSpanOnlyContent,
+    			focusOnActivate,
+    			content$use,
+    			content$class,
+    			element,
+    			tab,
+    			instantiate,
+    			getInstance,
+    			tabIndicatorPromiseResolve,
+    			tabIndicatorPromise
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(12, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("activeEntry" in $$props) activeEntry = $$new_props.activeEntry;
+    		if ("use" in $$props) $$invalidate(1, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(2, className = $$new_props.className);
+    		if ("tabEntry" in $$props) $$invalidate(13, tabEntry = $$new_props.tabEntry);
+    		if ("ripple" in $$props) $$invalidate(3, ripple = $$new_props.ripple);
+    		if ("active" in $$props) $$invalidate(0, active = $$new_props.active);
+    		if ("stacked" in $$props) $$invalidate(4, stacked = $$new_props.stacked);
+    		if ("minWidth" in $$props) $$invalidate(5, minWidth = $$new_props.minWidth);
+    		if ("indicatorSpanOnlyContent" in $$props) $$invalidate(6, indicatorSpanOnlyContent = $$new_props.indicatorSpanOnlyContent);
+    		if ("focusOnActivate" in $$props) $$invalidate(14, focusOnActivate = $$new_props.focusOnActivate);
+    		if ("content$use" in $$props) $$invalidate(7, content$use = $$new_props.content$use);
+    		if ("content$class" in $$props) $$invalidate(8, content$class = $$new_props.content$class);
+    		if ("element" in $$props) $$invalidate(9, element = $$new_props.element);
+    		if ("tab" in $$props) $$invalidate(20, tab = $$new_props.tab);
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    		if ("tabIndicatorPromiseResolve" in $$props) tabIndicatorPromiseResolve = $$new_props.tabIndicatorPromiseResolve;
+    		if ("tabIndicatorPromise" in $$props) tabIndicatorPromise = $$new_props.tabIndicatorPromise;
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*tab, focusOnActivate*/ 1064960) {
+    			 if (tab) {
+    				$$invalidate(20, tab.focusOnActivate = focusOnActivate, tab);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*tab, active*/ 1048577) {
+    			 if (tab && tab.active !== active) {
+    				$$invalidate(0, active = tab.active);
+    			}
+    		}
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		active,
+    		use,
+    		className,
+    		ripple,
+    		stacked,
+    		minWidth,
+    		indicatorSpanOnlyContent,
+    		content$use,
+    		content$class,
+    		element,
+    		forwardEvents,
+    		interactedHandler,
+    		$$props,
+    		tabEntry,
+    		focusOnActivate,
+    		activate,
+    		deactivate,
+    		focus,
+    		computeIndicatorClientRect,
+    		computeDimensions,
+    		tab,
+    		tabIndicatorPromiseResolve,
+    		activeEntry,
+    		instantiate,
+    		getInstance,
+    		tabIndicatorPromise,
+    		getTabIndicatorInstancePromise,
+    		$$slots,
+    		button_binding,
+    		$$scope
+    	];
+    }
+
+    class Tab extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$j, create_fragment$j, safe_not_equal, {
+    			use: 1,
+    			class: 2,
+    			tab: 13,
+    			ripple: 3,
+    			active: 0,
+    			stacked: 4,
+    			minWidth: 5,
+    			indicatorSpanOnlyContent: 6,
+    			focusOnActivate: 14,
+    			content$use: 7,
+    			content$class: 8,
+    			activate: 15,
+    			deactivate: 16,
+    			focus: 17,
+    			computeIndicatorClientRect: 18,
+    			computeDimensions: 19
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Tab",
+    			options,
+    			id: create_fragment$j.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*tabEntry*/ ctx[13] === undefined && !("tab" in props)) {
+    			console.warn("<Tab> was created without expected prop 'tab'");
+    		}
+    	}
+
+    	get use() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get tab() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set tab(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get ripple() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set ripple(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get active() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set active(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get stacked() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set stacked(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get minWidth() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set minWidth(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get indicatorSpanOnlyContent() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set indicatorSpanOnlyContent(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get focusOnActivate() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set focusOnActivate(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get content$use() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set content$use(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get content$class() {
+    		throw new Error_1("<Tab>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set content$class(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get activate() {
+    		return this.$$.ctx[15];
+    	}
+
+    	set activate(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get deactivate() {
+    		return this.$$.ctx[16];
+    	}
+
+    	set deactivate(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get focus() {
+    		return this.$$.ctx[17];
+    	}
+
+    	set focus(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get computeIndicatorClientRect() {
+    		return this.$$.ctx[18];
+    	}
+
+    	set computeIndicatorClientRect(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get computeDimensions() {
+    		return this.$$.ctx[19];
+    	}
+
+    	set computeDimensions(value) {
+    		throw new Error_1("<Tab>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    var css$4 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-tab-bar{width:100%}.mdc-tab-scroller{overflow-y:hidden}.mdc-tab-scroller__test{position:absolute;top:-9999px;width:100px;height:100px;overflow-x:scroll}.mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:touch;display:flex;overflow-x:hidden}.mdc-tab-scroller__scroll-area::-webkit-scrollbar,.mdc-tab-scroller__test::-webkit-scrollbar{display:none}.mdc-tab-scroller__scroll-area--scroll{overflow-x:scroll}.mdc-tab-scroller__scroll-content{position:relative;display:flex;flex:1 0 auto;transform:none;will-change:transform}.mdc-tab-scroller--align-start .mdc-tab-scroller__scroll-content{justify-content:flex-start}.mdc-tab-scroller--align-end .mdc-tab-scroller__scroll-content{justify-content:flex-end}.mdc-tab-scroller--align-center .mdc-tab-scroller__scroll-content{justify-content:center}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:auto}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-content{transition:transform .25s cubic-bezier(.4,0,.2,1)}";
+    styleInject(css$4);
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses$6 = {
+        ANIMATING: 'mdc-tab-scroller--animating',
+        SCROLL_AREA_SCROLL: 'mdc-tab-scroller__scroll-area--scroll',
+        SCROLL_TEST: 'mdc-tab-scroller__test',
+    };
+    var strings$7 = {
+        AREA_SELECTOR: '.mdc-tab-scroller__scroll-area',
+        CONTENT_SELECTOR: '.mdc-tab-scroller__scroll-content',
+    };
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScrollerRTL = /** @class */ (function () {
+        function MDCTabScrollerRTL(adapter) {
+            this.adapter_ = adapter;
+        }
+        return MDCTabScrollerRTL;
+    }());
+    //# sourceMappingURL=rtl-scroller.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScrollerRTLDefault = /** @class */ (function (_super) {
+        __extends(MDCTabScrollerRTLDefault, _super);
+        function MDCTabScrollerRTLDefault() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabScrollerRTLDefault.prototype.getScrollPositionRTL = function () {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var right = this.calculateScrollEdges_().right;
+            // Scroll values on most browsers are ints instead of floats so we round
+            return Math.round(right - currentScrollLeft);
+        };
+        MDCTabScrollerRTLDefault.prototype.scrollToRTL = function (scrollX) {
+            var edges = this.calculateScrollEdges_();
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(edges.right - scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: clampedScrollLeft - currentScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLDefault.prototype.incrementScrollRTL = function (scrollX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(currentScrollLeft - scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: clampedScrollLeft - currentScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLDefault.prototype.getAnimatingScrollPosition = function (scrollX) {
+            return scrollX;
+        };
+        MDCTabScrollerRTLDefault.prototype.calculateScrollEdges_ = function () {
+            var contentWidth = this.adapter_.getScrollContentOffsetWidth();
+            var rootWidth = this.adapter_.getScrollAreaOffsetWidth();
+            return {
+                left: 0,
+                right: contentWidth - rootWidth,
+            };
+        };
+        MDCTabScrollerRTLDefault.prototype.clampScrollValue_ = function (scrollX) {
+            var edges = this.calculateScrollEdges_();
+            return Math.min(Math.max(edges.left, scrollX), edges.right);
+        };
+        return MDCTabScrollerRTLDefault;
+    }(MDCTabScrollerRTL));
+    //# sourceMappingURL=rtl-default-scroller.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScrollerRTLNegative = /** @class */ (function (_super) {
+        __extends(MDCTabScrollerRTLNegative, _super);
+        function MDCTabScrollerRTLNegative() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabScrollerRTLNegative.prototype.getScrollPositionRTL = function (translateX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            return Math.round(translateX - currentScrollLeft);
+        };
+        MDCTabScrollerRTLNegative.prototype.scrollToRTL = function (scrollX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(-scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: clampedScrollLeft - currentScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLNegative.prototype.incrementScrollRTL = function (scrollX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(currentScrollLeft - scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: clampedScrollLeft - currentScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLNegative.prototype.getAnimatingScrollPosition = function (scrollX, translateX) {
+            return scrollX - translateX;
+        };
+        MDCTabScrollerRTLNegative.prototype.calculateScrollEdges_ = function () {
+            var contentWidth = this.adapter_.getScrollContentOffsetWidth();
+            var rootWidth = this.adapter_.getScrollAreaOffsetWidth();
+            return {
+                left: rootWidth - contentWidth,
+                right: 0,
+            };
+        };
+        MDCTabScrollerRTLNegative.prototype.clampScrollValue_ = function (scrollX) {
+            var edges = this.calculateScrollEdges_();
+            return Math.max(Math.min(edges.right, scrollX), edges.left);
+        };
+        return MDCTabScrollerRTLNegative;
+    }(MDCTabScrollerRTL));
+    //# sourceMappingURL=rtl-negative-scroller.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScrollerRTLReverse = /** @class */ (function (_super) {
+        __extends(MDCTabScrollerRTLReverse, _super);
+        function MDCTabScrollerRTLReverse() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabScrollerRTLReverse.prototype.getScrollPositionRTL = function (translateX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            // Scroll values on most browsers are ints instead of floats so we round
+            return Math.round(currentScrollLeft - translateX);
+        };
+        MDCTabScrollerRTLReverse.prototype.scrollToRTL = function (scrollX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: currentScrollLeft - clampedScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLReverse.prototype.incrementScrollRTL = function (scrollX) {
+            var currentScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            var clampedScrollLeft = this.clampScrollValue_(currentScrollLeft + scrollX);
+            return {
+                finalScrollPosition: clampedScrollLeft,
+                scrollDelta: currentScrollLeft - clampedScrollLeft,
+            };
+        };
+        MDCTabScrollerRTLReverse.prototype.getAnimatingScrollPosition = function (scrollX, translateX) {
+            return scrollX + translateX;
+        };
+        MDCTabScrollerRTLReverse.prototype.calculateScrollEdges_ = function () {
+            var contentWidth = this.adapter_.getScrollContentOffsetWidth();
+            var rootWidth = this.adapter_.getScrollAreaOffsetWidth();
+            return {
+                left: contentWidth - rootWidth,
+                right: 0,
+            };
+        };
+        MDCTabScrollerRTLReverse.prototype.clampScrollValue_ = function (scrollX) {
+            var edges = this.calculateScrollEdges_();
+            return Math.min(Math.max(edges.right, scrollX), edges.left);
+        };
+        return MDCTabScrollerRTLReverse;
+    }(MDCTabScrollerRTL));
+    //# sourceMappingURL=rtl-reverse-scroller.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScrollerFoundation = /** @class */ (function (_super) {
+        __extends(MDCTabScrollerFoundation, _super);
+        function MDCTabScrollerFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCTabScrollerFoundation.defaultAdapter, adapter)) || this;
+            /**
+             * Controls whether we should handle the transitionend and interaction events during the animation.
+             */
+            _this.isAnimating_ = false;
+            return _this;
+        }
+        Object.defineProperty(MDCTabScrollerFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses$6;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabScrollerFoundation, "strings", {
+            get: function () {
+                return strings$7;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabScrollerFoundation, "defaultAdapter", {
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    eventTargetMatchesSelector: function () { return false; },
+                    addClass: function () { return undefined; },
+                    removeClass: function () { return undefined; },
+                    addScrollAreaClass: function () { return undefined; },
+                    setScrollAreaStyleProperty: function () { return undefined; },
+                    setScrollContentStyleProperty: function () { return undefined; },
+                    getScrollContentStyleValue: function () { return ''; },
+                    setScrollAreaScrollLeft: function () { return undefined; },
+                    getScrollAreaScrollLeft: function () { return 0; },
+                    getScrollContentOffsetWidth: function () { return 0; },
+                    getScrollAreaOffsetWidth: function () { return 0; },
+                    computeScrollAreaClientRect: function () { return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 }); },
+                    computeScrollContentClientRect: function () { return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 }); },
+                    computeHorizontalScrollbarHeight: function () { return 0; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCTabScrollerFoundation.prototype.init = function () {
+            // Compute horizontal scrollbar height on scroller with overflow initially hidden, then update overflow to scroll
+            // and immediately adjust bottom margin to avoid the scrollbar initially appearing before JS runs.
+            var horizontalScrollbarHeight = this.adapter_.computeHorizontalScrollbarHeight();
+            this.adapter_.setScrollAreaStyleProperty('margin-bottom', -horizontalScrollbarHeight + 'px');
+            this.adapter_.addScrollAreaClass(MDCTabScrollerFoundation.cssClasses.SCROLL_AREA_SCROLL);
+        };
+        /**
+         * Computes the current visual scroll position
+         */
+        MDCTabScrollerFoundation.prototype.getScrollPosition = function () {
+            if (this.isRTL_()) {
+                return this.computeCurrentScrollPositionRTL_();
+            }
+            var currentTranslateX = this.calculateCurrentTranslateX_();
+            var scrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            return scrollLeft - currentTranslateX;
+        };
+        /**
+         * Handles interaction events that occur during transition
+         */
+        MDCTabScrollerFoundation.prototype.handleInteraction = function () {
+            // Early exit if we aren't animating
+            if (!this.isAnimating_) {
+                return;
+            }
+            // Prevent other event listeners from handling this event
+            this.stopScrollAnimation_();
+        };
+        /**
+         * Handles the transitionend event
+         */
+        MDCTabScrollerFoundation.prototype.handleTransitionEnd = function (evt) {
+            // Early exit if we aren't animating or the event was triggered by a different element.
+            var evtTarget = evt.target;
+            if (!this.isAnimating_ ||
+                !this.adapter_.eventTargetMatchesSelector(evtTarget, MDCTabScrollerFoundation.strings.CONTENT_SELECTOR)) {
+                return;
+            }
+            this.isAnimating_ = false;
+            this.adapter_.removeClass(MDCTabScrollerFoundation.cssClasses.ANIMATING);
+        };
+        /**
+         * Increment the scroll value by the scrollXIncrement
+         * @param scrollXIncrement The value by which to increment the scroll position
+         */
+        MDCTabScrollerFoundation.prototype.incrementScroll = function (scrollXIncrement) {
+            // Early exit for non-operational increment values
+            if (scrollXIncrement === 0) {
+                return;
+            }
+            if (this.isRTL_()) {
+                return this.incrementScrollRTL_(scrollXIncrement);
+            }
+            this.incrementScroll_(scrollXIncrement);
+        };
+        /**
+         * Scrolls to the given scrollX value
+         */
+        MDCTabScrollerFoundation.prototype.scrollTo = function (scrollX) {
+            if (this.isRTL_()) {
+                return this.scrollToRTL_(scrollX);
+            }
+            this.scrollTo_(scrollX);
+        };
+        /**
+         * @return Browser-specific {@link MDCTabScrollerRTL} instance.
+         */
+        MDCTabScrollerFoundation.prototype.getRTLScroller = function () {
+            if (!this.rtlScrollerInstance_) {
+                this.rtlScrollerInstance_ = this.rtlScrollerFactory_();
+            }
+            return this.rtlScrollerInstance_;
+        };
+        /**
+         * @return translateX value from a CSS matrix transform function string.
+         */
+        MDCTabScrollerFoundation.prototype.calculateCurrentTranslateX_ = function () {
+            var transformValue = this.adapter_.getScrollContentStyleValue('transform');
+            // Early exit if no transform is present
+            if (transformValue === 'none') {
+                return 0;
+            }
+            // The transform value comes back as a matrix transformation in the form
+            // of `matrix(a, b, c, d, tx, ty)`. We only care about tx (translateX) so
+            // we're going to grab all the parenthesized values, strip out tx, and
+            // parse it.
+            var match = /\((.+?)\)/.exec(transformValue);
+            if (!match) {
+                return 0;
+            }
+            var matrixParams = match[1];
+            // tslint:disable-next-line:ban-ts-ignore "Unused vars" should be a linter warning, not a compiler error.
+            // @ts-ignore These unused variables should retain their semantic names for clarity.
+            var _a = __read(matrixParams.split(','), 6), a = _a[0], b = _a[1], c = _a[2], d = _a[3], tx = _a[4], ty = _a[5];
+            return parseFloat(tx); // tslint:disable-line:ban
+        };
+        /**
+         * Calculates a safe scroll value that is > 0 and < the max scroll value
+         * @param scrollX The distance to scroll
+         */
+        MDCTabScrollerFoundation.prototype.clampScrollValue_ = function (scrollX) {
+            var edges = this.calculateScrollEdges_();
+            return Math.min(Math.max(edges.left, scrollX), edges.right);
+        };
+        MDCTabScrollerFoundation.prototype.computeCurrentScrollPositionRTL_ = function () {
+            var translateX = this.calculateCurrentTranslateX_();
+            return this.getRTLScroller().getScrollPositionRTL(translateX);
+        };
+        MDCTabScrollerFoundation.prototype.calculateScrollEdges_ = function () {
+            var contentWidth = this.adapter_.getScrollContentOffsetWidth();
+            var rootWidth = this.adapter_.getScrollAreaOffsetWidth();
+            return {
+                left: 0,
+                right: contentWidth - rootWidth,
+            };
+        };
+        /**
+         * Internal scroll method
+         * @param scrollX The new scroll position
+         */
+        MDCTabScrollerFoundation.prototype.scrollTo_ = function (scrollX) {
+            var currentScrollX = this.getScrollPosition();
+            var safeScrollX = this.clampScrollValue_(scrollX);
+            var scrollDelta = safeScrollX - currentScrollX;
+            this.animate_({
+                finalScrollPosition: safeScrollX,
+                scrollDelta: scrollDelta,
+            });
+        };
+        /**
+         * Internal RTL scroll method
+         * @param scrollX The new scroll position
+         */
+        MDCTabScrollerFoundation.prototype.scrollToRTL_ = function (scrollX) {
+            var animation = this.getRTLScroller().scrollToRTL(scrollX);
+            this.animate_(animation);
+        };
+        /**
+         * Internal increment scroll method
+         * @param scrollX The new scroll position increment
+         */
+        MDCTabScrollerFoundation.prototype.incrementScroll_ = function (scrollX) {
+            var currentScrollX = this.getScrollPosition();
+            var targetScrollX = scrollX + currentScrollX;
+            var safeScrollX = this.clampScrollValue_(targetScrollX);
+            var scrollDelta = safeScrollX - currentScrollX;
+            this.animate_({
+                finalScrollPosition: safeScrollX,
+                scrollDelta: scrollDelta,
+            });
+        };
+        /**
+         * Internal increment scroll RTL method
+         * @param scrollX The new scroll position RTL increment
+         */
+        MDCTabScrollerFoundation.prototype.incrementScrollRTL_ = function (scrollX) {
+            var animation = this.getRTLScroller().incrementScrollRTL(scrollX);
+            this.animate_(animation);
+        };
+        /**
+         * Animates the tab scrolling
+         * @param animation The animation to apply
+         */
+        MDCTabScrollerFoundation.prototype.animate_ = function (animation) {
+            var _this = this;
+            // Early exit if translateX is 0, which means there's no animation to perform
+            if (animation.scrollDelta === 0) {
+                return;
+            }
+            this.stopScrollAnimation_();
+            // This animation uses the FLIP approach.
+            // Read more here: https://aerotwist.com/blog/flip-your-animations/
+            this.adapter_.setScrollAreaScrollLeft(animation.finalScrollPosition);
+            this.adapter_.setScrollContentStyleProperty('transform', "translateX(" + animation.scrollDelta + "px)");
+            // Force repaint
+            this.adapter_.computeScrollAreaClientRect();
+            requestAnimationFrame(function () {
+                _this.adapter_.addClass(MDCTabScrollerFoundation.cssClasses.ANIMATING);
+                _this.adapter_.setScrollContentStyleProperty('transform', 'none');
+            });
+            this.isAnimating_ = true;
+        };
+        /**
+         * Stops scroll animation
+         */
+        MDCTabScrollerFoundation.prototype.stopScrollAnimation_ = function () {
+            this.isAnimating_ = false;
+            var currentScrollPosition = this.getAnimatingScrollPosition_();
+            this.adapter_.removeClass(MDCTabScrollerFoundation.cssClasses.ANIMATING);
+            this.adapter_.setScrollContentStyleProperty('transform', 'translateX(0px)');
+            this.adapter_.setScrollAreaScrollLeft(currentScrollPosition);
+        };
+        /**
+         * Gets the current scroll position during animation
+         */
+        MDCTabScrollerFoundation.prototype.getAnimatingScrollPosition_ = function () {
+            var currentTranslateX = this.calculateCurrentTranslateX_();
+            var scrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            if (this.isRTL_()) {
+                return this.getRTLScroller().getAnimatingScrollPosition(scrollLeft, currentTranslateX);
+            }
+            return scrollLeft - currentTranslateX;
+        };
+        /**
+         * Determines the RTL Scroller to use
+         */
+        MDCTabScrollerFoundation.prototype.rtlScrollerFactory_ = function () {
+            // Browsers have three different implementations of scrollLeft in RTL mode,
+            // dependent on the browser. The behavior is based off the max LTR
+            // scrollLeft value and 0.
+            //
+            // * Default scrolling in RTL *
+            //    - Left-most value: 0
+            //    - Right-most value: Max LTR scrollLeft value
+            //
+            // * Negative scrolling in RTL *
+            //    - Left-most value: Negated max LTR scrollLeft value
+            //    - Right-most value: 0
+            //
+            // * Reverse scrolling in RTL *
+            //    - Left-most value: Max LTR scrollLeft value
+            //    - Right-most value: 0
+            //
+            // We use those principles below to determine which RTL scrollLeft
+            // behavior is implemented in the current browser.
+            var initialScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            this.adapter_.setScrollAreaScrollLeft(initialScrollLeft - 1);
+            var newScrollLeft = this.adapter_.getScrollAreaScrollLeft();
+            // If the newScrollLeft value is negative,then we know that the browser has
+            // implemented negative RTL scrolling, since all other implementations have
+            // only positive values.
+            if (newScrollLeft < 0) {
+                // Undo the scrollLeft test check
+                this.adapter_.setScrollAreaScrollLeft(initialScrollLeft);
+                return new MDCTabScrollerRTLNegative(this.adapter_);
+            }
+            var rootClientRect = this.adapter_.computeScrollAreaClientRect();
+            var contentClientRect = this.adapter_.computeScrollContentClientRect();
+            var rightEdgeDelta = Math.round(contentClientRect.right - rootClientRect.right);
+            // Undo the scrollLeft test check
+            this.adapter_.setScrollAreaScrollLeft(initialScrollLeft);
+            // By calculating the clientRect of the root element and the clientRect of
+            // the content element, we can determine how much the scroll value changed
+            // when we performed the scrollLeft subtraction above.
+            if (rightEdgeDelta === newScrollLeft) {
+                return new MDCTabScrollerRTLReverse(this.adapter_);
+            }
+            return new MDCTabScrollerRTLDefault(this.adapter_);
+        };
+        MDCTabScrollerFoundation.prototype.isRTL_ = function () {
+            return this.adapter_.getScrollContentStyleValue('direction') === 'rtl';
+        };
+        return MDCTabScrollerFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    /**
+     * Stores result from computeHorizontalScrollbarHeight to avoid redundant processing.
+     */
+    var horizontalScrollbarHeight_;
+    /**
+     * Computes the height of browser-rendered horizontal scrollbars using a self-created test element.
+     * May return 0 (e.g. on OS X browsers under default configuration).
+     */
+    function computeHorizontalScrollbarHeight(documentObj, shouldCacheResult) {
+        if (shouldCacheResult === void 0) { shouldCacheResult = true; }
+        if (shouldCacheResult && typeof horizontalScrollbarHeight_ !== 'undefined') {
+            return horizontalScrollbarHeight_;
+        }
+        var el = documentObj.createElement('div');
+        el.classList.add(cssClasses$6.SCROLL_TEST);
+        documentObj.body.appendChild(el);
+        var horizontalScrollbarHeight = el.offsetHeight - el.clientHeight;
+        documentObj.body.removeChild(el);
+        if (shouldCacheResult) {
+            horizontalScrollbarHeight_ = horizontalScrollbarHeight;
+        }
+        return horizontalScrollbarHeight;
+    }
+    //# sourceMappingURL=util.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCTabScroller = /** @class */ (function (_super) {
+        __extends(MDCTabScroller, _super);
+        function MDCTabScroller() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabScroller.attachTo = function (root) {
+            return new MDCTabScroller(root);
+        };
+        MDCTabScroller.prototype.initialize = function () {
+            this.area_ = this.root_.querySelector(MDCTabScrollerFoundation.strings.AREA_SELECTOR);
+            this.content_ = this.root_.querySelector(MDCTabScrollerFoundation.strings.CONTENT_SELECTOR);
+        };
+        MDCTabScroller.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            this.handleInteraction_ = function () { return _this.foundation_.handleInteraction(); };
+            this.handleTransitionEnd_ = function (evt) { return _this.foundation_.handleTransitionEnd(evt); };
+            this.area_.addEventListener('wheel', this.handleInteraction_, applyPassive());
+            this.area_.addEventListener('touchstart', this.handleInteraction_, applyPassive());
+            this.area_.addEventListener('pointerdown', this.handleInteraction_, applyPassive());
+            this.area_.addEventListener('mousedown', this.handleInteraction_, applyPassive());
+            this.area_.addEventListener('keydown', this.handleInteraction_, applyPassive());
+            this.content_.addEventListener('transitionend', this.handleTransitionEnd_);
+        };
+        MDCTabScroller.prototype.destroy = function () {
+            _super.prototype.destroy.call(this);
+            this.area_.removeEventListener('wheel', this.handleInteraction_, applyPassive());
+            this.area_.removeEventListener('touchstart', this.handleInteraction_, applyPassive());
+            this.area_.removeEventListener('pointerdown', this.handleInteraction_, applyPassive());
+            this.area_.removeEventListener('mousedown', this.handleInteraction_, applyPassive());
+            this.area_.removeEventListener('keydown', this.handleInteraction_, applyPassive());
+            this.content_.removeEventListener('transitionend', this.handleTransitionEnd_);
+        };
+        MDCTabScroller.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                eventTargetMatchesSelector: function (evtTarget, selector) { return matches$1(evtTarget, selector); },
+                addClass: function (className) { return _this.root_.classList.add(className); },
+                removeClass: function (className) { return _this.root_.classList.remove(className); },
+                addScrollAreaClass: function (className) { return _this.area_.classList.add(className); },
+                setScrollAreaStyleProperty: function (prop, value) { return _this.area_.style.setProperty(prop, value); },
+                setScrollContentStyleProperty: function (prop, value) { return _this.content_.style.setProperty(prop, value); },
+                getScrollContentStyleValue: function (propName) { return window.getComputedStyle(_this.content_).getPropertyValue(propName); },
+                setScrollAreaScrollLeft: function (scrollX) { return _this.area_.scrollLeft = scrollX; },
+                getScrollAreaScrollLeft: function () { return _this.area_.scrollLeft; },
+                getScrollContentOffsetWidth: function () { return _this.content_.offsetWidth; },
+                getScrollAreaOffsetWidth: function () { return _this.area_.offsetWidth; },
+                computeScrollAreaClientRect: function () { return _this.area_.getBoundingClientRect(); },
+                computeScrollContentClientRect: function () { return _this.content_.getBoundingClientRect(); },
+                computeHorizontalScrollbarHeight: function () { return computeHorizontalScrollbarHeight(document); },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCTabScrollerFoundation(adapter);
+        };
+        /**
+         * Returns the current visual scroll position
+         */
+        MDCTabScroller.prototype.getScrollPosition = function () {
+            return this.foundation_.getScrollPosition();
+        };
+        /**
+         * Returns the width of the scroll content
+         */
+        MDCTabScroller.prototype.getScrollContentWidth = function () {
+            return this.content_.offsetWidth;
+        };
+        /**
+         * Increments the scroll value by the given amount
+         * @param scrollXIncrement The pixel value by which to increment the scroll value
+         */
+        MDCTabScroller.prototype.incrementScroll = function (scrollXIncrement) {
+            this.foundation_.incrementScroll(scrollXIncrement);
+        };
+        /**
+         * Scrolls to the given pixel position
+         * @param scrollX The pixel value to scroll to
+         */
+        MDCTabScroller.prototype.scrollTo = function (scrollX) {
+            this.foundation_.scrollTo(scrollX);
+        };
+        return MDCTabScroller;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var strings$8 = {
+        ARROW_LEFT_KEY: 'ArrowLeft',
+        ARROW_RIGHT_KEY: 'ArrowRight',
+        END_KEY: 'End',
+        ENTER_KEY: 'Enter',
+        HOME_KEY: 'Home',
+        SPACE_KEY: 'Space',
+        TAB_ACTIVATED_EVENT: 'MDCTabBar:activated',
+        TAB_SCROLLER_SELECTOR: '.mdc-tab-scroller',
+        TAB_SELECTOR: '.mdc-tab',
+    };
+    var numbers$3 = {
+        ARROW_LEFT_KEYCODE: 37,
+        ARROW_RIGHT_KEYCODE: 39,
+        END_KEYCODE: 35,
+        ENTER_KEYCODE: 13,
+        EXTRA_SCROLL_AMOUNT: 20,
+        HOME_KEYCODE: 36,
+        SPACE_KEYCODE: 32,
+    };
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var ACCEPTABLE_KEYS = new Set();
+    // IE11 has no support for new Set with iterable so we need to initialize this by hand
+    ACCEPTABLE_KEYS.add(strings$8.ARROW_LEFT_KEY);
+    ACCEPTABLE_KEYS.add(strings$8.ARROW_RIGHT_KEY);
+    ACCEPTABLE_KEYS.add(strings$8.END_KEY);
+    ACCEPTABLE_KEYS.add(strings$8.HOME_KEY);
+    ACCEPTABLE_KEYS.add(strings$8.ENTER_KEY);
+    ACCEPTABLE_KEYS.add(strings$8.SPACE_KEY);
+    var KEYCODE_MAP = new Map();
+    // IE11 has no support for new Map with iterable so we need to initialize this by hand
+    KEYCODE_MAP.set(numbers$3.ARROW_LEFT_KEYCODE, strings$8.ARROW_LEFT_KEY);
+    KEYCODE_MAP.set(numbers$3.ARROW_RIGHT_KEYCODE, strings$8.ARROW_RIGHT_KEY);
+    KEYCODE_MAP.set(numbers$3.END_KEYCODE, strings$8.END_KEY);
+    KEYCODE_MAP.set(numbers$3.HOME_KEYCODE, strings$8.HOME_KEY);
+    KEYCODE_MAP.set(numbers$3.ENTER_KEYCODE, strings$8.ENTER_KEY);
+    KEYCODE_MAP.set(numbers$3.SPACE_KEYCODE, strings$8.SPACE_KEY);
+    var MDCTabBarFoundation = /** @class */ (function (_super) {
+        __extends(MDCTabBarFoundation, _super);
+        function MDCTabBarFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCTabBarFoundation.defaultAdapter, adapter)) || this;
+            _this.useAutomaticActivation_ = false;
+            return _this;
+        }
+        Object.defineProperty(MDCTabBarFoundation, "strings", {
+            get: function () {
+                return strings$8;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabBarFoundation, "numbers", {
+            get: function () {
+                return numbers$3;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabBarFoundation, "defaultAdapter", {
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    scrollTo: function () { return undefined; },
+                    incrementScroll: function () { return undefined; },
+                    getScrollPosition: function () { return 0; },
+                    getScrollContentWidth: function () { return 0; },
+                    getOffsetWidth: function () { return 0; },
+                    isRTL: function () { return false; },
+                    setActiveTab: function () { return undefined; },
+                    activateTabAtIndex: function () { return undefined; },
+                    deactivateTabAtIndex: function () { return undefined; },
+                    focusTabAtIndex: function () { return undefined; },
+                    getTabIndicatorClientRectAtIndex: function () { return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 }); },
+                    getTabDimensionsAtIndex: function () { return ({ rootLeft: 0, rootRight: 0, contentLeft: 0, contentRight: 0 }); },
+                    getPreviousActiveTabIndex: function () { return -1; },
+                    getFocusedTabIndex: function () { return -1; },
+                    getIndexOfTabById: function () { return -1; },
+                    getTabListLength: function () { return 0; },
+                    notifyTabActivated: function () { return undefined; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Switches between automatic and manual activation modes.
+         * See https://www.w3.org/TR/wai-aria-practices/#tabpanel for examples.
+         */
+        MDCTabBarFoundation.prototype.setUseAutomaticActivation = function (useAutomaticActivation) {
+            this.useAutomaticActivation_ = useAutomaticActivation;
+        };
+        MDCTabBarFoundation.prototype.activateTab = function (index) {
+            var previousActiveIndex = this.adapter_.getPreviousActiveTabIndex();
+            if (!this.indexIsInRange_(index) || index === previousActiveIndex) {
+                return;
+            }
+            var previousClientRect;
+            if (previousActiveIndex !== -1) {
+                this.adapter_.deactivateTabAtIndex(previousActiveIndex);
+                previousClientRect = this.adapter_.getTabIndicatorClientRectAtIndex(previousActiveIndex);
+            }
+            this.adapter_.activateTabAtIndex(index, previousClientRect);
+            this.scrollIntoView(index);
+            this.adapter_.notifyTabActivated(index);
+        };
+        MDCTabBarFoundation.prototype.handleKeyDown = function (evt) {
+            // Get the key from the event
+            var key = this.getKeyFromEvent_(evt);
+            // Early exit if the event key isn't one of the keyboard navigation keys
+            if (key === undefined) {
+                return;
+            }
+            // Prevent default behavior for movement keys, but not for activation keys, since :active is used to apply ripple
+            if (!this.isActivationKey_(key)) {
+                evt.preventDefault();
+            }
+            if (this.useAutomaticActivation_) {
+                if (this.isActivationKey_(key)) {
+                    return;
+                }
+                var index = this.determineTargetFromKey_(this.adapter_.getPreviousActiveTabIndex(), key);
+                this.adapter_.setActiveTab(index);
+                this.scrollIntoView(index);
+            }
+            else {
+                var focusedTabIndex = this.adapter_.getFocusedTabIndex();
+                if (this.isActivationKey_(key)) {
+                    this.adapter_.setActiveTab(focusedTabIndex);
+                }
+                else {
+                    var index = this.determineTargetFromKey_(focusedTabIndex, key);
+                    this.adapter_.focusTabAtIndex(index);
+                    this.scrollIntoView(index);
+                }
+            }
+        };
+        /**
+         * Handles the MDCTab:interacted event
+         */
+        MDCTabBarFoundation.prototype.handleTabInteraction = function (evt) {
+            this.adapter_.setActiveTab(this.adapter_.getIndexOfTabById(evt.detail.tabId));
+        };
+        /**
+         * Scrolls the tab at the given index into view
+         * @param index The tab index to make visible
+         */
+        MDCTabBarFoundation.prototype.scrollIntoView = function (index) {
+            // Early exit if the index is out of range
+            if (!this.indexIsInRange_(index)) {
+                return;
+            }
+            // Always scroll to 0 if scrolling to the 0th index
+            if (index === 0) {
+                return this.adapter_.scrollTo(0);
+            }
+            // Always scroll to the max value if scrolling to the Nth index
+            // MDCTabScroller.scrollTo() will never scroll past the max possible value
+            if (index === this.adapter_.getTabListLength() - 1) {
+                return this.adapter_.scrollTo(this.adapter_.getScrollContentWidth());
+            }
+            if (this.isRTL_()) {
+                return this.scrollIntoViewRTL_(index);
+            }
+            this.scrollIntoView_(index);
+        };
+        /**
+         * Private method for determining the index of the destination tab based on what key was pressed
+         * @param origin The original index from which to determine the destination
+         * @param key The name of the key
+         */
+        MDCTabBarFoundation.prototype.determineTargetFromKey_ = function (origin, key) {
+            var isRTL = this.isRTL_();
+            var maxIndex = this.adapter_.getTabListLength() - 1;
+            var shouldGoToEnd = key === strings$8.END_KEY;
+            var shouldDecrement = key === strings$8.ARROW_LEFT_KEY && !isRTL || key === strings$8.ARROW_RIGHT_KEY && isRTL;
+            var shouldIncrement = key === strings$8.ARROW_RIGHT_KEY && !isRTL || key === strings$8.ARROW_LEFT_KEY && isRTL;
+            var index = origin;
+            if (shouldGoToEnd) {
+                index = maxIndex;
+            }
+            else if (shouldDecrement) {
+                index -= 1;
+            }
+            else if (shouldIncrement) {
+                index += 1;
+            }
+            else {
+                index = 0;
+            }
+            if (index < 0) {
+                index = maxIndex;
+            }
+            else if (index > maxIndex) {
+                index = 0;
+            }
+            return index;
+        };
+        /**
+         * Calculates the scroll increment that will make the tab at the given index visible
+         * @param index The index of the tab
+         * @param nextIndex The index of the next tab
+         * @param scrollPosition The current scroll position
+         * @param barWidth The width of the Tab Bar
+         */
+        MDCTabBarFoundation.prototype.calculateScrollIncrement_ = function (index, nextIndex, scrollPosition, barWidth) {
+            var nextTabDimensions = this.adapter_.getTabDimensionsAtIndex(nextIndex);
+            var relativeContentLeft = nextTabDimensions.contentLeft - scrollPosition - barWidth;
+            var relativeContentRight = nextTabDimensions.contentRight - scrollPosition;
+            var leftIncrement = relativeContentRight - numbers$3.EXTRA_SCROLL_AMOUNT;
+            var rightIncrement = relativeContentLeft + numbers$3.EXTRA_SCROLL_AMOUNT;
+            if (nextIndex < index) {
+                return Math.min(leftIncrement, 0);
+            }
+            return Math.max(rightIncrement, 0);
+        };
+        /**
+         * Calculates the scroll increment that will make the tab at the given index visible in RTL
+         * @param index The index of the tab
+         * @param nextIndex The index of the next tab
+         * @param scrollPosition The current scroll position
+         * @param barWidth The width of the Tab Bar
+         * @param scrollContentWidth The width of the scroll content
+         */
+        MDCTabBarFoundation.prototype.calculateScrollIncrementRTL_ = function (index, nextIndex, scrollPosition, barWidth, scrollContentWidth) {
+            var nextTabDimensions = this.adapter_.getTabDimensionsAtIndex(nextIndex);
+            var relativeContentLeft = scrollContentWidth - nextTabDimensions.contentLeft - scrollPosition;
+            var relativeContentRight = scrollContentWidth - nextTabDimensions.contentRight - scrollPosition - barWidth;
+            var leftIncrement = relativeContentRight + numbers$3.EXTRA_SCROLL_AMOUNT;
+            var rightIncrement = relativeContentLeft - numbers$3.EXTRA_SCROLL_AMOUNT;
+            if (nextIndex > index) {
+                return Math.max(leftIncrement, 0);
+            }
+            return Math.min(rightIncrement, 0);
+        };
+        /**
+         * Determines the index of the adjacent tab closest to either edge of the Tab Bar
+         * @param index The index of the tab
+         * @param tabDimensions The dimensions of the tab
+         * @param scrollPosition The current scroll position
+         * @param barWidth The width of the tab bar
+         */
+        MDCTabBarFoundation.prototype.findAdjacentTabIndexClosestToEdge_ = function (index, tabDimensions, scrollPosition, barWidth) {
+            /**
+             * Tabs are laid out in the Tab Scroller like this:
+             *
+             *    Scroll Position
+             *    +---+
+             *    |   |   Bar Width
+             *    |   +-----------------------------------+
+             *    |   |                                   |
+             *    |   V                                   V
+             *    |   +-----------------------------------+
+             *    V   |             Tab Scroller          |
+             *    +------------+--------------+-------------------+
+             *    |    Tab     |      Tab     |        Tab        |
+             *    +------------+--------------+-------------------+
+             *        |                                   |
+             *        +-----------------------------------+
+             *
+             * To determine the next adjacent index, we look at the Tab root left and
+             * Tab root right, both relative to the scroll position. If the Tab root
+             * left is less than 0, then we know it's out of view to the left. If the
+             * Tab root right minus the bar width is greater than 0, we know the Tab is
+             * out of view to the right. From there, we either increment or decrement
+             * the index.
+             */
+            var relativeRootLeft = tabDimensions.rootLeft - scrollPosition;
+            var relativeRootRight = tabDimensions.rootRight - scrollPosition - barWidth;
+            var relativeRootDelta = relativeRootLeft + relativeRootRight;
+            var leftEdgeIsCloser = relativeRootLeft < 0 || relativeRootDelta < 0;
+            var rightEdgeIsCloser = relativeRootRight > 0 || relativeRootDelta > 0;
+            if (leftEdgeIsCloser) {
+                return index - 1;
+            }
+            if (rightEdgeIsCloser) {
+                return index + 1;
+            }
+            return -1;
+        };
+        /**
+         * Determines the index of the adjacent tab closest to either edge of the Tab Bar in RTL
+         * @param index The index of the tab
+         * @param tabDimensions The dimensions of the tab
+         * @param scrollPosition The current scroll position
+         * @param barWidth The width of the tab bar
+         * @param scrollContentWidth The width of the scroller content
+         */
+        MDCTabBarFoundation.prototype.findAdjacentTabIndexClosestToEdgeRTL_ = function (index, tabDimensions, scrollPosition, barWidth, scrollContentWidth) {
+            var rootLeft = scrollContentWidth - tabDimensions.rootLeft - barWidth - scrollPosition;
+            var rootRight = scrollContentWidth - tabDimensions.rootRight - scrollPosition;
+            var rootDelta = rootLeft + rootRight;
+            var leftEdgeIsCloser = rootLeft > 0 || rootDelta > 0;
+            var rightEdgeIsCloser = rootRight < 0 || rootDelta < 0;
+            if (leftEdgeIsCloser) {
+                return index + 1;
+            }
+            if (rightEdgeIsCloser) {
+                return index - 1;
+            }
+            return -1;
+        };
+        /**
+         * Returns the key associated with a keydown event
+         * @param evt The keydown event
+         */
+        MDCTabBarFoundation.prototype.getKeyFromEvent_ = function (evt) {
+            if (ACCEPTABLE_KEYS.has(evt.key)) {
+                return evt.key;
+            }
+            return KEYCODE_MAP.get(evt.keyCode);
+        };
+        MDCTabBarFoundation.prototype.isActivationKey_ = function (key) {
+            return key === strings$8.SPACE_KEY || key === strings$8.ENTER_KEY;
+        };
+        /**
+         * Returns whether a given index is inclusively between the ends
+         * @param index The index to test
+         */
+        MDCTabBarFoundation.prototype.indexIsInRange_ = function (index) {
+            return index >= 0 && index < this.adapter_.getTabListLength();
+        };
+        /**
+         * Returns the view's RTL property
+         */
+        MDCTabBarFoundation.prototype.isRTL_ = function () {
+            return this.adapter_.isRTL();
+        };
+        /**
+         * Scrolls the tab at the given index into view for left-to-right user agents.
+         * @param index The index of the tab to scroll into view
+         */
+        MDCTabBarFoundation.prototype.scrollIntoView_ = function (index) {
+            var scrollPosition = this.adapter_.getScrollPosition();
+            var barWidth = this.adapter_.getOffsetWidth();
+            var tabDimensions = this.adapter_.getTabDimensionsAtIndex(index);
+            var nextIndex = this.findAdjacentTabIndexClosestToEdge_(index, tabDimensions, scrollPosition, barWidth);
+            if (!this.indexIsInRange_(nextIndex)) {
+                return;
+            }
+            var scrollIncrement = this.calculateScrollIncrement_(index, nextIndex, scrollPosition, barWidth);
+            this.adapter_.incrementScroll(scrollIncrement);
+        };
+        /**
+         * Scrolls the tab at the given index into view in RTL
+         * @param index The tab index to make visible
+         */
+        MDCTabBarFoundation.prototype.scrollIntoViewRTL_ = function (index) {
+            var scrollPosition = this.adapter_.getScrollPosition();
+            var barWidth = this.adapter_.getOffsetWidth();
+            var tabDimensions = this.adapter_.getTabDimensionsAtIndex(index);
+            var scrollWidth = this.adapter_.getScrollContentWidth();
+            var nextIndex = this.findAdjacentTabIndexClosestToEdgeRTL_(index, tabDimensions, scrollPosition, barWidth, scrollWidth);
+            if (!this.indexIsInRange_(nextIndex)) {
+                return;
+            }
+            var scrollIncrement = this.calculateScrollIncrementRTL_(index, nextIndex, scrollPosition, barWidth, scrollWidth);
+            this.adapter_.incrementScroll(scrollIncrement);
+        };
+        return MDCTabBarFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var strings$9 = MDCTabBarFoundation.strings;
+    var tabIdCounter = 0;
+    var MDCTabBar = /** @class */ (function (_super) {
+        __extends(MDCTabBar, _super);
+        function MDCTabBar() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCTabBar.attachTo = function (root) {
+            return new MDCTabBar(root);
+        };
+        Object.defineProperty(MDCTabBar.prototype, "focusOnActivate", {
+            set: function (focusOnActivate) {
+                this.tabList_.forEach(function (tab) { return tab.focusOnActivate = focusOnActivate; });
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCTabBar.prototype, "useAutomaticActivation", {
+            set: function (useAutomaticActivation) {
+                this.foundation_.setUseAutomaticActivation(useAutomaticActivation);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCTabBar.prototype.initialize = function (tabFactory, tabScrollerFactory) {
+            if (tabFactory === void 0) { tabFactory = function (el) { return new MDCTab(el); }; }
+            if (tabScrollerFactory === void 0) { tabScrollerFactory = function (el) { return new MDCTabScroller(el); }; }
+            this.tabList_ = this.instantiateTabs_(tabFactory);
+            this.tabScroller_ = this.instantiateTabScroller_(tabScrollerFactory);
+        };
+        MDCTabBar.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            this.handleTabInteraction_ = function (evt) { return _this.foundation_.handleTabInteraction(evt); };
+            this.handleKeyDown_ = function (evt) { return _this.foundation_.handleKeyDown(evt); };
+            this.listen(MDCTabFoundation.strings.INTERACTED_EVENT, this.handleTabInteraction_);
+            this.listen('keydown', this.handleKeyDown_);
+            for (var i = 0; i < this.tabList_.length; i++) {
+                if (this.tabList_[i].active) {
+                    this.scrollIntoView(i);
+                    break;
+                }
+            }
+        };
+        MDCTabBar.prototype.destroy = function () {
+            _super.prototype.destroy.call(this);
+            this.unlisten(MDCTabFoundation.strings.INTERACTED_EVENT, this.handleTabInteraction_);
+            this.unlisten('keydown', this.handleKeyDown_);
+            this.tabList_.forEach(function (tab) { return tab.destroy(); });
+            if (this.tabScroller_) {
+                this.tabScroller_.destroy();
+            }
+        };
+        MDCTabBar.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                scrollTo: function (scrollX) { return _this.tabScroller_.scrollTo(scrollX); },
+                incrementScroll: function (scrollXIncrement) { return _this.tabScroller_.incrementScroll(scrollXIncrement); },
+                getScrollPosition: function () { return _this.tabScroller_.getScrollPosition(); },
+                getScrollContentWidth: function () { return _this.tabScroller_.getScrollContentWidth(); },
+                getOffsetWidth: function () { return _this.root_.offsetWidth; },
+                isRTL: function () { return window.getComputedStyle(_this.root_).getPropertyValue('direction') === 'rtl'; },
+                setActiveTab: function (index) { return _this.foundation_.activateTab(index); },
+                activateTabAtIndex: function (index, clientRect) { return _this.tabList_[index].activate(clientRect); },
+                deactivateTabAtIndex: function (index) { return _this.tabList_[index].deactivate(); },
+                focusTabAtIndex: function (index) { return _this.tabList_[index].focus(); },
+                getTabIndicatorClientRectAtIndex: function (index) { return _this.tabList_[index].computeIndicatorClientRect(); },
+                getTabDimensionsAtIndex: function (index) { return _this.tabList_[index].computeDimensions(); },
+                getPreviousActiveTabIndex: function () {
+                    for (var i = 0; i < _this.tabList_.length; i++) {
+                        if (_this.tabList_[i].active) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                },
+                getFocusedTabIndex: function () {
+                    var tabElements = _this.getTabElements_();
+                    var activeElement = document.activeElement;
+                    return tabElements.indexOf(activeElement);
+                },
+                getIndexOfTabById: function (id) {
+                    for (var i = 0; i < _this.tabList_.length; i++) {
+                        if (_this.tabList_[i].id === id) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                },
+                getTabListLength: function () { return _this.tabList_.length; },
+                notifyTabActivated: function (index) {
+                    return _this.emit(strings$9.TAB_ACTIVATED_EVENT, { index: index }, true);
+                },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCTabBarFoundation(adapter);
+        };
+        /**
+         * Activates the tab at the given index
+         * @param index The index of the tab
+         */
+        MDCTabBar.prototype.activateTab = function (index) {
+            this.foundation_.activateTab(index);
+        };
+        /**
+         * Scrolls the tab at the given index into view
+         * @param index THe index of the tab
+         */
+        MDCTabBar.prototype.scrollIntoView = function (index) {
+            this.foundation_.scrollIntoView(index);
+        };
+        /**
+         * Returns all the tab elements in a nice clean array
+         */
+        MDCTabBar.prototype.getTabElements_ = function () {
+            return [].slice.call(this.root_.querySelectorAll(strings$9.TAB_SELECTOR));
+        };
+        /**
+         * Instantiates tab components on all child tab elements
+         */
+        MDCTabBar.prototype.instantiateTabs_ = function (tabFactory) {
+            return this.getTabElements_().map(function (el) {
+                el.id = el.id || "mdc-tab-" + ++tabIdCounter;
+                return tabFactory(el);
+            });
+        };
+        /**
+         * Instantiates tab scroller component on the child tab scroller element
+         */
+        MDCTabBar.prototype.instantiateTabScroller_ = function (tabScrollerFactory) {
+            var tabScrollerElement = this.root_.querySelector(strings$9.TAB_SCROLLER_SELECTOR);
+            if (tabScrollerElement) {
+                return tabScrollerFactory(tabScrollerElement);
+            }
+            return null;
+        };
+        return MDCTabBar;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /* node_modules\@smui\tab-scroller\TabScroller.svelte generated by Svelte v3.18.1 */
+    const file$i = "node_modules\\@smui\\tab-scroller\\TabScroller.svelte";
+
+    function create_fragment$k(ctx) {
+    	let div2;
+    	let div1;
+    	let div0;
+    	let useActions_action;
+    	let useActions_action_1;
+    	let useActions_action_2;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[17].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[16], null);
+
+    	let div0_levels = [
+    		{
+    			class: "mdc-tab-scroller__scroll-content " + /*scrollContent$class*/ ctx[5]
+    		},
+    		exclude(prefixFilter(/*$$props*/ ctx[8], "scrollContent$"), ["use", "class"])
+    	];
+
+    	let div0_data = {};
+
+    	for (let i = 0; i < div0_levels.length; i += 1) {
+    		div0_data = assign(div0_data, div0_levels[i]);
+    	}
+
+    	let div1_levels = [
+    		{
+    			class: "mdc-tab-scroller__scroll-area " + /*scrollArea$class*/ ctx[3]
+    		},
+    		exclude(prefixFilter(/*$$props*/ ctx[8], "scrollArea$"), ["use", "class"])
+    	];
+
+    	let div1_data = {};
+
+    	for (let i = 0; i < div1_levels.length; i += 1) {
+    		div1_data = assign(div1_data, div1_levels[i]);
+    	}
+
+    	let div2_levels = [
+    		{
+    			class: "mdc-tab-scroller " + /*className*/ ctx[1]
+    		},
+    		exclude(/*$$props*/ ctx[8], ["use", "class", "scrollArea$", "scrollContent$"])
+    	];
+
+    	let div2_data = {};
+
+    	for (let i = 0; i < div2_levels.length; i += 1) {
+    		div2_data = assign(div2_data, div2_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div2 = element("div");
+    			div1 = element("div");
+    			div0 = element("div");
+    			if (default_slot) default_slot.c();
+    			set_attributes(div0, div0_data);
+    			add_location(div0, file$i, 12, 4, 371);
+    			set_attributes(div1, div1_data);
+    			add_location(div1, file$i, 7, 2, 188);
+    			set_attributes(div2, div2_data);
+    			add_location(div2, file$i, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div2, anchor);
+    			append_dev(div2, div1);
+    			append_dev(div1, div0);
+
+    			if (default_slot) {
+    				default_slot.m(div0, null);
+    			}
+
+    			/*div2_binding*/ ctx[18](div2);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, div0, /*scrollContent$use*/ ctx[4])),
+    				action_destroyer(useActions_action_1 = useActions.call(null, div1, /*scrollArea$use*/ ctx[2])),
+    				action_destroyer(useActions_action_2 = useActions.call(null, div2, /*use*/ ctx[0])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[7].call(null, div2))
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 65536) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[16], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[16], dirty, null));
+    			}
+
+    			set_attributes(div0, get_spread_update(div0_levels, [
+    				dirty & /*scrollContent$class*/ 32 && {
+    					class: "mdc-tab-scroller__scroll-content " + /*scrollContent$class*/ ctx[5]
+    				},
+    				dirty & /*exclude, prefixFilter, $$props*/ 256 && exclude(prefixFilter(/*$$props*/ ctx[8], "scrollContent$"), ["use", "class"])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*scrollContent$use*/ 16) useActions_action.update.call(null, /*scrollContent$use*/ ctx[4]);
+
+    			set_attributes(div1, get_spread_update(div1_levels, [
+    				dirty & /*scrollArea$class*/ 8 && {
+    					class: "mdc-tab-scroller__scroll-area " + /*scrollArea$class*/ ctx[3]
+    				},
+    				dirty & /*exclude, prefixFilter, $$props*/ 256 && exclude(prefixFilter(/*$$props*/ ctx[8], "scrollArea$"), ["use", "class"])
+    			]));
+
+    			if (useActions_action_1 && is_function(useActions_action_1.update) && dirty & /*scrollArea$use*/ 4) useActions_action_1.update.call(null, /*scrollArea$use*/ ctx[2]);
+
+    			set_attributes(div2, get_spread_update(div2_levels, [
+    				dirty & /*className*/ 2 && {
+    					class: "mdc-tab-scroller " + /*className*/ ctx[1]
+    				},
+    				dirty & /*exclude, $$props*/ 256 && exclude(/*$$props*/ ctx[8], ["use", "class", "scrollArea$", "scrollContent$"])
+    			]));
+
+    			if (useActions_action_2 && is_function(useActions_action_2.update) && dirty & /*use*/ 1) useActions_action_2.update.call(null, /*use*/ ctx[0]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div2);
+    			if (default_slot) default_slot.d(detaching);
+    			/*div2_binding*/ ctx[18](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$k.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$k($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { scrollArea$use = [] } = $$props;
+    	let { scrollArea$class = "" } = $$props;
+    	let { scrollContent$use = [] } = $$props;
+    	let { scrollContent$class = "" } = $$props;
+    	let element;
+    	let tabScroller;
+    	let instantiate = getContext("SMUI:tab-scroller:instantiate");
+    	let getInstance = getContext("SMUI:tab-scroller:getInstance");
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			tabScroller = new MDCTabScroller(element);
+    		} else {
+    			tabScroller = await getInstance();
+    		}
+    	});
+
+    	onDestroy(() => {
+    		tabScroller && tabScroller.destroy();
+    	});
+
+    	function scrollTo(...args) {
+    		return tabScroller.scrollTo(...args);
+    	}
+
+    	function incrementScroll(...args) {
+    		return tabScroller.incrementScroll(...args);
+    	}
+
+    	function getScrollPosition(...args) {
+    		return tabScroller.getScrollPosition(...args);
+    	}
+
+    	function getScrollContentWidth(...args) {
+    		return tabScroller.getScrollContentWidth(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function div2_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(6, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(8, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(0, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(1, className = $$new_props.class);
+    		if ("scrollArea$use" in $$new_props) $$invalidate(2, scrollArea$use = $$new_props.scrollArea$use);
+    		if ("scrollArea$class" in $$new_props) $$invalidate(3, scrollArea$class = $$new_props.scrollArea$class);
+    		if ("scrollContent$use" in $$new_props) $$invalidate(4, scrollContent$use = $$new_props.scrollContent$use);
+    		if ("scrollContent$class" in $$new_props) $$invalidate(5, scrollContent$class = $$new_props.scrollContent$class);
+    		if ("$$scope" in $$new_props) $$invalidate(16, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			scrollArea$use,
+    			scrollArea$class,
+    			scrollContent$use,
+    			scrollContent$class,
+    			element,
+    			tabScroller,
+    			instantiate,
+    			getInstance
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(8, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(0, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(1, className = $$new_props.className);
+    		if ("scrollArea$use" in $$props) $$invalidate(2, scrollArea$use = $$new_props.scrollArea$use);
+    		if ("scrollArea$class" in $$props) $$invalidate(3, scrollArea$class = $$new_props.scrollArea$class);
+    		if ("scrollContent$use" in $$props) $$invalidate(4, scrollContent$use = $$new_props.scrollContent$use);
+    		if ("scrollContent$class" in $$props) $$invalidate(5, scrollContent$class = $$new_props.scrollContent$class);
+    		if ("element" in $$props) $$invalidate(6, element = $$new_props.element);
+    		if ("tabScroller" in $$props) tabScroller = $$new_props.tabScroller;
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		use,
+    		className,
+    		scrollArea$use,
+    		scrollArea$class,
+    		scrollContent$use,
+    		scrollContent$class,
+    		element,
+    		forwardEvents,
+    		$$props,
+    		scrollTo,
+    		incrementScroll,
+    		getScrollPosition,
+    		getScrollContentWidth,
+    		tabScroller,
+    		instantiate,
+    		getInstance,
+    		$$scope,
+    		$$slots,
+    		div2_binding
+    	];
+    }
+
+    class TabScroller extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$k, create_fragment$k, safe_not_equal, {
+    			use: 0,
+    			class: 1,
+    			scrollArea$use: 2,
+    			scrollArea$class: 3,
+    			scrollContent$use: 4,
+    			scrollContent$class: 5,
+    			scrollTo: 9,
+    			incrementScroll: 10,
+    			getScrollPosition: 11,
+    			getScrollContentWidth: 12
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "TabScroller",
+    			options,
+    			id: create_fragment$k.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollArea$use() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set scrollArea$use(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollArea$class() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set scrollArea$class(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollContent$use() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set scrollContent$use(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollContent$class() {
+    		throw new Error("<TabScroller>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set scrollContent$class(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollTo() {
+    		return this.$$.ctx[9];
+    	}
+
+    	set scrollTo(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get incrementScroll() {
+    		return this.$$.ctx[10];
+    	}
+
+    	set incrementScroll(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getScrollPosition() {
+    		return this.$$.ctx[11];
+    	}
+
+    	set getScrollPosition(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getScrollContentWidth() {
+    		return this.$$.ctx[12];
+    	}
+
+    	set getScrollContentWidth(value) {
+    		throw new Error("<TabScroller>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* node_modules\@smui\tab-bar\TabBar.svelte generated by Svelte v3.18.1 */
+    const file$j = "node_modules\\@smui\\tab-bar\\TabBar.svelte";
+    const get_default_slot_changes = dirty => ({ tab: dirty & /*tabs*/ 4 });
+    const get_default_slot_context = ctx => ({ tab: /*tab*/ ctx[28] });
+
+    function get_each_context$1(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[28] = list[i];
+    	child_ctx[30] = i;
+    	return child_ctx;
+    }
+
+    // (13:4) {#each tabs as tab, i (key(tab))}
+    function create_each_block$1(key_2, ctx) {
+    	let first;
+    	let current;
+    	const default_slot_template = /*$$slots*/ ctx[25].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[27], get_default_slot_context);
+
+    	const block = {
+    		key: key_2,
+    		first: null,
+    		c: function create() {
+    			first = empty();
+    			if (default_slot) default_slot.c();
+    			this.first = first;
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, first, anchor);
+
+    			if (default_slot) {
+    				default_slot.m(target, anchor);
+    			}
+
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope, tabs*/ 134217732) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[27], get_default_slot_context), get_slot_changes(default_slot_template, /*$$scope*/ ctx[27], dirty, get_default_slot_changes));
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(first);
+    			if (default_slot) default_slot.d(detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block$1.name,
+    		type: "each",
+    		source: "(13:4) {#each tabs as tab, i (key(tab))}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (10:2) <TabScroller     {...prefixFilter($$props, 'tabScroller$')}   >
+    function create_default_slot$4(ctx) {
+    	let each_blocks = [];
+    	let each_1_lookup = new Map();
+    	let each_1_anchor;
+    	let current;
+    	let each_value = /*tabs*/ ctx[2];
+    	const get_key = ctx => /*key*/ ctx[3](/*tab*/ ctx[28]);
+    	validate_each_keys(ctx, each_value, get_each_context$1, get_key);
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		let child_ctx = get_each_context$1(ctx, each_value, i);
+    		let key = get_key(child_ctx);
+    		each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
+    	}
+
+    	const block = {
+    		c: function create() {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			each_1_anchor = empty();
+    		},
+    		m: function mount(target, anchor) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(target, anchor);
+    			}
+
+    			insert_dev(target, each_1_anchor, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const each_value = /*tabs*/ ctx[2];
+    			group_outros();
+    			validate_each_keys(ctx, each_value, get_each_context$1, get_key);
+    			each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$1, each_1_anchor, get_each_context$1);
+    			check_outros();
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+
+    			for (let i = 0; i < each_value.length; i += 1) {
+    				transition_in(each_blocks[i]);
+    			}
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				transition_out(each_blocks[i]);
+    			}
+
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].d(detaching);
+    			}
+
+    			if (detaching) detach_dev(each_1_anchor);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot$4.name,
+    		type: "slot",
+    		source: "(10:2) <TabScroller     {...prefixFilter($$props, 'tabScroller$')}   >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$l(ctx) {
+    	let div;
+    	let useActions_action;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const tabscroller_spread_levels = [prefixFilter(/*$$props*/ ctx[7], "tabScroller$")];
+
+    	let tabscroller_props = {
+    		$$slots: { default: [create_default_slot$4] },
+    		$$scope: { ctx }
+    	};
+
+    	for (let i = 0; i < tabscroller_spread_levels.length; i += 1) {
+    		tabscroller_props = assign(tabscroller_props, tabscroller_spread_levels[i]);
+    	}
+
+    	const tabscroller = new TabScroller({ props: tabscroller_props, $$inline: true });
+
+    	let div_levels = [
+    		{
+    			class: "mdc-tab-bar " + /*className*/ ctx[1]
+    		},
+    		{ role: "tablist" },
+    		exclude(/*$$props*/ ctx[7], [
+    			"use",
+    			"class",
+    			"tabs",
+    			"key",
+    			"focusOnActivate",
+    			"useAutomaticActivation",
+    			"activeIndex",
+    			"tabScroller$"
+    		])
+    	];
+
+    	let div_data = {};
+
+    	for (let i = 0; i < div_levels.length; i += 1) {
+    		div_data = assign(div_data, div_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			create_component(tabscroller.$$.fragment);
+    			set_attributes(div, div_data);
+    			add_location(div, file$j, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			mount_component(tabscroller, div, null);
+    			/*div_binding*/ ctx[26](div);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, div, /*use*/ ctx[0])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[5].call(null, div)),
+    				listen_dev(div, "MDCTabBar:activated", /*activatedHandler*/ ctx[6], false, false, false)
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			const tabscroller_changes = (dirty & /*prefixFilter, $$props*/ 128)
+    			? get_spread_update(tabscroller_spread_levels, [get_spread_object(prefixFilter(/*$$props*/ ctx[7], "tabScroller$"))])
+    			: {};
+
+    			if (dirty & /*$$scope, tabs*/ 134217732) {
+    				tabscroller_changes.$$scope = { dirty, ctx };
+    			}
+
+    			tabscroller.$set(tabscroller_changes);
+
+    			set_attributes(div, get_spread_update(div_levels, [
+    				dirty & /*className*/ 2 && {
+    					class: "mdc-tab-bar " + /*className*/ ctx[1]
+    				},
+    				{ role: "tablist" },
+    				dirty & /*exclude, $$props*/ 128 && exclude(/*$$props*/ ctx[7], [
+    					"use",
+    					"class",
+    					"tabs",
+    					"key",
+    					"focusOnActivate",
+    					"useAutomaticActivation",
+    					"activeIndex",
+    					"tabScroller$"
+    				])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*use*/ 1) useActions_action.update.call(null, /*use*/ ctx[0]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tabscroller.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tabscroller.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			destroy_component(tabscroller);
+    			/*div_binding*/ ctx[26](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$l.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$l($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCTabBar:activated"]);
+
+    	let uninitializedValue = () => {
+    		
+    	};
+
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { tabs = [] } = $$props;
+    	let { key = tab => tab } = $$props;
+    	let { focusOnActivate = true } = $$props;
+    	let { useAutomaticActivation = true } = $$props;
+    	let { activeIndex = uninitializedValue } = $$props;
+    	let { active = uninitializedValue } = $$props;
+
+    	if (activeIndex === uninitializedValue && active === uninitializedValue) {
+    		activeIndex = 0;
+    		active = tabs[0];
+    	} else if (activeIndex === uninitializedValue) {
+    		activeIndex = tabs.indexOf(active);
+    	} else if (active === uninitializedValue) {
+    		active = tabs[activeIndex];
+    	}
+
+    	let element;
+    	let tabBar;
+    	let tabScrollerPromiseResolve;
+    	let tabScrollerPromise = new Promise(resolve => tabScrollerPromiseResolve = resolve);
+    	let tabPromiseResolve = [];
+    	let tabPromise = tabs.map((tab, i) => new Promise(resolve => tabPromiseResolve[i] = resolve));
+    	setContext("SMUI:tab-scroller:instantiate", false);
+    	setContext("SMUI:tab-scroller:getInstance", getTabScrollerInstancePromise);
+    	setContext("SMUI:tab:instantiate", false);
+    	setContext("SMUI:tab:getInstance", getTabInstancePromise);
+    	setContext("SMUI:tab:active", active);
+    	let previousActiveIndex = activeIndex;
+    	let previousActive = active;
+
+    	onMount(() => {
+    		$$invalidate(14, tabBar = new MDCTabBar(element));
+    		tabScrollerPromiseResolve(tabBar.tabScroller_);
+
+    		for (let i = 0; i < tabs.length; i++) {
+    			tabPromiseResolve[i](tabBar.tabList_[i]);
+    		}
+    	});
+
+    	onDestroy(() => {
+    		tabBar && tabBar.destroy();
+    	});
+
+    	function getTabScrollerInstancePromise() {
+    		return tabScrollerPromise;
+    	}
+
+    	function getTabInstancePromise(tabEntry) {
+    		return tabPromise[tabs.indexOf(tabEntry)];
+    	}
+
+    	function updateIndexAfterActivate(index) {
+    		$$invalidate(8, activeIndex = index);
+    		$$invalidate(17, previousActiveIndex = index);
+    		$$invalidate(9, active = tabs[index]);
+    		$$invalidate(18, previousActive = tabs[index]);
+    	}
+
+    	function activatedHandler(e) {
+    		updateIndexAfterActivate(e.detail.index);
+    	}
+
+    	function activateTab(index, ...args) {
+    		updateIndexAfterActivate(index);
+    		return tabBar.activateTab(index, ...args);
+    	}
+
+    	function scrollIntoView(...args) {
+    		return tabBar.scrollIntoView(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function div_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(4, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(0, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(1, className = $$new_props.class);
+    		if ("tabs" in $$new_props) $$invalidate(2, tabs = $$new_props.tabs);
+    		if ("key" in $$new_props) $$invalidate(3, key = $$new_props.key);
+    		if ("focusOnActivate" in $$new_props) $$invalidate(10, focusOnActivate = $$new_props.focusOnActivate);
+    		if ("useAutomaticActivation" in $$new_props) $$invalidate(11, useAutomaticActivation = $$new_props.useAutomaticActivation);
+    		if ("activeIndex" in $$new_props) $$invalidate(8, activeIndex = $$new_props.activeIndex);
+    		if ("active" in $$new_props) $$invalidate(9, active = $$new_props.active);
+    		if ("$$scope" in $$new_props) $$invalidate(27, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			uninitializedValue,
+    			use,
+    			className,
+    			tabs,
+    			key,
+    			focusOnActivate,
+    			useAutomaticActivation,
+    			activeIndex,
+    			active,
+    			element,
+    			tabBar,
+    			tabScrollerPromiseResolve,
+    			tabScrollerPromise,
+    			tabPromiseResolve,
+    			tabPromise,
+    			previousActiveIndex,
+    			previousActive
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("uninitializedValue" in $$props) uninitializedValue = $$new_props.uninitializedValue;
+    		if ("use" in $$props) $$invalidate(0, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(1, className = $$new_props.className);
+    		if ("tabs" in $$props) $$invalidate(2, tabs = $$new_props.tabs);
+    		if ("key" in $$props) $$invalidate(3, key = $$new_props.key);
+    		if ("focusOnActivate" in $$props) $$invalidate(10, focusOnActivate = $$new_props.focusOnActivate);
+    		if ("useAutomaticActivation" in $$props) $$invalidate(11, useAutomaticActivation = $$new_props.useAutomaticActivation);
+    		if ("activeIndex" in $$props) $$invalidate(8, activeIndex = $$new_props.activeIndex);
+    		if ("active" in $$props) $$invalidate(9, active = $$new_props.active);
+    		if ("element" in $$props) $$invalidate(4, element = $$new_props.element);
+    		if ("tabBar" in $$props) $$invalidate(14, tabBar = $$new_props.tabBar);
+    		if ("tabScrollerPromiseResolve" in $$props) tabScrollerPromiseResolve = $$new_props.tabScrollerPromiseResolve;
+    		if ("tabScrollerPromise" in $$props) tabScrollerPromise = $$new_props.tabScrollerPromise;
+    		if ("tabPromiseResolve" in $$props) tabPromiseResolve = $$new_props.tabPromiseResolve;
+    		if ("tabPromise" in $$props) tabPromise = $$new_props.tabPromise;
+    		if ("previousActiveIndex" in $$props) $$invalidate(17, previousActiveIndex = $$new_props.previousActiveIndex);
+    		if ("previousActive" in $$props) $$invalidate(18, previousActive = $$new_props.previousActive);
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*tabBar, focusOnActivate*/ 17408) {
+    			 if (tabBar) {
+    				$$invalidate(14, tabBar.focusOnActivate = focusOnActivate, tabBar);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*tabBar, useAutomaticActivation*/ 18432) {
+    			 if (tabBar) {
+    				$$invalidate(14, tabBar.useAutomaticActivation = useAutomaticActivation, tabBar);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*tabBar, tabs, activeIndex*/ 16644) {
+    			 if (tabBar) {
+    				$$invalidate(9, active = tabs[activeIndex]);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*tabBar, previousActiveIndex, activeIndex*/ 147712) {
+    			 if (tabBar && previousActiveIndex !== activeIndex) {
+    				activateTab(activeIndex);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*tabBar, previousActive, active, tabs*/ 279044) {
+    			 if (tabBar && previousActive !== active) {
+    				activateTab(tabs.indexOf(active));
+    			}
+    		}
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		use,
+    		className,
+    		tabs,
+    		key,
+    		element,
+    		forwardEvents,
+    		activatedHandler,
+    		$$props,
+    		activeIndex,
+    		active,
+    		focusOnActivate,
+    		useAutomaticActivation,
+    		activateTab,
+    		scrollIntoView,
+    		tabBar,
+    		tabScrollerPromiseResolve,
+    		tabPromiseResolve,
+    		previousActiveIndex,
+    		previousActive,
+    		uninitializedValue,
+    		tabScrollerPromise,
+    		tabPromise,
+    		getTabScrollerInstancePromise,
+    		getTabInstancePromise,
+    		updateIndexAfterActivate,
+    		$$slots,
+    		div_binding,
+    		$$scope
+    	];
+    }
+
+    class TabBar extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$l, create_fragment$l, safe_not_equal, {
+    			use: 0,
+    			class: 1,
+    			tabs: 2,
+    			key: 3,
+    			focusOnActivate: 10,
+    			useAutomaticActivation: 11,
+    			activeIndex: 8,
+    			active: 9,
+    			activateTab: 12,
+    			scrollIntoView: 13
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "TabBar",
+    			options,
+    			id: create_fragment$l.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get tabs() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set tabs(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get key() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set key(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get focusOnActivate() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set focusOnActivate(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get useAutomaticActivation() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set useAutomaticActivation(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get activeIndex() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set activeIndex(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get active() {
+    		throw new Error("<TabBar>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set active(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get activateTab() {
+    		return this.$$.ctx[12];
+    	}
+
+    	set activateTab(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get scrollIntoView() {
+    		return this.$$.ctx[13];
+    	}
+
+    	set scrollIntoView(value) {
+    		throw new Error("<TabBar>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    var css$5 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-menu{min-width:112px}.mdc-menu .mdc-list,.mdc-menu .mdc-list-item__graphic,.mdc-menu .mdc-list-item__meta{color:rgba(0,0,0,.87)}.mdc-menu .mdc-list-divider{margin:8px 0}.mdc-menu .mdc-list-item{user-select:none}.mdc-menu .mdc-list-item--disabled{cursor:auto}@media screen and (-ms-high-contrast:active){.mdc-menu .mdc-list-item--disabled{opacity:.38}}.mdc-menu a.mdc-list-item .mdc-list-item__graphic,.mdc-menu a.mdc-list-item .mdc-list-item__text{pointer-events:none}.mdc-menu__selection-group{padding:0;fill:currentColor}.mdc-menu__selection-group .mdc-list-item{padding-left:56px;padding-right:16px}.mdc-menu__selection-group .mdc-list-item[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-list-item{padding-left:16px;padding-right:56px}.mdc-menu__selection-group .mdc-menu__selection-group-icon{left:16px;right:auto;display:none;position:absolute;top:50%;transform:translateY(-50%)}.mdc-menu__selection-group .mdc-menu__selection-group-icon[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-menu__selection-group-icon{left:auto;right:16px}.mdc-menu-item--selected .mdc-menu__selection-group-icon{display:inline}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
+    styleInject(css$5);
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses$7 = {
+        ANCHOR: 'mdc-menu-surface--anchor',
+        ANIMATING_CLOSED: 'mdc-menu-surface--animating-closed',
+        ANIMATING_OPEN: 'mdc-menu-surface--animating-open',
+        FIXED: 'mdc-menu-surface--fixed',
+        OPEN: 'mdc-menu-surface--open',
+        ROOT: 'mdc-menu-surface',
+    };
+    // tslint:disable:object-literal-sort-keys
+    var strings$a = {
+        CLOSED_EVENT: 'MDCMenuSurface:closed',
+        OPENED_EVENT: 'MDCMenuSurface:opened',
+        FOCUSABLE_ELEMENTS: [
+            'button:not(:disabled)', '[href]:not([aria-disabled="true"])', 'input:not(:disabled)',
+            'select:not(:disabled)', 'textarea:not(:disabled)', '[tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])',
+        ].join(', '),
+    };
+    // tslint:enable:object-literal-sort-keys
+    var numbers$4 = {
+        /** Total duration of menu-surface open animation. */
+        TRANSITION_OPEN_DURATION: 120,
+        /** Total duration of menu-surface close animation. */
+        TRANSITION_CLOSE_DURATION: 75,
+        /** Margin left to the edge of the viewport when menu-surface is at maximum possible height. */
+        MARGIN_TO_EDGE: 32,
+        /** Ratio of anchor width to menu-surface width for switching from corner positioning to center positioning. */
+        ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO: 0.67,
+    };
+    /**
+     * Enum for bits in the {@see Corner) bitmap.
+     */
+    var CornerBit;
+    (function (CornerBit) {
+        CornerBit[CornerBit["BOTTOM"] = 1] = "BOTTOM";
+        CornerBit[CornerBit["CENTER"] = 2] = "CENTER";
+        CornerBit[CornerBit["RIGHT"] = 4] = "RIGHT";
+        CornerBit[CornerBit["FLIP_RTL"] = 8] = "FLIP_RTL";
+    })(CornerBit || (CornerBit = {}));
+    /**
+     * Enum for representing an element corner for positioning the menu-surface.
+     *
+     * The START constants map to LEFT if element directionality is left
+     * to right and RIGHT if the directionality is right to left.
+     * Likewise END maps to RIGHT or LEFT depending on the directionality.
+     */
+    var Corner;
+    (function (Corner) {
+        Corner[Corner["TOP_LEFT"] = 0] = "TOP_LEFT";
+        Corner[Corner["TOP_RIGHT"] = 4] = "TOP_RIGHT";
+        Corner[Corner["BOTTOM_LEFT"] = 1] = "BOTTOM_LEFT";
+        Corner[Corner["BOTTOM_RIGHT"] = 5] = "BOTTOM_RIGHT";
+        Corner[Corner["TOP_START"] = 8] = "TOP_START";
+        Corner[Corner["TOP_END"] = 12] = "TOP_END";
+        Corner[Corner["BOTTOM_START"] = 9] = "BOTTOM_START";
+        Corner[Corner["BOTTOM_END"] = 13] = "BOTTOM_END";
+    })(Corner || (Corner = {}));
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenuSurfaceFoundation = /** @class */ (function (_super) {
+        __extends(MDCMenuSurfaceFoundation, _super);
+        function MDCMenuSurfaceFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCMenuSurfaceFoundation.defaultAdapter, adapter)) || this;
+            _this.isOpen_ = false;
+            _this.isQuickOpen_ = false;
+            _this.isHoistedElement_ = false;
+            _this.isFixedPosition_ = false;
+            _this.openAnimationEndTimerId_ = 0;
+            _this.closeAnimationEndTimerId_ = 0;
+            _this.animationRequestId_ = 0;
+            _this.anchorCorner_ = Corner.TOP_START;
+            _this.anchorMargin_ = { top: 0, right: 0, bottom: 0, left: 0 };
+            _this.position_ = { x: 0, y: 0 };
+            return _this;
+        }
+        Object.defineProperty(MDCMenuSurfaceFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses$7;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "strings", {
+            get: function () {
+                return strings$a;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "numbers", {
+            get: function () {
+                return numbers$4;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "Corner", {
+            get: function () {
+                return Corner;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "defaultAdapter", {
+            /**
+             * @see {@link MDCMenuSurfaceAdapter} for typing information on parameters and return types.
+             */
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    addClass: function () { return undefined; },
+                    removeClass: function () { return undefined; },
+                    hasClass: function () { return false; },
+                    hasAnchor: function () { return false; },
+                    isElementInContainer: function () { return false; },
+                    isFocused: function () { return false; },
+                    isRtl: function () { return false; },
+                    getInnerDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getAnchorDimensions: function () { return null; },
+                    getWindowDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getBodyDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getWindowScroll: function () { return ({ x: 0, y: 0 }); },
+                    setPosition: function () { return undefined; },
+                    setMaxHeight: function () { return undefined; },
+                    setTransformOrigin: function () { return undefined; },
+                    saveFocus: function () { return undefined; },
+                    restoreFocus: function () { return undefined; },
+                    notifyClose: function () { return undefined; },
+                    notifyOpen: function () { return undefined; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCMenuSurfaceFoundation.prototype.init = function () {
+            var _a = MDCMenuSurfaceFoundation.cssClasses, ROOT = _a.ROOT, OPEN = _a.OPEN;
+            if (!this.adapter_.hasClass(ROOT)) {
+                throw new Error(ROOT + " class required in root element.");
+            }
+            if (this.adapter_.hasClass(OPEN)) {
+                this.isOpen_ = true;
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.destroy = function () {
+            clearTimeout(this.openAnimationEndTimerId_);
+            clearTimeout(this.closeAnimationEndTimerId_);
+            // Cancel any currently running animations.
+            cancelAnimationFrame(this.animationRequestId_);
+        };
+        /**
+         * @param corner Default anchor corner alignment of top-left menu surface corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.setAnchorCorner = function (corner) {
+            this.anchorCorner_ = corner;
+        };
+        /**
+         * @param margin Set of margin values from anchor.
+         */
+        MDCMenuSurfaceFoundation.prototype.setAnchorMargin = function (margin) {
+            this.anchorMargin_.top = margin.top || 0;
+            this.anchorMargin_.right = margin.right || 0;
+            this.anchorMargin_.bottom = margin.bottom || 0;
+            this.anchorMargin_.left = margin.left || 0;
+        };
+        /** Used to indicate if the menu-surface is hoisted to the body. */
+        MDCMenuSurfaceFoundation.prototype.setIsHoisted = function (isHoisted) {
+            this.isHoistedElement_ = isHoisted;
+        };
+        /** Used to set the menu-surface calculations based on a fixed position menu. */
+        MDCMenuSurfaceFoundation.prototype.setFixedPosition = function (isFixedPosition) {
+            this.isFixedPosition_ = isFixedPosition;
+        };
+        /** Sets the menu-surface position on the page. */
+        MDCMenuSurfaceFoundation.prototype.setAbsolutePosition = function (x, y) {
+            this.position_.x = this.isFinite_(x) ? x : 0;
+            this.position_.y = this.isFinite_(y) ? y : 0;
+        };
+        MDCMenuSurfaceFoundation.prototype.setQuickOpen = function (quickOpen) {
+            this.isQuickOpen_ = quickOpen;
+        };
+        MDCMenuSurfaceFoundation.prototype.isOpen = function () {
+            return this.isOpen_;
+        };
+        /**
+         * Open the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.open = function () {
+            var _this = this;
+            this.adapter_.saveFocus();
+            if (!this.isQuickOpen_) {
+                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
+            }
+            this.animationRequestId_ = requestAnimationFrame(function () {
+                _this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
+                _this.dimensions_ = _this.adapter_.getInnerDimensions();
+                _this.autoPosition_();
+                if (_this.isQuickOpen_) {
+                    _this.adapter_.notifyOpen();
+                }
+                else {
+                    _this.openAnimationEndTimerId_ = setTimeout(function () {
+                        _this.openAnimationEndTimerId_ = 0;
+                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
+                        _this.adapter_.notifyOpen();
+                    }, numbers$4.TRANSITION_OPEN_DURATION);
+                }
+            });
+            this.isOpen_ = true;
+        };
+        /**
+         * Closes the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.close = function (skipRestoreFocus) {
+            var _this = this;
+            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
+            if (!this.isQuickOpen_) {
+                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
+            }
+            requestAnimationFrame(function () {
+                _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
+                if (_this.isQuickOpen_) {
+                    _this.adapter_.notifyClose();
+                }
+                else {
+                    _this.closeAnimationEndTimerId_ = setTimeout(function () {
+                        _this.closeAnimationEndTimerId_ = 0;
+                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
+                        _this.adapter_.notifyClose();
+                    }, numbers$4.TRANSITION_CLOSE_DURATION);
+                }
+            });
+            this.isOpen_ = false;
+            if (!skipRestoreFocus) {
+                this.maybeRestoreFocus_();
+            }
+        };
+        /** Handle clicks and close if not within menu-surface element. */
+        MDCMenuSurfaceFoundation.prototype.handleBodyClick = function (evt) {
+            var el = evt.target;
+            if (this.adapter_.isElementInContainer(el)) {
+                return;
+            }
+            this.close();
+        };
+        /** Handle keys that close the surface. */
+        MDCMenuSurfaceFoundation.prototype.handleKeydown = function (evt) {
+            var keyCode = evt.keyCode, key = evt.key;
+            var isEscape = key === 'Escape' || keyCode === 27;
+            if (isEscape) {
+                this.close();
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.autoPosition_ = function () {
+            var _a;
+            // Compute measurements for autoposition methods reuse.
+            this.measurements_ = this.getAutoLayoutMeasurements_();
+            var corner = this.getOriginCorner_();
+            var maxMenuSurfaceHeight = this.getMenuSurfaceMaxHeight_(corner);
+            var verticalAlignment = this.hasBit_(corner, CornerBit.BOTTOM) ? 'bottom' : 'top';
+            var horizontalAlignment = this.hasBit_(corner, CornerBit.RIGHT) ? 'right' : 'left';
+            var horizontalOffset = this.getHorizontalOriginOffset_(corner);
+            var verticalOffset = this.getVerticalOriginOffset_(corner);
+            var _b = this.measurements_, anchorSize = _b.anchorSize, surfaceSize = _b.surfaceSize;
+            var position = (_a = {},
+                _a[horizontalAlignment] = horizontalOffset,
+                _a[verticalAlignment] = verticalOffset,
+                _a);
+            // Center align when anchor width is comparable or greater than menu surface, otherwise keep corner.
+            if (anchorSize.width / surfaceSize.width > numbers$4.ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO) {
+                horizontalAlignment = 'center';
+            }
+            // If the menu-surface has been hoisted to the body, it's no longer relative to the anchor element
+            if (this.isHoistedElement_ || this.isFixedPosition_) {
+                this.adjustPositionForHoistedElement_(position);
+            }
+            this.adapter_.setTransformOrigin(horizontalAlignment + " " + verticalAlignment);
+            this.adapter_.setPosition(position);
+            this.adapter_.setMaxHeight(maxMenuSurfaceHeight ? maxMenuSurfaceHeight + 'px' : '');
+        };
+        /**
+         * @return Measurements used to position menu surface popup.
+         */
+        MDCMenuSurfaceFoundation.prototype.getAutoLayoutMeasurements_ = function () {
+            var anchorRect = this.adapter_.getAnchorDimensions();
+            var bodySize = this.adapter_.getBodyDimensions();
+            var viewportSize = this.adapter_.getWindowDimensions();
+            var windowScroll = this.adapter_.getWindowScroll();
+            if (!anchorRect) {
+                // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
+                anchorRect = {
+                    top: this.position_.y,
+                    right: this.position_.x,
+                    bottom: this.position_.y,
+                    left: this.position_.x,
+                    width: 0,
+                    height: 0,
+                };
+                // tslint:enable:object-literal-sort-keys
+            }
+            return {
+                anchorSize: anchorRect,
+                bodySize: bodySize,
+                surfaceSize: this.dimensions_,
+                viewportDistance: {
+                    // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
+                    top: anchorRect.top,
+                    right: viewportSize.width - anchorRect.right,
+                    bottom: viewportSize.height - anchorRect.bottom,
+                    left: anchorRect.left,
+                },
+                viewportSize: viewportSize,
+                windowScroll: windowScroll,
+            };
+        };
+        /**
+         * Computes the corner of the anchor from which to animate and position the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.getOriginCorner_ = function () {
+            // Defaults: open from the top left.
+            var corner = Corner.TOP_LEFT;
+            var _a = this.measurements_, viewportDistance = _a.viewportDistance, anchorSize = _a.anchorSize, surfaceSize = _a.surfaceSize;
+            var isBottomAligned = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var availableTop = isBottomAligned ? viewportDistance.top + anchorSize.height + this.anchorMargin_.bottom
+                : viewportDistance.top + this.anchorMargin_.top;
+            var availableBottom = isBottomAligned ? viewportDistance.bottom - this.anchorMargin_.bottom
+                : viewportDistance.bottom + anchorSize.height - this.anchorMargin_.top;
+            var topOverflow = surfaceSize.height - availableTop;
+            var bottomOverflow = surfaceSize.height - availableBottom;
+            if (bottomOverflow > 0 && topOverflow < bottomOverflow) {
+                corner = this.setBit_(corner, CornerBit.BOTTOM);
+            }
+            var isRtl = this.adapter_.isRtl();
+            var isFlipRtl = this.hasBit_(this.anchorCorner_, CornerBit.FLIP_RTL);
+            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
+            var isAlignedRight = (avoidHorizontalOverlap && !isRtl) ||
+                (!avoidHorizontalOverlap && isFlipRtl && isRtl);
+            var availableLeft = isAlignedRight ? viewportDistance.left + anchorSize.width + this.anchorMargin_.right :
+                viewportDistance.left + this.anchorMargin_.left;
+            var availableRight = isAlignedRight ? viewportDistance.right - this.anchorMargin_.right :
+                viewportDistance.right + anchorSize.width - this.anchorMargin_.left;
+            var leftOverflow = surfaceSize.width - availableLeft;
+            var rightOverflow = surfaceSize.width - availableRight;
+            if ((leftOverflow < 0 && isAlignedRight && isRtl) ||
+                (avoidHorizontalOverlap && !isAlignedRight && leftOverflow < 0) ||
+                (rightOverflow > 0 && leftOverflow < rightOverflow)) {
+                corner = this.setBit_(corner, CornerBit.RIGHT);
+            }
+            return corner;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Maximum height of the menu surface, based on available space. 0 indicates should not be set.
+         */
+        MDCMenuSurfaceFoundation.prototype.getMenuSurfaceMaxHeight_ = function (corner) {
+            var viewportDistance = this.measurements_.viewportDistance;
+            var maxHeight = 0;
+            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
+            var isBottomAnchored = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var MARGIN_TO_EDGE = MDCMenuSurfaceFoundation.numbers.MARGIN_TO_EDGE;
+            // When maximum height is not specified, it is handled from CSS.
+            if (isBottomAligned) {
+                maxHeight = viewportDistance.top + this.anchorMargin_.top - MARGIN_TO_EDGE;
+                if (!isBottomAnchored) {
+                    maxHeight += this.measurements_.anchorSize.height;
+                }
+            }
+            else {
+                maxHeight =
+                    viewportDistance.bottom - this.anchorMargin_.bottom + this.measurements_.anchorSize.height - MARGIN_TO_EDGE;
+                if (isBottomAnchored) {
+                    maxHeight -= this.measurements_.anchorSize.height;
+                }
+            }
+            return maxHeight;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Horizontal offset of menu surface origin corner from corresponding anchor corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.getHorizontalOriginOffset_ = function (corner) {
+            var anchorSize = this.measurements_.anchorSize;
+            // isRightAligned corresponds to using the 'right' property on the surface.
+            var isRightAligned = this.hasBit_(corner, CornerBit.RIGHT);
+            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
+            if (isRightAligned) {
+                var rightOffset = avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.left : this.anchorMargin_.right;
+                // For hoisted or fixed elements, adjust the offset by the difference between viewport width and body width so
+                // when we calculate the right value (`adjustPositionForHoistedElement_`) based on the element position,
+                // the right property is correct.
+                if (this.isHoistedElement_ || this.isFixedPosition_) {
+                    return rightOffset - (this.measurements_.viewportSize.width - this.measurements_.bodySize.width);
+                }
+                return rightOffset;
+            }
+            return avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.right : this.anchorMargin_.left;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Vertical offset of menu surface origin corner from corresponding anchor corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.getVerticalOriginOffset_ = function (corner) {
+            var anchorSize = this.measurements_.anchorSize;
+            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
+            var avoidVerticalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var y = 0;
+            if (isBottomAligned) {
+                y = avoidVerticalOverlap ? anchorSize.height - this.anchorMargin_.top : -this.anchorMargin_.bottom;
+            }
+            else {
+                y = avoidVerticalOverlap ? (anchorSize.height + this.anchorMargin_.bottom) : this.anchorMargin_.top;
+            }
+            return y;
+        };
+        /** Calculates the offsets for positioning the menu-surface when the menu-surface has been hoisted to the body. */
+        MDCMenuSurfaceFoundation.prototype.adjustPositionForHoistedElement_ = function (position) {
+            var e_1, _a;
+            var _b = this.measurements_, windowScroll = _b.windowScroll, viewportDistance = _b.viewportDistance;
+            var props = Object.keys(position);
+            try {
+                for (var props_1 = __values(props), props_1_1 = props_1.next(); !props_1_1.done; props_1_1 = props_1.next()) {
+                    var prop = props_1_1.value;
+                    var value = position[prop] || 0;
+                    // Hoisted surfaces need to have the anchor elements location on the page added to the
+                    // position properties for proper alignment on the body.
+                    value += viewportDistance[prop];
+                    // Surfaces that are absolutely positioned need to have additional calculations for scroll
+                    // and bottom positioning.
+                    if (!this.isFixedPosition_) {
+                        if (prop === 'top') {
+                            value += windowScroll.y;
+                        }
+                        else if (prop === 'bottom') {
+                            value -= windowScroll.y;
+                        }
+                        else if (prop === 'left') {
+                            value += windowScroll.x;
+                        }
+                        else { // prop === 'right'
+                            value -= windowScroll.x;
+                        }
+                    }
+                    position[prop] = value;
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (props_1_1 && !props_1_1.done && (_a = props_1.return)) _a.call(props_1);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+        };
+        /**
+         * The last focused element when the menu surface was opened should regain focus, if the user is
+         * focused on or within the menu surface when it is closed.
+         */
+        MDCMenuSurfaceFoundation.prototype.maybeRestoreFocus_ = function () {
+            var isRootFocused = this.adapter_.isFocused();
+            var childHasFocus = document.activeElement && this.adapter_.isElementInContainer(document.activeElement);
+            if (isRootFocused || childHasFocus) {
+                this.adapter_.restoreFocus();
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.hasBit_ = function (corner, bit) {
+            return Boolean(corner & bit); // tslint:disable-line:no-bitwise
+        };
+        MDCMenuSurfaceFoundation.prototype.setBit_ = function (corner, bit) {
+            return corner | bit; // tslint:disable-line:no-bitwise
+        };
+        /**
+         * isFinite that doesn't force conversion to number type.
+         * Equivalent to Number.isFinite in ES2015, which is not supported in IE.
+         */
+        MDCMenuSurfaceFoundation.prototype.isFinite_ = function (num) {
+            return typeof num === 'number' && isFinite(num);
+        };
+        return MDCMenuSurfaceFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cachedCssTransformPropertyName_;
+    /**
+     * Returns the name of the correct transform property to use on the current browser.
+     */
+    function getTransformPropertyName(globalObj, forceRefresh) {
+        if (forceRefresh === void 0) { forceRefresh = false; }
+        if (cachedCssTransformPropertyName_ === undefined || forceRefresh) {
+            var el = globalObj.document.createElement('div');
+            cachedCssTransformPropertyName_ = 'transform' in el.style ? 'transform' : 'webkitTransform';
+        }
+        return cachedCssTransformPropertyName_;
+    }
+    //# sourceMappingURL=util.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenuSurface = /** @class */ (function (_super) {
+        __extends(MDCMenuSurface, _super);
+        function MDCMenuSurface() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCMenuSurface.attachTo = function (root) {
+            return new MDCMenuSurface(root);
+        };
+        MDCMenuSurface.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            var parentEl = this.root_.parentElement;
+            this.anchorElement = parentEl && parentEl.classList.contains(cssClasses$7.ANCHOR) ? parentEl : null;
+            if (this.root_.classList.contains(cssClasses$7.FIXED)) {
+                this.setFixedPosition(true);
+            }
+            this.handleKeydown_ = function (evt) { return _this.foundation_.handleKeydown(evt); };
+            this.handleBodyClick_ = function (evt) { return _this.foundation_.handleBodyClick(evt); };
+            this.registerBodyClickListener_ = function () { return document.body.addEventListener('click', _this.handleBodyClick_); };
+            this.deregisterBodyClickListener_ = function () { return document.body.removeEventListener('click', _this.handleBodyClick_); };
+            this.listen('keydown', this.handleKeydown_);
+            this.listen(strings$a.OPENED_EVENT, this.registerBodyClickListener_);
+            this.listen(strings$a.CLOSED_EVENT, this.deregisterBodyClickListener_);
+        };
+        MDCMenuSurface.prototype.destroy = function () {
+            this.unlisten('keydown', this.handleKeydown_);
+            this.unlisten(strings$a.OPENED_EVENT, this.registerBodyClickListener_);
+            this.unlisten(strings$a.CLOSED_EVENT, this.deregisterBodyClickListener_);
+            _super.prototype.destroy.call(this);
+        };
+        MDCMenuSurface.prototype.isOpen = function () {
+            return this.foundation_.isOpen();
+        };
+        MDCMenuSurface.prototype.open = function () {
+            this.foundation_.open();
+        };
+        MDCMenuSurface.prototype.close = function (skipRestoreFocus) {
+            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
+            this.foundation_.close(skipRestoreFocus);
+        };
+        Object.defineProperty(MDCMenuSurface.prototype, "quickOpen", {
+            set: function (quickOpen) {
+                this.foundation_.setQuickOpen(quickOpen);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Removes the menu-surface from it's current location and appends it to the
+         * body to overcome any overflow:hidden issues.
+         */
+        MDCMenuSurface.prototype.hoistMenuToBody = function () {
+            document.body.appendChild(this.root_);
+            this.setIsHoisted(true);
+        };
+        /** Sets the foundation to use page offsets for an positioning when the menu is hoisted to the body. */
+        MDCMenuSurface.prototype.setIsHoisted = function (isHoisted) {
+            this.foundation_.setIsHoisted(isHoisted);
+        };
+        /** Sets the element that the menu-surface is anchored to. */
+        MDCMenuSurface.prototype.setMenuSurfaceAnchorElement = function (element) {
+            this.anchorElement = element;
+        };
+        /** Sets the menu-surface to position: fixed. */
+        MDCMenuSurface.prototype.setFixedPosition = function (isFixed) {
+            if (isFixed) {
+                this.root_.classList.add(cssClasses$7.FIXED);
+            }
+            else {
+                this.root_.classList.remove(cssClasses$7.FIXED);
+            }
+            this.foundation_.setFixedPosition(isFixed);
+        };
+        /** Sets the absolute x/y position to position based on. Requires the menu to be hoisted. */
+        MDCMenuSurface.prototype.setAbsolutePosition = function (x, y) {
+            this.foundation_.setAbsolutePosition(x, y);
+            this.setIsHoisted(true);
+        };
+        /**
+         * @param corner Default anchor corner alignment of top-left surface corner.
+         */
+        MDCMenuSurface.prototype.setAnchorCorner = function (corner) {
+            this.foundation_.setAnchorCorner(corner);
+        };
+        MDCMenuSurface.prototype.setAnchorMargin = function (margin) {
+            this.foundation_.setAnchorMargin(margin);
+        };
+        MDCMenuSurface.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                addClass: function (className) { return _this.root_.classList.add(className); },
+                removeClass: function (className) { return _this.root_.classList.remove(className); },
+                hasClass: function (className) { return _this.root_.classList.contains(className); },
+                hasAnchor: function () { return !!_this.anchorElement; },
+                notifyClose: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.CLOSED_EVENT, {}); },
+                notifyOpen: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.OPENED_EVENT, {}); },
+                isElementInContainer: function (el) { return _this.root_.contains(el); },
+                isRtl: function () { return getComputedStyle(_this.root_).getPropertyValue('direction') === 'rtl'; },
+                setTransformOrigin: function (origin) {
+                    var propertyName = getTransformPropertyName(window) + "-origin";
+                    _this.root_.style.setProperty(propertyName, origin);
+                },
+                isFocused: function () { return document.activeElement === _this.root_; },
+                saveFocus: function () {
+                    _this.previousFocus_ = document.activeElement;
+                },
+                restoreFocus: function () {
+                    if (_this.root_.contains(document.activeElement)) {
+                        if (_this.previousFocus_ && _this.previousFocus_.focus) {
+                            _this.previousFocus_.focus();
+                        }
+                    }
+                },
+                getInnerDimensions: function () {
+                    return { width: _this.root_.offsetWidth, height: _this.root_.offsetHeight };
+                },
+                getAnchorDimensions: function () { return _this.anchorElement ? _this.anchorElement.getBoundingClientRect() : null; },
+                getWindowDimensions: function () {
+                    return { width: window.innerWidth, height: window.innerHeight };
+                },
+                getBodyDimensions: function () {
+                    return { width: document.body.clientWidth, height: document.body.clientHeight };
+                },
+                getWindowScroll: function () {
+                    return { x: window.pageXOffset, y: window.pageYOffset };
+                },
+                setPosition: function (position) {
+                    _this.root_.style.left = 'left' in position ? position.left + "px" : '';
+                    _this.root_.style.right = 'right' in position ? position.right + "px" : '';
+                    _this.root_.style.top = 'top' in position ? position.top + "px" : '';
+                    _this.root_.style.bottom = 'bottom' in position ? position.bottom + "px" : '';
+                },
+                setMaxHeight: function (height) {
+                    _this.root_.style.maxHeight = height;
+                },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCMenuSurfaceFoundation(adapter);
+        };
+        return MDCMenuSurface;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses$8 = {
+        MENU_SELECTED_LIST_ITEM: 'mdc-menu-item--selected',
+        MENU_SELECTION_GROUP: 'mdc-menu__selection-group',
+        ROOT: 'mdc-menu',
+    };
+    var strings$b = {
+        ARIA_CHECKED_ATTR: 'aria-checked',
+        ARIA_DISABLED_ATTR: 'aria-disabled',
+        CHECKBOX_SELECTOR: 'input[type="checkbox"]',
+        LIST_SELECTOR: '.mdc-list',
+        SELECTED_EVENT: 'MDCMenu:selected',
+    };
+    var numbers$5 = {
+        FOCUS_ROOT_INDEX: -1,
+    };
+    var DefaultFocusState;
+    (function (DefaultFocusState) {
+        DefaultFocusState[DefaultFocusState["NONE"] = 0] = "NONE";
+        DefaultFocusState[DefaultFocusState["LIST_ROOT"] = 1] = "LIST_ROOT";
+        DefaultFocusState[DefaultFocusState["FIRST_ITEM"] = 2] = "FIRST_ITEM";
+        DefaultFocusState[DefaultFocusState["LAST_ITEM"] = 3] = "LAST_ITEM";
+    })(DefaultFocusState || (DefaultFocusState = {}));
+    //# sourceMappingURL=constants.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenuFoundation = /** @class */ (function (_super) {
+        __extends(MDCMenuFoundation, _super);
+        function MDCMenuFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCMenuFoundation.defaultAdapter, adapter)) || this;
+            _this.closeAnimationEndTimerId_ = 0;
+            _this.defaultFocusState_ = DefaultFocusState.LIST_ROOT;
+            return _this;
+        }
+        Object.defineProperty(MDCMenuFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses$8;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuFoundation, "strings", {
+            get: function () {
+                return strings$b;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuFoundation, "numbers", {
+            get: function () {
+                return numbers$5;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuFoundation, "defaultAdapter", {
+            /**
+             * @see {@link MDCMenuAdapter} for typing information on parameters and return types.
+             */
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    addClassToElementAtIndex: function () { return undefined; },
+                    removeClassFromElementAtIndex: function () { return undefined; },
+                    addAttributeToElementAtIndex: function () { return undefined; },
+                    removeAttributeFromElementAtIndex: function () { return undefined; },
+                    elementContainsClass: function () { return false; },
+                    closeSurface: function () { return undefined; },
+                    getElementIndex: function () { return -1; },
+                    notifySelected: function () { return undefined; },
+                    getMenuItemCount: function () { return 0; },
+                    focusItemAtIndex: function () { return undefined; },
+                    focusListRoot: function () { return undefined; },
+                    getSelectedSiblingOfItemAtIndex: function () { return -1; },
+                    isSelectableItemAtIndex: function () { return false; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCMenuFoundation.prototype.destroy = function () {
+            if (this.closeAnimationEndTimerId_) {
+                clearTimeout(this.closeAnimationEndTimerId_);
+            }
+            this.adapter_.closeSurface();
+        };
+        MDCMenuFoundation.prototype.handleKeydown = function (evt) {
+            var key = evt.key, keyCode = evt.keyCode;
+            var isTab = key === 'Tab' || keyCode === 9;
+            if (isTab) {
+                this.adapter_.closeSurface(/** skipRestoreFocus */ true);
+            }
+        };
+        MDCMenuFoundation.prototype.handleItemAction = function (listItem) {
+            var _this = this;
+            var index = this.adapter_.getElementIndex(listItem);
+            if (index < 0) {
+                return;
+            }
+            this.adapter_.notifySelected({ index: index });
+            this.adapter_.closeSurface();
+            // Wait for the menu to close before adding/removing classes that affect styles.
+            this.closeAnimationEndTimerId_ = setTimeout(function () {
+                // Recompute the index in case the menu contents have changed.
+                var recomputedIndex = _this.adapter_.getElementIndex(listItem);
+                if (_this.adapter_.isSelectableItemAtIndex(recomputedIndex)) {
+                    _this.setSelectedIndex(recomputedIndex);
+                }
+            }, MDCMenuSurfaceFoundation.numbers.TRANSITION_CLOSE_DURATION);
+        };
+        MDCMenuFoundation.prototype.handleMenuSurfaceOpened = function () {
+            switch (this.defaultFocusState_) {
+                case DefaultFocusState.FIRST_ITEM:
+                    this.adapter_.focusItemAtIndex(0);
+                    break;
+                case DefaultFocusState.LAST_ITEM:
+                    this.adapter_.focusItemAtIndex(this.adapter_.getMenuItemCount() - 1);
+                    break;
+                case DefaultFocusState.NONE:
+                    // Do nothing.
+                    break;
+                default:
+                    this.adapter_.focusListRoot();
+                    break;
+            }
+        };
+        /**
+         * Sets default focus state where the menu should focus every time when menu
+         * is opened. Focuses the list root (`DefaultFocusState.LIST_ROOT`) element by
+         * default.
+         */
+        MDCMenuFoundation.prototype.setDefaultFocusState = function (focusState) {
+            this.defaultFocusState_ = focusState;
+        };
+        /**
+         * Selects the list item at `index` within the menu.
+         * @param index Index of list item within the menu.
+         */
+        MDCMenuFoundation.prototype.setSelectedIndex = function (index) {
+            this.validatedIndex_(index);
+            if (!this.adapter_.isSelectableItemAtIndex(index)) {
+                throw new Error('MDCMenuFoundation: No selection group at specified index.');
+            }
+            var prevSelectedIndex = this.adapter_.getSelectedSiblingOfItemAtIndex(index);
+            if (prevSelectedIndex >= 0) {
+                this.adapter_.removeAttributeFromElementAtIndex(prevSelectedIndex, strings$b.ARIA_CHECKED_ATTR);
+                this.adapter_.removeClassFromElementAtIndex(prevSelectedIndex, cssClasses$8.MENU_SELECTED_LIST_ITEM);
+            }
+            this.adapter_.addClassToElementAtIndex(index, cssClasses$8.MENU_SELECTED_LIST_ITEM);
+            this.adapter_.addAttributeToElementAtIndex(index, strings$b.ARIA_CHECKED_ATTR, 'true');
+        };
+        /**
+         * Sets the enabled state to isEnabled for the menu item at the given index.
+         * @param index Index of the menu item
+         * @param isEnabled The desired enabled state of the menu item.
+         */
+        MDCMenuFoundation.prototype.setEnabled = function (index, isEnabled) {
+            this.validatedIndex_(index);
+            if (isEnabled) {
+                this.adapter_.removeClassFromElementAtIndex(index, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.addAttributeToElementAtIndex(index, strings$b.ARIA_DISABLED_ATTR, 'false');
+            }
+            else {
+                this.adapter_.addClassToElementAtIndex(index, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.addAttributeToElementAtIndex(index, strings$b.ARIA_DISABLED_ATTR, 'true');
+            }
+        };
+        MDCMenuFoundation.prototype.validatedIndex_ = function (index) {
+            var menuSize = this.adapter_.getMenuItemCount();
+            var isIndexInRange = index >= 0 && index < menuSize;
+            if (!isIndexInRange) {
+                throw new Error('MDCMenuFoundation: No list item at specified index.');
+            }
+        };
+        return MDCMenuFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenu = /** @class */ (function (_super) {
+        __extends(MDCMenu, _super);
+        function MDCMenu() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCMenu.attachTo = function (root) {
+            return new MDCMenu(root);
+        };
+        MDCMenu.prototype.initialize = function (menuSurfaceFactory, listFactory) {
+            if (menuSurfaceFactory === void 0) { menuSurfaceFactory = function (el) { return new MDCMenuSurface(el); }; }
+            if (listFactory === void 0) { listFactory = function (el) { return new MDCList(el); }; }
+            this.menuSurfaceFactory_ = menuSurfaceFactory;
+            this.listFactory_ = listFactory;
+        };
+        MDCMenu.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            this.menuSurface_ = this.menuSurfaceFactory_(this.root_);
+            var list = this.root_.querySelector(strings$b.LIST_SELECTOR);
+            if (list) {
+                this.list_ = this.listFactory_(list);
+                this.list_.wrapFocus = true;
+            }
+            else {
+                this.list_ = null;
+            }
+            this.handleKeydown_ = function (evt) { return _this.foundation_.handleKeydown(evt); };
+            this.handleItemAction_ = function (evt) { return _this.foundation_.handleItemAction(_this.items[evt.detail.index]); };
+            this.handleMenuSurfaceOpened_ = function () { return _this.foundation_.handleMenuSurfaceOpened(); };
+            this.menuSurface_.listen(MDCMenuSurfaceFoundation.strings.OPENED_EVENT, this.handleMenuSurfaceOpened_);
+            this.listen('keydown', this.handleKeydown_);
+            this.listen(MDCListFoundation.strings.ACTION_EVENT, this.handleItemAction_);
+        };
+        MDCMenu.prototype.destroy = function () {
+            if (this.list_) {
+                this.list_.destroy();
+            }
+            this.menuSurface_.destroy();
+            this.menuSurface_.unlisten(MDCMenuSurfaceFoundation.strings.OPENED_EVENT, this.handleMenuSurfaceOpened_);
+            this.unlisten('keydown', this.handleKeydown_);
+            this.unlisten(MDCListFoundation.strings.ACTION_EVENT, this.handleItemAction_);
+            _super.prototype.destroy.call(this);
+        };
+        Object.defineProperty(MDCMenu.prototype, "open", {
+            get: function () {
+                return this.menuSurface_.isOpen();
+            },
+            set: function (value) {
+                if (value) {
+                    this.menuSurface_.open();
+                }
+                else {
+                    this.menuSurface_.close();
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenu.prototype, "wrapFocus", {
+            get: function () {
+                return this.list_ ? this.list_.wrapFocus : false;
+            },
+            set: function (value) {
+                if (this.list_) {
+                    this.list_.wrapFocus = value;
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenu.prototype, "items", {
+            /**
+             * Return the items within the menu. Note that this only contains the set of elements within
+             * the items container that are proper list items, and not supplemental / presentational DOM
+             * elements.
+             */
+            get: function () {
+                return this.list_ ? this.list_.listElements : [];
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenu.prototype, "quickOpen", {
+            set: function (quickOpen) {
+                this.menuSurface_.quickOpen = quickOpen;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Sets default focus state where the menu should focus every time when menu
+         * is opened. Focuses the list root (`DefaultFocusState.LIST_ROOT`) element by
+         * default.
+         * @param focusState Default focus state.
+         */
+        MDCMenu.prototype.setDefaultFocusState = function (focusState) {
+            this.foundation_.setDefaultFocusState(focusState);
+        };
+        /**
+         * @param corner Default anchor corner alignment of top-left menu corner.
+         */
+        MDCMenu.prototype.setAnchorCorner = function (corner) {
+            this.menuSurface_.setAnchorCorner(corner);
+        };
+        MDCMenu.prototype.setAnchorMargin = function (margin) {
+            this.menuSurface_.setAnchorMargin(margin);
+        };
+        /**
+         * Sets the list item as the selected row at the specified index.
+         * @param index Index of list item within menu.
+         */
+        MDCMenu.prototype.setSelectedIndex = function (index) {
+            this.foundation_.setSelectedIndex(index);
+        };
+        /**
+         * Sets the enabled state to isEnabled for the menu item at the given index.
+         * @param index Index of the menu item
+         * @param isEnabled The desired enabled state of the menu item.
+         */
+        MDCMenu.prototype.setEnabled = function (index, isEnabled) {
+            this.foundation_.setEnabled(index, isEnabled);
+        };
+        /**
+         * @return The item within the menu at the index specified.
+         */
+        MDCMenu.prototype.getOptionByIndex = function (index) {
+            var items = this.items;
+            if (index < items.length) {
+                return this.items[index];
+            }
+            else {
+                return null;
+            }
+        };
+        MDCMenu.prototype.setFixedPosition = function (isFixed) {
+            this.menuSurface_.setFixedPosition(isFixed);
+        };
+        MDCMenu.prototype.hoistMenuToBody = function () {
+            this.menuSurface_.hoistMenuToBody();
+        };
+        MDCMenu.prototype.setIsHoisted = function (isHoisted) {
+            this.menuSurface_.setIsHoisted(isHoisted);
+        };
+        MDCMenu.prototype.setAbsolutePosition = function (x, y) {
+            this.menuSurface_.setAbsolutePosition(x, y);
+        };
+        /**
+         * Sets the element that the menu-surface is anchored to.
+         */
+        MDCMenu.prototype.setAnchorElement = function (element) {
+            this.menuSurface_.anchorElement = element;
+        };
+        MDCMenu.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                addClassToElementAtIndex: function (index, className) {
+                    var list = _this.items;
+                    list[index].classList.add(className);
+                },
+                removeClassFromElementAtIndex: function (index, className) {
+                    var list = _this.items;
+                    list[index].classList.remove(className);
+                },
+                addAttributeToElementAtIndex: function (index, attr, value) {
+                    var list = _this.items;
+                    list[index].setAttribute(attr, value);
+                },
+                removeAttributeFromElementAtIndex: function (index, attr) {
+                    var list = _this.items;
+                    list[index].removeAttribute(attr);
+                },
+                elementContainsClass: function (element, className) { return element.classList.contains(className); },
+                closeSurface: function (skipRestoreFocus) { return _this.menuSurface_.close(skipRestoreFocus); },
+                getElementIndex: function (element) { return _this.items.indexOf(element); },
+                notifySelected: function (evtData) { return _this.emit(strings$b.SELECTED_EVENT, {
+                    index: evtData.index,
+                    item: _this.items[evtData.index],
+                }); },
+                getMenuItemCount: function () { return _this.items.length; },
+                focusItemAtIndex: function (index) { return _this.items[index].focus(); },
+                focusListRoot: function () { return _this.root_.querySelector(strings$b.LIST_SELECTOR).focus(); },
+                isSelectableItemAtIndex: function (index) { return !!closest(_this.items[index], "." + cssClasses$8.MENU_SELECTION_GROUP); },
+                getSelectedSiblingOfItemAtIndex: function (index) {
+                    var selectionGroupEl = closest(_this.items[index], "." + cssClasses$8.MENU_SELECTION_GROUP);
+                    var selectedItemEl = selectionGroupEl.querySelector("." + cssClasses$8.MENU_SELECTED_LIST_ITEM);
+                    return selectedItemEl ? _this.items.indexOf(selectedItemEl) : -1;
+                },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCMenuFoundation(adapter);
+        };
+        return MDCMenu;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    /* node_modules\@smui\menu-surface\MenuSurface.svelte generated by Svelte v3.18.1 */
+    const file$k = "node_modules\\@smui\\menu-surface\\MenuSurface.svelte";
+
+    function create_fragment$m(ctx) {
+    	let div;
+    	let useActions_action;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[27].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[26], null);
+
+    	let div_levels = [
+    		{
+    			class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
+    		},
+    		exclude(/*$$props*/ ctx[7], [
+    			"use",
+    			"class",
+    			"static",
+    			"anchor",
+    			"fixed",
+    			"open",
+    			"quickOpen",
+    			"anchorElement",
+    			"anchorCorner",
+    			"element"
+    		])
+    	];
+
+    	let div_data = {};
+
+    	for (let i = 0; i < div_levels.length; i += 1) {
+    		div_data = assign(div_data, div_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			if (default_slot) default_slot.c();
+    			set_attributes(div, div_data);
+    			add_location(div, file$k, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+
+    			if (default_slot) {
+    				default_slot.m(div, null);
+    			}
+
+    			/*div_binding*/ ctx[28](div);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, div, /*use*/ ctx[2])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[5].call(null, div)),
+    				listen_dev(div, "MDCMenuSurface:closed", /*updateOpen*/ ctx[6], false, false, false),
+    				listen_dev(div, "MDCMenuSurface:opened", /*updateOpen*/ ctx[6], false, false, false)
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 67108864) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[26], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[26], dirty, null));
+    			}
+
+    			set_attributes(div, get_spread_update(div_levels, [
+    				dirty & /*className, fixed, isStatic*/ 25 && {
+    					class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
+    				},
+    				dirty & /*exclude, $$props*/ 128 && exclude(/*$$props*/ ctx[7], [
+    					"use",
+    					"class",
+    					"static",
+    					"anchor",
+    					"fixed",
+    					"open",
+    					"quickOpen",
+    					"anchorElement",
+    					"anchorCorner",
+    					"element"
+    				])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*use*/ 4) useActions_action.update.call(null, /*use*/ ctx[2]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			if (default_slot) default_slot.d(detaching);
+    			/*div_binding*/ ctx[28](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$m.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$m($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCMenuSurface:closed", "MDCMenuSurface:opened"]);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { static: isStatic = false } = $$props;
+    	let { anchor = true } = $$props;
+    	let { fixed = false } = $$props;
+    	let { open = isStatic } = $$props;
+    	let { quickOpen = false } = $$props;
+    	let { anchorElement = null } = $$props;
+    	let { anchorCorner = null } = $$props;
+    	let { element = undefined } = $$props; // This is exported because Menu needs it.
+    	let menuSurface;
+    	let instantiate = getContext("SMUI:menu-surface:instantiate");
+    	let getInstance = getContext("SMUI:menu-surface:getInstance");
+    	setContext("SMUI:list:role", "menu");
+    	setContext("SMUI:list:item:role", "menuitem");
+    	let oldFixed = null;
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			$$invalidate(22, menuSurface = new MDCMenuSurface(element));
+    		} else {
+    			$$invalidate(22, menuSurface = await getInstance());
+    		}
+    	});
+
+    	onDestroy(() => {
+    		if (anchor) {
+    			element && element.parentNode.classList.remove("mdc-menu-surface--anchor");
+    		}
+
+    		let isHoisted = false;
+
+    		if (menuSurface) {
+    			isHoisted = menuSurface.foundation_.isHoistedElement_;
+
+    			if (instantiate !== false) {
+    				menuSurface.destroy();
+    			}
+    		}
+
+    		if (isHoisted) {
+    			element.parentNode.removeChild(element);
+    		}
+    	});
+
+    	function updateOpen() {
+    		if (menuSurface) {
+    			if (isStatic) {
+    				$$invalidate(8, open = true);
+    			} else {
+    				$$invalidate(8, open = menuSurface.isOpen());
+    			}
+    		}
+    	}
+
+    	function setOpen(value) {
+    		$$invalidate(8, open = value);
+    	}
+
+    	function setAnchorCorner(...args) {
+    		return menuSurface.setAnchorCorner(...args);
+    	}
+
+    	function setAnchorMargin(...args) {
+    		return menuSurface.setAnchorMargin(...args);
+    	}
+
+    	function setFixedPosition(isFixed, ...args) {
+    		$$invalidate(0, fixed = isFixed);
+    		return menuSurface.setFixedPosition(isFixed, ...args);
+    	}
+
+    	function setAbsolutePosition(...args) {
+    		return menuSurface.setAbsolutePosition(...args);
+    	}
+
+    	function setMenuSurfaceAnchorElement(...args) {
+    		return menuSurface.setMenuSurfaceAnchorElement(...args);
+    	}
+
+    	function hoistMenuToBody(...args) {
+    		return menuSurface.hoistMenuToBody(...args);
+    	}
+
+    	function setIsHoisted(...args) {
+    		return menuSurface.setIsHoisted(...args);
+    	}
+
+    	function getDefaultFoundation(...args) {
+    		return menuSurface.getDefaultFoundation(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function div_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(1, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(2, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(3, className = $$new_props.class);
+    		if ("static" in $$new_props) $$invalidate(4, isStatic = $$new_props.static);
+    		if ("anchor" in $$new_props) $$invalidate(10, anchor = $$new_props.anchor);
+    		if ("fixed" in $$new_props) $$invalidate(0, fixed = $$new_props.fixed);
+    		if ("open" in $$new_props) $$invalidate(8, open = $$new_props.open);
+    		if ("quickOpen" in $$new_props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
+    		if ("anchorElement" in $$new_props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
+    		if ("anchorCorner" in $$new_props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
+    		if ("element" in $$new_props) $$invalidate(1, element = $$new_props.element);
+    		if ("$$scope" in $$new_props) $$invalidate(26, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			isStatic,
+    			anchor,
+    			fixed,
+    			open,
+    			quickOpen,
+    			anchorElement,
+    			anchorCorner,
+    			element,
+    			menuSurface,
+    			instantiate,
+    			getInstance,
+    			oldFixed
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(2, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(3, className = $$new_props.className);
+    		if ("isStatic" in $$props) $$invalidate(4, isStatic = $$new_props.isStatic);
+    		if ("anchor" in $$props) $$invalidate(10, anchor = $$new_props.anchor);
+    		if ("fixed" in $$props) $$invalidate(0, fixed = $$new_props.fixed);
+    		if ("open" in $$props) $$invalidate(8, open = $$new_props.open);
+    		if ("quickOpen" in $$props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
+    		if ("anchorElement" in $$props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
+    		if ("anchorCorner" in $$props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
+    		if ("element" in $$props) $$invalidate(1, element = $$new_props.element);
+    		if ("menuSurface" in $$props) $$invalidate(22, menuSurface = $$new_props.menuSurface);
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    		if ("oldFixed" in $$props) $$invalidate(23, oldFixed = $$new_props.oldFixed);
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*element, anchor*/ 1026) {
+    			 if (element && anchor && !element.parentNode.classList.contains("mdc-menu-surface--anchor")) {
+    				element.parentNode.classList.add("mdc-menu-surface--anchor");
+    				$$invalidate(9, anchorElement = element.parentNode);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, quickOpen*/ 4196352) {
+    			 if (menuSurface && menuSurface.quickOpen !== quickOpen) {
+    				$$invalidate(22, menuSurface.quickOpen = quickOpen, menuSurface);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, anchorElement*/ 4194816) {
+    			 if (menuSurface && menuSurface.anchorElement !== anchorElement) {
+    				$$invalidate(22, menuSurface.anchorElement = anchorElement, menuSurface);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, open*/ 4194560) {
+    			 if (menuSurface && menuSurface.isOpen() !== open) {
+    				if (open) {
+    					menuSurface.open();
+    				} else {
+    					menuSurface.close();
+    				}
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, oldFixed, fixed*/ 12582913) {
+    			 if (menuSurface && oldFixed !== fixed) {
+    				menuSurface.setFixedPosition(fixed);
+    				$$invalidate(23, oldFixed = fixed);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, anchorCorner*/ 4198400) {
+    			 if (menuSurface && anchorCorner != null) {
+    				if (Corner.hasOwnProperty(anchorCorner)) {
+    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
+    				} else if (CornerBit.hasOwnProperty(anchorCorner)) {
+    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
+    				} else {
+    					menuSurface.setAnchorCorner(anchorCorner);
+    				}
+    			}
+    		}
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		fixed,
+    		element,
+    		use,
+    		className,
+    		isStatic,
+    		forwardEvents,
+    		updateOpen,
+    		$$props,
+    		open,
+    		anchorElement,
+    		anchor,
+    		quickOpen,
+    		anchorCorner,
+    		setOpen,
+    		setAnchorCorner,
+    		setAnchorMargin,
+    		setFixedPosition,
+    		setAbsolutePosition,
+    		setMenuSurfaceAnchorElement,
+    		hoistMenuToBody,
+    		setIsHoisted,
+    		getDefaultFoundation,
+    		menuSurface,
+    		oldFixed,
+    		instantiate,
+    		getInstance,
+    		$$scope,
+    		$$slots,
+    		div_binding
+    	];
+    }
+
+    class MenuSurface extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance$m, create_fragment$m, safe_not_equal, {
+    			use: 2,
+    			class: 3,
+    			static: 4,
+    			anchor: 10,
+    			fixed: 0,
+    			open: 8,
+    			quickOpen: 11,
+    			anchorElement: 9,
+    			anchorCorner: 12,
+    			element: 1,
+    			setOpen: 13,
+    			setAnchorCorner: 14,
+    			setAnchorMargin: 15,
+    			setFixedPosition: 16,
+    			setAbsolutePosition: 17,
+    			setMenuSurfaceAnchorElement: 18,
+    			hoistMenuToBody: 19,
+    			setIsHoisted: 20,
+    			getDefaultFoundation: 21
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "MenuSurface",
+    			options,
+    			id: create_fragment$m.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get static() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set static(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchor() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchor(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get fixed() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set fixed(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get open() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set open(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get quickOpen() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set quickOpen(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchorElement() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchorElement(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchorCorner() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchorCorner(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get element() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set element(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setOpen() {
+    		return this.$$.ctx[13];
+    	}
+
+    	set setOpen(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorCorner() {
+    		return this.$$.ctx[14];
+    	}
+
+    	set setAnchorCorner(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorMargin() {
+    		return this.$$.ctx[15];
+    	}
+
+    	set setAnchorMargin(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setFixedPosition() {
+    		return this.$$.ctx[16];
+    	}
+
+    	set setFixedPosition(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAbsolutePosition() {
+    		return this.$$.ctx[17];
+    	}
+
+    	set setAbsolutePosition(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setMenuSurfaceAnchorElement() {
+    		return this.$$.ctx[18];
+    	}
+
+    	set setMenuSurfaceAnchorElement(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get hoistMenuToBody() {
+    		return this.$$.ctx[19];
+    	}
+
+    	set hoistMenuToBody(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setIsHoisted() {
+    		return this.$$.ctx[20];
+    	}
+
+    	set setIsHoisted(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getDefaultFoundation() {
+    		return this.$$.ctx[21];
+    	}
+
+    	set getDefaultFoundation(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    /* node_modules\@smui\menu\Menu.svelte generated by Svelte v3.18.1 */
+
+    // (1:0) <MenuSurface   bind:element   use={[forwardEvents, ...use]}   class="mdc-menu {className}"   on:MDCMenu:selected={updateOpen}   on:MDCMenuSurface:closed={updateOpen} on:MDCMenuSurface:opened={updateOpen}   {...exclude($$props, ['use', 'class', 'wrapFocus'])} >
+    function create_default_slot$5(ctx) {
+    	let current;
+    	const default_slot_template = /*$$slots*/ ctx[34].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[36], null);
+
+    	const block = {
+    		c: function create() {
+    			if (default_slot) default_slot.c();
+    		},
+    		m: function mount(target, anchor) {
+    			if (default_slot) {
+    				default_slot.m(target, anchor);
+    			}
+
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			if (default_slot && default_slot.p && dirty[1] & /*$$scope*/ 32) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[36], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[36], dirty, null));
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (default_slot) default_slot.d(detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot$5.name,
+    		type: "slot",
+    		source: "(1:0) <MenuSurface   bind:element   use={[forwardEvents, ...use]}   class=\\\"mdc-menu {className}\\\"   on:MDCMenu:selected={updateOpen}   on:MDCMenuSurface:closed={updateOpen} on:MDCMenuSurface:opened={updateOpen}   {...exclude($$props, ['use', 'class', 'wrapFocus'])} >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$n(ctx) {
+    	let updating_element;
+    	let current;
+
+    	const menusurface_spread_levels = [
+    		{
+    			use: [/*forwardEvents*/ ctx[3], .../*use*/ ctx[0]]
+    		},
+    		{
+    			class: "mdc-menu " + /*className*/ ctx[1]
+    		},
+    		exclude(/*$$props*/ ctx[5], ["use", "class", "wrapFocus"])
+    	];
+
+    	function menusurface_element_binding(value) {
+    		/*menusurface_element_binding*/ ctx[35].call(null, value);
+    	}
+
+    	let menusurface_props = {
+    		$$slots: { default: [create_default_slot$5] },
+    		$$scope: { ctx }
+    	};
+
+    	for (let i = 0; i < menusurface_spread_levels.length; i += 1) {
+    		menusurface_props = assign(menusurface_props, menusurface_spread_levels[i]);
+    	}
+
+    	if (/*element*/ ctx[2] !== void 0) {
+    		menusurface_props.element = /*element*/ ctx[2];
+    	}
+
+    	const menusurface = new MenuSurface({ props: menusurface_props, $$inline: true });
+    	binding_callbacks.push(() => bind(menusurface, "element", menusurface_element_binding));
+    	menusurface.$on("MDCMenu:selected", /*updateOpen*/ ctx[4]);
+    	menusurface.$on("MDCMenuSurface:closed", /*updateOpen*/ ctx[4]);
+    	menusurface.$on("MDCMenuSurface:opened", /*updateOpen*/ ctx[4]);
+
+    	const block = {
+    		c: function create() {
+    			create_component(menusurface.$$.fragment);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(menusurface, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const menusurface_changes = (dirty[0] & /*forwardEvents, use, className, $$props*/ 43)
+    			? get_spread_update(menusurface_spread_levels, [
+    					dirty[0] & /*forwardEvents, use*/ 9 && {
+    						use: [/*forwardEvents*/ ctx[3], .../*use*/ ctx[0]]
+    					},
+    					dirty[0] & /*className*/ 2 && {
+    						class: "mdc-menu " + /*className*/ ctx[1]
+    					},
+    					dirty[0] & /*$$props*/ 32 && get_spread_object(exclude(/*$$props*/ ctx[5], ["use", "class", "wrapFocus"]))
+    				])
+    			: {};
+
+    			if (dirty[1] & /*$$scope*/ 32) {
+    				menusurface_changes.$$scope = { dirty, ctx };
+    			}
+
+    			if (!updating_element && dirty[0] & /*element*/ 4) {
+    				updating_element = true;
+    				menusurface_changes.element = /*element*/ ctx[2];
+    				add_flush_callback(() => updating_element = false);
+    			}
+
+    			menusurface.$set(menusurface_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(menusurface.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(menusurface.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(menusurface, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$n.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$n($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCMenu:selected", "MDCMenuSurface:closed", "MDCMenuSurface:opened"]);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { static: isStatic = false } = $$props;
+    	let { open = isStatic } = $$props; // Purposely omitted from the exclude call above.
+    	let { quickOpen = false } = $$props; // Purposely omitted from the exclude call above.
+    	let { anchorCorner = null } = $$props; // Purposely omitted from the exclude call above.
+    	let { wrapFocus = false } = $$props;
+    	let element;
+    	let menu;
+    	let instantiate = getContext("SMUI:menu:instantiate");
+    	let getInstance = getContext("SMUI:menu:getInstance");
+    	let menuSurfacePromiseResolve;
+    	let menuSurfacePromise = new Promise(resolve => menuSurfacePromiseResolve = resolve);
+    	let listPromiseResolve;
+    	let listPromise = new Promise(resolve => listPromiseResolve = resolve);
+    	setContext("SMUI:menu-surface:instantiate", false);
+    	setContext("SMUI:menu-surface:getInstance", getMenuSurfaceInstancePromise);
+    	setContext("SMUI:list:instantiate", false);
+    	setContext("SMUI:list:getInstance", getListInstancePromise);
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			$$invalidate(25, menu = new MDCMenu(element));
+    		} else {
+    			$$invalidate(25, menu = await getInstance());
+    		}
+
+    		menuSurfacePromiseResolve(menu.menuSurface_);
+    		listPromiseResolve(menu.list_);
+    	});
+
+    	onDestroy(() => {
+    		if (instantiate !== false) {
+    			menu && menu.destroy();
+    		}
+    	});
+
+    	function getMenuSurfaceInstancePromise() {
+    		return menuSurfacePromise;
+    	}
+
+    	function getListInstancePromise() {
+    		return listPromise;
+    	}
+
+    	function updateOpen() {
+    		$$invalidate(6, open = menu.open);
+    	}
+
+    	function setOpen(value) {
+    		$$invalidate(6, open = value);
+    	}
+
+    	function getItems() {
+    		return menu.items;
+    	}
+
+    	function setDefaultFocusState(...args) {
+    		return menu.setDefaultFocusState(...args);
+    	}
+
+    	function setAnchorCorner(...args) {
+    		return menu.setAnchorCorner(...args);
+    	}
+
+    	function setAnchorMargin(...args) {
+    		return menu.setAnchorMargin(...args);
+    	}
+
+    	function setSelectedIndex(...args) {
+    		return menu.setSelectedIndex(...args);
+    	}
+
+    	function setEnabled(...args) {
+    		return menu.setEnabled(...args);
+    	}
+
+    	function getOptionByIndex(...args) {
+    		return menu.getOptionByIndex(...args);
+    	}
+
+    	function setFixedPosition(...args) {
+    		return menu.setFixedPosition(...args);
+    	}
+
+    	function hoistMenuToBody(...args) {
+    		return menu.hoistMenuToBody(...args);
+    	}
+
+    	function setIsHoisted(...args) {
+    		return menu.setIsHoisted(...args);
+    	}
+
+    	function setAbsolutePosition(...args) {
+    		return menu.setAbsolutePosition(...args);
+    	}
+
+    	function setAnchorElement(...args) {
+    		return menu.setAnchorElement(...args);
+    	}
+
+    	function getDefaultFoundation(...args) {
+    		return menu.getDefaultFoundation(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function menusurface_element_binding(value) {
+    		element = value;
+    		$$invalidate(2, element);
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(5, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(0, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(1, className = $$new_props.class);
+    		if ("static" in $$new_props) $$invalidate(7, isStatic = $$new_props.static);
+    		if ("open" in $$new_props) $$invalidate(6, open = $$new_props.open);
+    		if ("quickOpen" in $$new_props) $$invalidate(8, quickOpen = $$new_props.quickOpen);
+    		if ("anchorCorner" in $$new_props) $$invalidate(9, anchorCorner = $$new_props.anchorCorner);
+    		if ("wrapFocus" in $$new_props) $$invalidate(10, wrapFocus = $$new_props.wrapFocus);
+    		if ("$$scope" in $$new_props) $$invalidate(36, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			isStatic,
+    			open,
+    			quickOpen,
+    			anchorCorner,
+    			wrapFocus,
+    			element,
+    			menu,
+    			instantiate,
+    			getInstance,
+    			menuSurfacePromiseResolve,
+    			menuSurfacePromise,
+    			listPromiseResolve,
+    			listPromise
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(5, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(0, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(1, className = $$new_props.className);
+    		if ("isStatic" in $$props) $$invalidate(7, isStatic = $$new_props.isStatic);
+    		if ("open" in $$props) $$invalidate(6, open = $$new_props.open);
+    		if ("quickOpen" in $$props) $$invalidate(8, quickOpen = $$new_props.quickOpen);
+    		if ("anchorCorner" in $$props) $$invalidate(9, anchorCorner = $$new_props.anchorCorner);
+    		if ("wrapFocus" in $$props) $$invalidate(10, wrapFocus = $$new_props.wrapFocus);
+    		if ("element" in $$props) $$invalidate(2, element = $$new_props.element);
+    		if ("menu" in $$props) $$invalidate(25, menu = $$new_props.menu);
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    		if ("menuSurfacePromiseResolve" in $$props) menuSurfacePromiseResolve = $$new_props.menuSurfacePromiseResolve;
+    		if ("menuSurfacePromise" in $$props) menuSurfacePromise = $$new_props.menuSurfacePromise;
+    		if ("listPromiseResolve" in $$props) listPromiseResolve = $$new_props.listPromiseResolve;
+    		if ("listPromise" in $$props) listPromise = $$new_props.listPromise;
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty[0] & /*menu, open, isStatic*/ 33554624) {
+    			 if (menu && menu.open !== open) {
+    				if (isStatic) {
+    					$$invalidate(6, open = true);
+    				}
+
+    				$$invalidate(25, menu.open = open, menu);
+    			}
+    		}
+
+    		if ($$self.$$.dirty[0] & /*menu, wrapFocus*/ 33555456) {
+    			 if (menu && menu.wrapFocus !== wrapFocus) {
+    				$$invalidate(25, menu.wrapFocus = wrapFocus, menu);
+    			}
+    		}
+
+    		if ($$self.$$.dirty[0] & /*menu, quickOpen*/ 33554688) {
+    			 if (menu) {
+    				$$invalidate(25, menu.quickOpen = quickOpen, menu);
+    			}
+    		}
+
+    		if ($$self.$$.dirty[0] & /*menu, anchorCorner*/ 33554944) {
+    			 if (menu && anchorCorner != null) {
+    				if (Corner.hasOwnProperty(anchorCorner)) {
+    					menu.setAnchorCorner(Corner[anchorCorner]);
+    				} else if (CornerBit.hasOwnProperty(anchorCorner)) {
+    					menu.setAnchorCorner(Corner[anchorCorner]);
+    				} else {
+    					menu.setAnchorCorner(anchorCorner);
+    				}
+    			}
+    		}
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		use,
+    		className,
+    		element,
+    		forwardEvents,
+    		updateOpen,
+    		$$props,
+    		open,
+    		isStatic,
+    		quickOpen,
+    		anchorCorner,
+    		wrapFocus,
+    		setOpen,
+    		getItems,
+    		setDefaultFocusState,
+    		setAnchorCorner,
+    		setAnchorMargin,
+    		setSelectedIndex,
+    		setEnabled,
+    		getOptionByIndex,
+    		setFixedPosition,
+    		hoistMenuToBody,
+    		setIsHoisted,
+    		setAbsolutePosition,
+    		setAnchorElement,
+    		getDefaultFoundation,
+    		menu,
+    		menuSurfacePromiseResolve,
+    		listPromiseResolve,
+    		instantiate,
+    		getInstance,
+    		menuSurfacePromise,
+    		listPromise,
+    		getMenuSurfaceInstancePromise,
+    		getListInstancePromise,
+    		$$slots,
+    		menusurface_element_binding,
+    		$$scope
+    	];
+    }
+
+    class Menu extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(
+    			this,
+    			options,
+    			instance$n,
+    			create_fragment$n,
+    			safe_not_equal,
+    			{
+    				use: 0,
+    				class: 1,
+    				static: 7,
+    				open: 6,
+    				quickOpen: 8,
+    				anchorCorner: 9,
+    				wrapFocus: 10,
+    				setOpen: 11,
+    				getItems: 12,
+    				setDefaultFocusState: 13,
+    				setAnchorCorner: 14,
+    				setAnchorMargin: 15,
+    				setSelectedIndex: 16,
+    				setEnabled: 17,
+    				getOptionByIndex: 18,
+    				setFixedPosition: 19,
+    				hoistMenuToBody: 20,
+    				setIsHoisted: 21,
+    				setAbsolutePosition: 22,
+    				setAnchorElement: 23,
+    				getDefaultFoundation: 24
+    			},
+    			[-1, -1]
+    		);
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Menu",
+    			options,
+    			id: create_fragment$n.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get static() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set static(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get open() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set open(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get quickOpen() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set quickOpen(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchorCorner() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchorCorner(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get wrapFocus() {
+    		throw new Error("<Menu>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set wrapFocus(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setOpen() {
+    		return this.$$.ctx[11];
+    	}
+
+    	set setOpen(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getItems() {
+    		return this.$$.ctx[12];
+    	}
+
+    	set getItems(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setDefaultFocusState() {
+    		return this.$$.ctx[13];
+    	}
+
+    	set setDefaultFocusState(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorCorner() {
+    		return this.$$.ctx[14];
+    	}
+
+    	set setAnchorCorner(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorMargin() {
+    		return this.$$.ctx[15];
+    	}
+
+    	set setAnchorMargin(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setSelectedIndex() {
+    		return this.$$.ctx[16];
+    	}
+
+    	set setSelectedIndex(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setEnabled() {
+    		return this.$$.ctx[17];
+    	}
+
+    	set setEnabled(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getOptionByIndex() {
+    		return this.$$.ctx[18];
+    	}
+
+    	set getOptionByIndex(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setFixedPosition() {
+    		return this.$$.ctx[19];
+    	}
+
+    	set setFixedPosition(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get hoistMenuToBody() {
+    		return this.$$.ctx[20];
+    	}
+
+    	set hoistMenuToBody(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setIsHoisted() {
+    		return this.$$.ctx[21];
+    	}
+
+    	set setIsHoisted(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAbsolutePosition() {
+    		return this.$$.ctx[22];
+    	}
+
+    	set setAbsolutePosition(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorElement() {
+    		return this.$$.ctx[23];
+    	}
+
+    	set setAnchorElement(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getDefaultFoundation() {
+    		return this.$$.ctx[24];
+    	}
+
+    	set getDefaultFoundation(value) {
+    		throw new Error("<Menu>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    classAdderBuilder({
+      class: 'mdc-menu__selection-group-icon',
+      component: Graphic,
+      contexts: {}
+    });
+
+    var css$6 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
+    styleInject(css$6);
+
+    function Anchor(node) {
+      node.classList.add('mdc-menu-surface--anchor');
+
+      return {
+        destroy() {
+          node.classList.remove('mdc-menu-surface--anchor');
+        }
+      }
+    }
+
+    /* src\components\emoji.svelte generated by Svelte v3.18.1 */
+
+    const file$l = "src\\components\\emoji.svelte";
+
+    // (64:6) <Button on:click={() => menu2.setOpen(true)}>
+    function create_default_slot_5$1(ctx) {
+    	let img;
+    	let img_src_value;
+
+    	const block = {
+    		c: function create() {
+    			img = element("img");
+    			if (img.src !== (img_src_value = "/icons8-batman-emoji-30.png")) attr_dev(img, "src", img_src_value);
+    			attr_dev(img, "alt", "Emoji");
+    			add_location(img, file$l, 63, 51, 1413);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, img, anchor);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(img);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_5$1.name,
+    		type: "slot",
+    		source: "(64:6) <Button on:click={() => menu2.setOpen(true)}>",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (69:16) <Icon class="material-icons" >
+    function create_default_slot_4$1(ctx) {
+    	let t_value = /*tab*/ ctx[11].icon + "";
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			t = text(t_value);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, t, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*tab*/ 2048 && t_value !== (t_value = /*tab*/ ctx[11].icon + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(t);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_4$1.name,
+    		type: "slot",
+    		source: "(69:16) <Icon class=\\\"material-icons\\\" >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (68:14) <Tab {tab} stacked={false} indicatorSpanOnlyContent={false} tabIndicator$transition="fade" >
+    function create_default_slot_3$1(ctx) {
+    	let current;
+
+    	const icon = new Icon({
+    			props: {
+    				class: "material-icons",
+    				$$slots: { default: [create_default_slot_4$1] },
+    				$$scope: { ctx }
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(icon.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(icon, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const icon_changes = {};
+
+    			if (dirty & /*$$scope, tab*/ 6144) {
+    				icon_changes.$$scope = { dirty, ctx };
+    			}
+
+    			icon.$set(icon_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(icon.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(icon.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(icon, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_3$1.name,
+    		type: "slot",
+    		source: "(68:14) <Tab {tab} stacked={false} indicatorSpanOnlyContent={false} tabIndicator$transition=\\\"fade\\\" >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (67:12) <TabBar tabs={keyedTabs} let:tab key={tab => tab.k} bind:active={keyedTabsActive} >
+    function create_default_slot_2$1(ctx) {
+    	let current;
+
+    	const tab = new Tab({
+    			props: {
+    				tab: /*tab*/ ctx[11],
+    				stacked: false,
+    				indicatorSpanOnlyContent: false,
+    				tabIndicator$transition: "fade",
+    				$$slots: { default: [create_default_slot_3$1] },
+    				$$scope: { ctx }
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(tab.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(tab, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const tab_changes = {};
+    			if (dirty & /*tab*/ 2048) tab_changes.tab = /*tab*/ ctx[11];
+
+    			if (dirty & /*$$scope, tab*/ 6144) {
+    				tab_changes.$$scope = { dirty, ctx };
+    			}
+
+    			tab.$set(tab_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tab.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tab.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(tab, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_2$1.name,
+    		type: "slot",
+    		source: "(67:12) <TabBar tabs={keyedTabs} let:tab key={tab => tab.k} bind:active={keyedTabsActive} >",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (66:8) <List>
+    function create_default_slot_1$2(ctx) {
+    	let updating_active;
+    	let t;
+    	let current;
+
+    	function tabbar_active_binding(value) {
+    		/*tabbar_active_binding*/ ctx[6].call(null, value);
+    	}
+
+    	let tabbar_props = {
+    		tabs: /*keyedTabs*/ ctx[4],
+    		key: func,
+    		$$slots: {
+    			default: [
+    				create_default_slot_2$1,
+    				({ tab }) => ({ 11: tab }),
+    				({ tab }) => tab ? 2048 : 0
+    			]
+    		},
+    		$$scope: { ctx }
+    	};
+
+    	if (/*keyedTabsActive*/ ctx[2] !== void 0) {
+    		tabbar_props.active = /*keyedTabsActive*/ ctx[2];
+    	}
+
+    	const tabbar = new TabBar({ props: tabbar_props, $$inline: true });
+    	binding_callbacks.push(() => bind(tabbar, "active", tabbar_active_binding));
+
+    	const emojitab = new Emojitab({
+    			props: { emoji: /*Filterlist*/ ctx[3] },
+    			$$inline: true
+    		});
+
+    	emojitab.$on("emojiClicked", /*emojiClicked_handler*/ ctx[7]);
+
+    	const block = {
+    		c: function create() {
+    			create_component(tabbar.$$.fragment);
+    			t = space();
+    			create_component(emojitab.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(tabbar, target, anchor);
+    			insert_dev(target, t, anchor);
+    			mount_component(emojitab, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const tabbar_changes = {};
+
+    			if (dirty & /*$$scope, tab*/ 6144) {
+    				tabbar_changes.$$scope = { dirty, ctx };
+    			}
+
+    			if (!updating_active && dirty & /*keyedTabsActive*/ 4) {
+    				updating_active = true;
+    				tabbar_changes.active = /*keyedTabsActive*/ ctx[2];
+    				add_flush_callback(() => updating_active = false);
+    			}
+
+    			tabbar.$set(tabbar_changes);
+    			const emojitab_changes = {};
+    			if (dirty & /*Filterlist*/ 8) emojitab_changes.emoji = /*Filterlist*/ ctx[3];
+    			emojitab.$set(emojitab_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(tabbar.$$.fragment, local);
+    			transition_in(emojitab.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(tabbar.$$.fragment, local);
+    			transition_out(emojitab.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(tabbar, detaching);
+    			if (detaching) detach_dev(t);
+    			destroy_component(emojitab, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_1$2.name,
+    		type: "slot",
+    		source: "(66:8) <List>",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (65:6) <Menu bind:this={menu2} anchor={true} bind:anchorElement={anchor2} anchorCorner="BOTTOM_RIGHT">
+    function create_default_slot$6(ctx) {
+    	let current;
+
+    	const list = new List({
+    			props: {
+    				$$slots: { default: [create_default_slot_1$2] },
+    				$$scope: { ctx }
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(list.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(list, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const list_changes = {};
+
+    			if (dirty & /*$$scope, Filterlist, keyedTabsActive*/ 4108) {
+    				list_changes.$$scope = { dirty, ctx };
+    			}
+
+    			list.$set(list_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(list.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(list.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(list, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot$6.name,
+    		type: "slot",
+    		source: "(65:6) <Menu bind:this={menu2} anchor={true} bind:anchorElement={anchor2} anchorCorner=\\\"BOTTOM_RIGHT\\\">",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$o(ctx) {
+    	let div;
+    	let t;
+    	let updating_anchorElement;
+    	let Anchor_action;
+    	let current;
+    	let dispose;
+
+    	const button = new Button_1({
+    			props: {
+    				$$slots: { default: [create_default_slot_5$1] },
+    				$$scope: { ctx }
+    			},
+    			$$inline: true
+    		});
+
+    	button.$on("click", /*click_handler*/ ctx[5]);
+
+    	function menu_anchorElement_binding(value) {
+    		/*menu_anchorElement_binding*/ ctx[9].call(null, value);
+    	}
+
+    	let menu_props = {
+    		anchor: true,
+    		anchorCorner: "BOTTOM_RIGHT",
+    		$$slots: { default: [create_default_slot$6] },
+    		$$scope: { ctx }
+    	};
+
+    	if (/*anchor2*/ ctx[0] !== void 0) {
+    		menu_props.anchorElement = /*anchor2*/ ctx[0];
+    	}
+
+    	const menu = new Menu({ props: menu_props, $$inline: true });
+    	/*menu_binding*/ ctx[8](menu);
+    	binding_callbacks.push(() => bind(menu, "anchorElement", menu_anchorElement_binding));
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			create_component(button.$$.fragment);
+    			t = space();
+    			create_component(menu.$$.fragment);
+    			add_location(div, file$l, 62, 0, 1324);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			mount_component(button, div, null);
+    			append_dev(div, t);
+    			mount_component(menu, div, null);
+    			/*div_binding*/ ctx[10](div);
+    			current = true;
+    			dispose = action_destroyer(Anchor_action = Anchor.call(null, div));
+    		},
+    		p: function update(ctx, [dirty]) {
+    			const button_changes = {};
+
+    			if (dirty & /*$$scope*/ 4096) {
+    				button_changes.$$scope = { dirty, ctx };
+    			}
+
+    			button.$set(button_changes);
+    			const menu_changes = {};
+
+    			if (dirty & /*$$scope, Filterlist, keyedTabsActive*/ 4108) {
+    				menu_changes.$$scope = { dirty, ctx };
+    			}
+
+    			if (!updating_anchorElement && dirty & /*anchor2*/ 1) {
+    				updating_anchorElement = true;
+    				menu_changes.anchorElement = /*anchor2*/ ctx[0];
+    				add_flush_callback(() => updating_anchorElement = false);
+    			}
+
+    			menu.$set(menu_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(button.$$.fragment, local);
+    			transition_in(menu.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(button.$$.fragment, local);
+    			transition_out(menu.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			destroy_component(button);
+    			/*menu_binding*/ ctx[8](null);
+    			destroy_component(menu);
+    			/*div_binding*/ ctx[10](null);
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$o.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    const func = tab => tab.k;
+
+    function instance$o($$self, $$props, $$invalidate) {
+    	let anchor2;
+    	let menu2;
+
+    	let keyedTabs = [
+    		{
+    			k: "Smileys & Emotion",
+    			icon: "c1",
+    			label: "Code"
+    		},
+    		{
+    			k: "People & Body",
+    			icon: "c2",
+    			label: "Code"
+    		},
+    		{
+    			k: "Animals & Nature",
+    			icon: "c3",
+    			label: "Code"
+    		},
+    		{
+    			k: "Travel & Places",
+    			icon: "c4",
+    			label: "Code"
+    		}
+    	];
+
+    	let keyedTabsActive = keyedTabs[0];
+    	const click_handler = () => menu2.setOpen(true);
+
+    	function tabbar_active_binding(value) {
+    		keyedTabsActive = value;
+    		$$invalidate(2, keyedTabsActive);
+    	}
+
+    	function emojiClicked_handler(event) {
+    		bubble($$self, event);
+    	}
+
+    	function menu_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(1, menu2 = $$value);
+    		});
+    	}
+
+    	function menu_anchorElement_binding(value) {
+    		anchor2 = value;
+    		$$invalidate(0, anchor2);
+    	}
+
+    	function div_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(0, anchor2 = $$value);
+    		});
+    	}
+
+    	$$self.$capture_state = () => {
+    		return {};
+    	};
+
+    	$$self.$inject_state = $$props => {
+    		if ("anchor2" in $$props) $$invalidate(0, anchor2 = $$props.anchor2);
+    		if ("menu2" in $$props) $$invalidate(1, menu2 = $$props.menu2);
+    		if ("keyedTabs" in $$props) $$invalidate(4, keyedTabs = $$props.keyedTabs);
+    		if ("keyedTabsActive" in $$props) $$invalidate(2, keyedTabsActive = $$props.keyedTabsActive);
+    		if ("Filterlist" in $$props) $$invalidate(3, Filterlist = $$props.Filterlist);
+    	};
+
+    	let Filterlist;
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*keyedTabsActive*/ 4) {
+    			 $$invalidate(3, Filterlist = temoji.filter(t => t.group === keyedTabsActive.k));
+    		}
+    	};
+
+    	return [
+    		anchor2,
+    		menu2,
+    		keyedTabsActive,
+    		Filterlist,
+    		keyedTabs,
+    		click_handler,
+    		tabbar_active_binding,
+    		emojiClicked_handler,
+    		menu_binding,
+    		menu_anchorElement_binding,
+    		div_binding
+    	];
+    }
+
+    class Emoji extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$o, create_fragment$o, safe_not_equal, {});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Emoji",
+    			options,
+    			id: create_fragment$o.name
     		});
     	}
     }
@@ -18157,16 +25600,17 @@ var app = (function () {
     /* src\App.svelte generated by Svelte v3.18.1 */
 
     const { document: document_1 } = globals;
-    const file$e = "src\\App.svelte";
 
-    function get_each_context(ctx, list, i) {
+    const file$m = "src\\App.svelte";
+
+    function get_each_context$2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[13] = list[i];
-    	child_ctx[15] = i;
+    	child_ctx[14] = list[i];
+    	child_ctx[16] = i;
     	return child_ctx;
     }
 
-    // (277:2) {:else}
+    // (282:2) {:else}
     function create_else_block_2(ctx) {
     	let center;
     	let p;
@@ -18176,10 +25620,10 @@ var app = (function () {
     			center = element("center");
     			p = element("p");
     			p.textContent = "Comments are loading...";
-    			attr_dev(p, "class", "svelte-o1plgt");
-    			add_location(p, file$e, 279, 12, 6976);
-    			attr_dev(center, "class", "svelte-o1plgt");
-    			add_location(center, file$e, 279, 4, 6968);
+    			attr_dev(p, "class", "svelte-1urw7wo");
+    			add_location(p, file$m, 284, 11, 7108);
+    			attr_dev(center, "class", "svelte-1urw7wo");
+    			add_location(center, file$m, 284, 3, 7100);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, center, anchor);
@@ -18194,33 +25638,33 @@ var app = (function () {
     		block,
     		id: create_else_block_2.name,
     		type: "else",
-    		source: "(277:2) {:else}",
+    		source: "(282:2) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (248:3) {:else}
+    // (253:3) {:else}
     function create_else_block$2(ctx) {
     	let t0;
     	let article;
     	let current_block_type_index;
     	let if_block1;
-    	let input_1;
+    	let input;
     	let t1;
     	let div_1;
-    	let t2_value = /*comment*/ ctx[13].time + "";
+    	let t2_value = /*comment*/ ctx[14].time + "";
     	let t2;
     	let t3;
     	let article_class_value;
     	let current;
-    	let if_block0 = /*i*/ ctx[15] != 0 && /*comment*/ ctx[13].author != /*comments*/ ctx[3][/*i*/ ctx[15] - 1].author && create_if_block_2(ctx);
-    	const if_block_creators = [create_if_block_1$1, create_else_block_1];
+    	let if_block0 = /*i*/ ctx[16] != 0 && /*comment*/ ctx[14].author != /*comments*/ ctx[3][/*i*/ ctx[16] - 1].author && create_if_block_2$1(ctx);
+    	const if_block_creators = [create_if_block_1$2, create_else_block_1];
     	const if_blocks = [];
 
     	function select_block_type_2(ctx, dirty) {
-    		if (/*comment*/ ctx[13].type === "link") return 0;
+    		if (/*comment*/ ctx[14].type === "link") return 0;
     		return 1;
     	}
 
@@ -18233,30 +25677,30 @@ var app = (function () {
     			t0 = space();
     			article = element("article");
     			if_block1.c();
-    			input_1 = element("input");
+    			input = element("input");
     			t1 = space();
     			div_1 = element("div");
     			t2 = text(t2_value);
     			t3 = space();
-    			attr_dev(input_1, "class", "nothing svelte-o1plgt");
-    			attr_dev(input_1, "type", "button");
-    			add_location(input_1, file$e, 270, 10, 6774);
+    			attr_dev(input, "class", "nothing svelte-1urw7wo");
+    			attr_dev(input, "type", "button");
+    			add_location(input, file$m, 275, 10, 6907);
     			attr_dev(div_1, "id", "commentdate");
-    			attr_dev(div_1, "class", "svelte-o1plgt");
-    			add_location(div_1, file$e, 271, 5, 6817);
+    			attr_dev(div_1, "class", "svelte-1urw7wo");
+    			add_location(div_1, file$m, 276, 5, 6950);
 
-    			attr_dev(article, "class", article_class_value = "" + (null_to_empty(/*comment*/ ctx[13].author === /*name*/ ctx[0]
+    			attr_dev(article, "class", article_class_value = "" + (null_to_empty(/*comment*/ ctx[14].author === /*name*/ ctx[0]
     			? "user"
-    			: "other") + " svelte-o1plgt"));
+    			: "other") + " svelte-1urw7wo"));
 
-    			add_location(article, file$e, 256, 4, 6417);
+    			add_location(article, file$m, 261, 4, 6544);
     		},
     		m: function mount(target, anchor) {
     			if (if_block0) if_block0.m(target, anchor);
     			insert_dev(target, t0, anchor);
     			insert_dev(target, article, anchor);
     			if_blocks[current_block_type_index].m(article, null);
-    			append_dev(article, input_1);
+    			append_dev(article, input);
     			append_dev(article, t1);
     			append_dev(article, div_1);
     			append_dev(div_1, t2);
@@ -18264,11 +25708,11 @@ var app = (function () {
     			current = true;
     		},
     		p: function update(ctx, dirty) {
-    			if (/*i*/ ctx[15] != 0 && /*comment*/ ctx[13].author != /*comments*/ ctx[3][/*i*/ ctx[15] - 1].author) {
+    			if (/*i*/ ctx[16] != 0 && /*comment*/ ctx[14].author != /*comments*/ ctx[3][/*i*/ ctx[16] - 1].author) {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     				} else {
-    					if_block0 = create_if_block_2(ctx);
+    					if_block0 = create_if_block_2$1(ctx);
     					if_block0.c();
     					if_block0.m(t0.parentNode, t0);
     				}
@@ -18298,14 +25742,14 @@ var app = (function () {
     				}
 
     				transition_in(if_block1, 1);
-    				if_block1.m(article, input_1);
+    				if_block1.m(article, input);
     			}
 
-    			if ((!current || dirty & /*comments*/ 8) && t2_value !== (t2_value = /*comment*/ ctx[13].time + "")) set_data_dev(t2, t2_value);
+    			if ((!current || dirty & /*comments*/ 8) && t2_value !== (t2_value = /*comment*/ ctx[14].time + "")) set_data_dev(t2, t2_value);
 
-    			if (!current || dirty & /*comments, name*/ 9 && article_class_value !== (article_class_value = "" + (null_to_empty(/*comment*/ ctx[13].author === /*name*/ ctx[0]
+    			if (!current || dirty & /*comments, name*/ 9 && article_class_value !== (article_class_value = "" + (null_to_empty(/*comment*/ ctx[14].author === /*name*/ ctx[0]
     			? "user"
-    			: "other") + " svelte-o1plgt"))) {
+    			: "other") + " svelte-1urw7wo"))) {
     				attr_dev(article, "class", article_class_value);
     			}
     		},
@@ -18330,32 +25774,32 @@ var app = (function () {
     		block,
     		id: create_else_block$2.name,
     		type: "else",
-    		source: "(248:3) {:else}",
+    		source: "(253:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (246:3) {#if comment.author==="system"}
-    function create_if_block$2(ctx) {
+    // (251:3) {#if comment.author==="system"}
+    function create_if_block$3(ctx) {
     	let span;
-    	let t_value = /*comment*/ ctx[13].text + "";
+    	let t_value = /*comment*/ ctx[14].text + "";
     	let t;
 
     	const block = {
     		c: function create() {
     			span = element("span");
     			t = text(t_value);
-    			attr_dev(span, "class", "systemsg svelte-o1plgt");
-    			add_location(span, file$e, 246, 4, 6099);
+    			attr_dev(span, "class", "systemsg svelte-1urw7wo");
+    			add_location(span, file$m, 251, 4, 6226);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
     			append_dev(span, t);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t_value !== (t_value = /*comment*/ ctx[13].text + "")) set_data_dev(t, t_value);
+    			if (dirty & /*comments*/ 8 && t_value !== (t_value = /*comment*/ ctx[14].text + "")) set_data_dev(t, t_value);
     		},
     		i: noop,
     		o: noop,
@@ -18366,22 +25810,22 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block$2.name,
+    		id: create_if_block$3.name,
     		type: "if",
-    		source: "(246:3) {#if comment.author===\\\"system\\\"}",
+    		source: "(251:3) {#if comment.author===\\\"system\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (249:4) {#if i!=0 && comment.author != comments[i-1].author}
-    function create_if_block_2(ctx) {
+    // (254:4) {#if i!=0 && comment.author != comments[i-1].author}
+    function create_if_block_2$1(ctx) {
     	let if_block_anchor;
 
     	function select_block_type_1(ctx, dirty) {
-    		if (/*comment*/ ctx[13].type === "bot") return create_if_block_3;
-    		if (/*comment*/ ctx[13].author != /*name*/ ctx[0]) return create_if_block_4;
+    		if (/*comment*/ ctx[14].type === "bot") return create_if_block_3;
+    		if (/*comment*/ ctx[14].author != /*name*/ ctx[0]) return create_if_block_4;
     	}
 
     	let current_block_type = select_block_type_1(ctx);
@@ -18420,19 +25864,19 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block_2.name,
+    		id: create_if_block_2$1.name,
     		type: "if",
-    		source: "(249:4) {#if i!=0 && comment.author != comments[i-1].author}",
+    		source: "(254:4) {#if i!=0 && comment.author != comments[i-1].author}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (252:38) 
+    // (257:38) 
     function create_if_block_4(ctx) {
     	let p;
-    	let t0_value = /*comment*/ ctx[13].author + "";
+    	let t0_value = /*comment*/ ctx[14].author + "";
     	let t0;
     	let t1;
 
@@ -18441,8 +25885,8 @@ var app = (function () {
     			p = element("p");
     			t0 = text(t0_value);
     			t1 = text(":");
-    			attr_dev(p, "class", "otherusert svelte-o1plgt");
-    			add_location(p, file$e, 252, 6, 6342);
+    			attr_dev(p, "class", "otherusert svelte-1urw7wo");
+    			add_location(p, file$m, 257, 6, 6469);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -18450,7 +25894,7 @@ var app = (function () {
     			append_dev(p, t1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[13].author + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[14].author + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(p);
@@ -18461,17 +25905,17 @@ var app = (function () {
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(252:38) ",
+    		source: "(257:38) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (250:5) {#if comment.type ==="bot"}
+    // (255:5) {#if comment.type ==="bot"}
     function create_if_block_3(ctx) {
     	let p;
-    	let t0_value = /*comment*/ ctx[13].author + "";
+    	let t0_value = /*comment*/ ctx[14].author + "";
     	let t0;
     	let t1;
 
@@ -18480,8 +25924,8 @@ var app = (function () {
     			p = element("p");
     			t0 = text(t0_value);
     			t1 = text(":");
-    			attr_dev(p, "class", "bot_respond svelte-o1plgt");
-    			add_location(p, file$e, 250, 6, 6252);
+    			attr_dev(p, "class", "bot_respond svelte-1urw7wo");
+    			add_location(p, file$m, 255, 6, 6379);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -18489,7 +25933,7 @@ var app = (function () {
     			append_dev(p, t1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[13].author + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[14].author + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(p);
@@ -18500,41 +25944,38 @@ var app = (function () {
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(250:5) {#if comment.type ===\\\"bot\\\"}",
+    		source: "(255:5) {#if comment.type ===\\\"bot\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (268:5) {:else}
+    // (273:5) {:else}
     function create_else_block_1(ctx) {
     	let span;
-    	let t0_value = /*comment*/ ctx[13].text + "";
-    	let t0;
-    	let t1;
+    	let raw_value = /*comment*/ ctx[14].text + "";
+    	let t;
 
     	const block = {
     		c: function create() {
     			span = element("span");
-    			t0 = text(t0_value);
-    			t1 = space();
-    			attr_dev(span, "class", "svelte-o1plgt");
-    			add_location(span, file$e, 268, 6, 6729);
+    			t = space();
+    			attr_dev(span, "class", "svelte-1urw7wo");
+    			add_location(span, file$m, 273, 6, 6856);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
-    			append_dev(span, t0);
-    			insert_dev(target, t1, anchor);
+    			span.innerHTML = raw_value;
+    			insert_dev(target, t, anchor);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[13].text + "")) set_data_dev(t0, t0_value);
-    		},
+    			if (dirty & /*comments*/ 8 && raw_value !== (raw_value = /*comment*/ ctx[14].text + "")) span.innerHTML = raw_value;		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(span);
-    			if (detaching) detach_dev(t1);
+    			if (detaching) detach_dev(t);
     		}
     	};
 
@@ -18542,25 +25983,25 @@ var app = (function () {
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(268:5) {:else}",
+    		source: "(273:5) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (258:5) {#if comment.type ==="link"}
-    function create_if_block_1$1(ctx) {
+    // (263:5) {#if comment.type ==="link"}
+    function create_if_block_1$2(ctx) {
     	let span;
     	let t;
     	let current;
 
     	const linkpreview = new Linkpreview({
     			props: {
-    				title: /*comment*/ ctx[13].title,
-    				image: /*comment*/ ctx[13].image,
-    				description: /*comment*/ ctx[13].description,
-    				url: /*comment*/ ctx[13].text
+    				title: /*comment*/ ctx[14].title,
+    				image: /*comment*/ ctx[14].image,
+    				description: /*comment*/ ctx[14].description,
+    				url: /*comment*/ ctx[14].text
     			},
     			$$inline: true
     		});
@@ -18570,8 +26011,8 @@ var app = (function () {
     			span = element("span");
     			create_component(linkpreview.$$.fragment);
     			t = space();
-    			attr_dev(span, "class", "svelte-o1plgt");
-    			add_location(span, file$e, 258, 6, 6516);
+    			attr_dev(span, "class", "svelte-1urw7wo");
+    			add_location(span, file$m, 263, 6, 6643);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -18581,10 +26022,10 @@ var app = (function () {
     		},
     		p: function update(ctx, dirty) {
     			const linkpreview_changes = {};
-    			if (dirty & /*comments*/ 8) linkpreview_changes.title = /*comment*/ ctx[13].title;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.image = /*comment*/ ctx[13].image;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.description = /*comment*/ ctx[13].description;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.url = /*comment*/ ctx[13].text;
+    			if (dirty & /*comments*/ 8) linkpreview_changes.title = /*comment*/ ctx[14].title;
+    			if (dirty & /*comments*/ 8) linkpreview_changes.image = /*comment*/ ctx[14].image;
+    			if (dirty & /*comments*/ 8) linkpreview_changes.description = /*comment*/ ctx[14].description;
+    			if (dirty & /*comments*/ 8) linkpreview_changes.url = /*comment*/ ctx[14].text;
     			linkpreview.$set(linkpreview_changes);
     		},
     		i: function intro(local) {
@@ -18605,26 +26046,26 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block_1$1.name,
+    		id: create_if_block_1$2.name,
     		type: "if",
-    		source: "(258:5) {#if comment.type ===\\\"link\\\"}",
+    		source: "(263:5) {#if comment.type ===\\\"link\\\"}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (245:2) {#each comments as comment, i}
-    function create_each_block(ctx) {
+    // (250:2) {#each comments as comment, i}
+    function create_each_block$2(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
     	let current;
-    	const if_block_creators = [create_if_block$2, create_else_block$2];
+    	const if_block_creators = [create_if_block$3, create_else_block$2];
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
-    		if (/*comment*/ ctx[13].author === "system") return 0;
+    		if (/*comment*/ ctx[14].author === "system") return 0;
     		return 1;
     	}
 
@@ -18683,19 +26124,21 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_each_block.name,
+    		id: create_each_block$2.name,
     		type: "each",
-    		source: "(245:2) {#each comments as comment, i}",
+    		source: "(250:2) {#each comments as comment, i}",
     		ctx
     	});
 
     	return block;
     }
 
-    function create_fragment$g(ctx) {
+    function create_fragment$p(ctx) {
     	let script0;
     	let script0_src_value;
     	let script1;
+    	let script1_src_value;
+    	let script2;
     	let link;
     	let t1;
     	let main;
@@ -18718,17 +26161,19 @@ var app = (function () {
     	let label;
     	let h4;
     	let t13;
-    	let input0;
+    	let input;
     	let t14;
     	let div3;
     	let t15;
-    	let div7;
+    	let div9;
     	let div5;
     	let t16;
+    	let div8;
     	let div6;
-    	let input1;
     	let t17;
     	let button;
+    	let t19;
+    	let div7;
     	let current;
     	let dispose;
     	const theme = new Theme({ $$inline: true });
@@ -18736,7 +26181,7 @@ var app = (function () {
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value.length; i += 1) {
-    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    		each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
     	}
 
     	const out = i => transition_out(each_blocks[i], 1, 1, () => {
@@ -18749,11 +26194,15 @@ var app = (function () {
     		each_1_else = create_else_block_2(ctx);
     	}
 
+    	const emoji = new Emoji({ $$inline: true });
+    	emoji.$on("emojiClicked", /*alertmsg*/ ctx[5]);
+
     	const block = {
     		c: function create() {
     			script0 = element("script");
     			script1 = element("script");
-    			script1.textContent = "window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'UA-158899098-1');\n";
+    			script2 = element("script");
+    			script2.textContent = "window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'UA-158899098-1');\n";
     			link = element("link");
     			t1 = space();
     			main = element("main");
@@ -18780,12 +26229,12 @@ var app = (function () {
     			h4 = element("h4");
     			h4.textContent = "Name:";
     			t13 = space();
-    			input0 = element("input");
+    			input = element("input");
     			t14 = space();
     			div3 = element("div");
     			create_component(theme.$$.fragment);
     			t15 = space();
-    			div7 = element("div");
+    			div9 = element("div");
     			div5 = element("div");
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -18797,64 +26246,74 @@ var app = (function () {
     			}
 
     			t16 = space();
+    			div8 = element("div");
     			div6 = element("div");
-    			input1 = element("input");
     			t17 = space();
     			button = element("button");
     			button.textContent = "Send";
-    			script0.async = true;
-    			if (script0.src !== (script0_src_value = "https://www.googletagmanager.com/gtag/js?id=UA-158899098-1")) attr_dev(script0, "src", script0_src_value);
-    			attr_dev(script0, "class", "svelte-o1plgt");
-    			add_location(script0, file$e, 214, 0, 5160);
-    			attr_dev(script1, "class", "svelte-o1plgt");
-    			add_location(script1, file$e, 215, 0, 5249);
+    			t19 = space();
+    			div7 = element("div");
+    			create_component(emoji.$$.fragment);
+    			if (script0.src !== (script0_src_value = "https://twemoji.maxcdn.com/v/latest/twemoji.min.js")) attr_dev(script0, "src", script0_src_value);
+    			attr_dev(script0, "crossorigin", "anonymous");
+    			attr_dev(script0, "class", "svelte-1urw7wo");
+    			add_location(script0, file$m, 217, 0, 5133);
+    			script1.async = true;
+    			if (script1.src !== (script1_src_value = "https://www.googletagmanager.com/gtag/js?id=UA-158899098-1")) attr_dev(script1, "src", script1_src_value);
+    			attr_dev(script1, "class", "svelte-1urw7wo");
+    			add_location(script1, file$m, 219, 0, 5286);
+    			attr_dev(script2, "class", "svelte-1urw7wo");
+    			add_location(script2, file$m, 220, 0, 5375);
     			attr_dev(link, "href", "https://fonts.googleapis.com/css?family=Roboto&display=swap");
     			attr_dev(link, "rel", "stylesheet");
-    			attr_dev(link, "class", "svelte-o1plgt");
-    			add_location(link, file$e, 223, 0, 5423);
-    			attr_dev(h1, "class", "svelte-o1plgt");
-    			add_location(h1, file$e, 226, 20, 5556);
-    			attr_dev(div0, "class", "title svelte-o1plgt");
-    			add_location(div0, file$e, 226, 0, 5536);
-    			attr_dev(p0, "class", "svelte-o1plgt");
-    			add_location(p0, file$e, 229, 1, 5634);
-    			attr_dev(p1, "class", "svelte-o1plgt");
-    			add_location(p1, file$e, 230, 1, 5685);
-    			attr_dev(p2, "class", "svelte-o1plgt");
-    			add_location(p2, file$e, 231, 1, 5716);
-    			attr_dev(div1, "class", "side_note svelte-o1plgt");
-    			add_location(div1, file$e, 228, 0, 5609);
+    			attr_dev(link, "class", "svelte-1urw7wo");
+    			add_location(link, file$m, 228, 0, 5549);
+    			attr_dev(h1, "class", "svelte-1urw7wo");
+    			add_location(h1, file$m, 231, 20, 5682);
+    			attr_dev(div0, "class", "title svelte-1urw7wo");
+    			add_location(div0, file$m, 231, 0, 5662);
+    			attr_dev(p0, "class", "svelte-1urw7wo");
+    			add_location(p0, file$m, 234, 1, 5760);
+    			attr_dev(p1, "class", "svelte-1urw7wo");
+    			add_location(p1, file$m, 235, 1, 5811);
+    			attr_dev(p2, "class", "svelte-1urw7wo");
+    			add_location(p2, file$m, 236, 1, 5842);
+    			attr_dev(div1, "class", "side_note svelte-1urw7wo");
+    			add_location(div1, file$m, 233, 0, 5735);
     			attr_dev(div2, "id", "typewriter");
-    			attr_dev(div2, "class", "svelte-o1plgt");
-    			add_location(div2, file$e, 227, 0, 5586);
-    			attr_dev(h4, "class", "svelte-o1plgt");
-    			add_location(h4, file$e, 235, 16, 5817);
-    			attr_dev(label, "class", "svelte-o1plgt");
-    			add_location(label, file$e, 235, 9, 5810);
-    			attr_dev(center, "class", "svelte-o1plgt");
-    			add_location(center, file$e, 235, 1, 5802);
-    			attr_dev(input0, "type", "text");
-    			attr_dev(input0, "class", "user_input svelte-o1plgt");
-    			add_location(input0, file$e, 236, 1, 5851);
-    			attr_dev(div3, "class", "theme svelte-o1plgt");
-    			add_location(div3, file$e, 237, 1, 5910);
-    			attr_dev(div4, "class", "headdiv svelte-o1plgt");
-    			add_location(div4, file$e, 234, 0, 5779);
-    			attr_dev(div5, "class", "scrollable svelte-o1plgt");
-    			add_location(div5, file$e, 243, 1, 5986);
-    			attr_dev(input1, "class", "svelte-o1plgt");
-    			add_location(input1, file$e, 283, 2, 7078);
+    			attr_dev(div2, "class", "svelte-1urw7wo");
+    			add_location(div2, file$m, 232, 0, 5712);
+    			attr_dev(h4, "class", "svelte-1urw7wo");
+    			add_location(h4, file$m, 240, 16, 5943);
+    			attr_dev(label, "class", "svelte-1urw7wo");
+    			add_location(label, file$m, 240, 9, 5936);
+    			attr_dev(center, "class", "svelte-1urw7wo");
+    			add_location(center, file$m, 240, 1, 5928);
+    			attr_dev(input, "type", "text");
+    			attr_dev(input, "class", "user_input svelte-1urw7wo");
+    			add_location(input, file$m, 241, 1, 5977);
+    			attr_dev(div3, "class", "theme svelte-1urw7wo");
+    			add_location(div3, file$m, 242, 1, 6036);
+    			attr_dev(div4, "class", "headdiv svelte-1urw7wo");
+    			add_location(div4, file$m, 239, 0, 5905);
+    			attr_dev(div5, "class", "scrollable svelte-1urw7wo");
+    			add_location(div5, file$m, 248, 1, 6113);
+    			attr_dev(div6, "contenteditable", "true");
+    			attr_dev(div6, "class", "svelte-1urw7wo");
+    			add_location(div6, file$m, 288, 2, 7210);
     			attr_dev(button, "type", "submit");
-    			attr_dev(button, "class", "svelte-o1plgt");
-    			add_location(button, file$e, 284, 2, 7135);
-    			attr_dev(div6, "class", "msg-input svelte-o1plgt");
-    			attr_dev(div6, "id", "msg-input");
-    			add_location(div6, file$e, 282, 1, 7035);
-    			attr_dev(div7, "class", "chat svelte-o1plgt");
-    			attr_dev(div7, "id", "chat");
-    			add_location(div7, file$e, 242, 0, 5956);
-    			attr_dev(main, "class", "svelte-o1plgt");
-    			add_location(main, file$e, 225, 0, 5529);
+    			attr_dev(button, "class", "svelte-1urw7wo");
+    			add_location(button, file$m, 290, 2, 7361);
+    			attr_dev(div7, "class", "emojicontainer svelte-1urw7wo");
+    			add_location(div7, file$m, 292, 2, 7426);
+    			attr_dev(div8, "class", "msg-input svelte-1urw7wo");
+    			attr_dev(div8, "id", "msg-input");
+    			add_location(div8, file$m, 287, 1, 7167);
+    			attr_dev(div9, "class", "chat svelte-1urw7wo");
+    			attr_dev(div9, "id", "chat");
+    			add_location(div9, file$m, 247, 0, 6083);
+    			attr_dev(main, "class", "svelte-1urw7wo");
+    			add_location(main, file$m, 230, 0, 5655);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -18862,6 +26321,7 @@ var app = (function () {
     		m: function mount(target, anchor) {
     			append_dev(document_1.head, script0);
     			append_dev(document_1.head, script1);
+    			append_dev(document_1.head, script2);
     			append_dev(document_1.head, link);
     			insert_dev(target, t1, anchor);
     			insert_dev(target, main, anchor);
@@ -18884,14 +26344,14 @@ var app = (function () {
     			append_dev(center, label);
     			append_dev(label, h4);
     			append_dev(div4, t13);
-    			append_dev(div4, input0);
-    			set_input_value(input0, /*name*/ ctx[0]);
+    			append_dev(div4, input);
+    			set_input_value(input, /*name*/ ctx[0]);
     			append_dev(div4, t14);
     			append_dev(div4, div3);
     			mount_component(theme, div3, null);
     			append_dev(main, t15);
-    			append_dev(main, div7);
-    			append_dev(div7, div5);
+    			append_dev(main, div9);
+    			append_dev(div9, div5);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].m(div5, null);
@@ -18901,26 +26361,29 @@ var app = (function () {
     				each_1_else.m(div5, null);
     			}
 
-    			/*div5_binding*/ ctx[11](div5);
-    			append_dev(div7, t16);
-    			append_dev(div7, div6);
-    			append_dev(div6, input1);
-    			/*input1_binding*/ ctx[12](input1);
-    			append_dev(div6, t17);
-    			append_dev(div6, button);
+    			/*div5_binding*/ ctx[12](div5);
+    			append_dev(div9, t16);
+    			append_dev(div9, div8);
+    			append_dev(div8, div6);
+    			/*div6_binding*/ ctx[13](div6);
+    			append_dev(div8, t17);
+    			append_dev(div8, button);
+    			append_dev(div8, t19);
+    			append_dev(div8, div7);
+    			mount_component(emoji, div7, null);
     			current = true;
 
     			dispose = [
-    				listen_dev(input0, "input", /*input0_input_handler*/ ctx[10]),
-    				listen_dev(input1, "keydown", /*handleKeydown*/ ctx[4], false, false, false),
+    				listen_dev(input, "input", /*input_input_handler*/ ctx[11]),
+    				listen_dev(div6, "keydown", /*handleKeydown*/ ctx[4], false, false, false),
     				listen_dev(button, "click", /*handleKeydown*/ ctx[4], false, false, false)
     			];
     		},
     		p: function update(ctx, [dirty]) {
     			if (!current || dirty & /*name*/ 1) set_data_dev(t3, /*name*/ ctx[0]);
 
-    			if (dirty & /*name*/ 1 && input0.value !== /*name*/ ctx[0]) {
-    				set_input_value(input0, /*name*/ ctx[0]);
+    			if (dirty & /*name*/ 1 && input.value !== /*name*/ ctx[0]) {
+    				set_input_value(input, /*name*/ ctx[0]);
     			}
 
     			if (dirty & /*comments, name*/ 9) {
@@ -18928,13 +26391,13 @@ var app = (function () {
     				let i;
 
     				for (i = 0; i < each_value.length; i += 1) {
-    					const child_ctx = get_each_context(ctx, each_value, i);
+    					const child_ctx = get_each_context$2(ctx, each_value, i);
 
     					if (each_blocks[i]) {
     						each_blocks[i].p(child_ctx, dirty);
     						transition_in(each_blocks[i], 1);
     					} else {
-    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i] = create_each_block$2(child_ctx);
     						each_blocks[i].c();
     						transition_in(each_blocks[i], 1);
     						each_blocks[i].m(div5, null);
@@ -18969,6 +26432,7 @@ var app = (function () {
     				transition_in(each_blocks[i]);
     			}
 
+    			transition_in(emoji.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
@@ -18979,26 +26443,29 @@ var app = (function () {
     				transition_out(each_blocks[i]);
     			}
 
+    			transition_out(emoji.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
     			detach_dev(script0);
     			detach_dev(script1);
+    			detach_dev(script2);
     			detach_dev(link);
     			if (detaching) detach_dev(t1);
     			if (detaching) detach_dev(main);
     			destroy_component(theme);
     			destroy_each(each_blocks, detaching);
     			if (each_1_else) each_1_else.d();
-    			/*div5_binding*/ ctx[11](null);
-    			/*input1_binding*/ ctx[12](null);
+    			/*div5_binding*/ ctx[12](null);
+    			/*div6_binding*/ ctx[13](null);
+    			destroy_component(emoji);
     			run_all(dispose);
     		}
     	};
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$g.name,
+    		id: create_fragment$p.name,
     		type: "component",
     		source: "",
     		ctx
@@ -19007,7 +26474,7 @@ var app = (function () {
     	return block;
     }
 
-    const serveradd = "http://127.0.0.1:5000";
+    const serveradd = "https://webchay.herokuapp.com";
 
     function asda() {
     	if (document.cookie) {
@@ -19025,7 +26492,6 @@ var app = (function () {
 
     function dateformat(date) {
     	let now = new Date(date);
-    	console.log(date, now.getTime());
     	const offsetMs = now.getTimezoneOffset() * 60 * 1000;
     	var dateLocal = new Date(now.getTime() - offsetMs);
     	let str = dateLocal.toString().slice(0, 25);
@@ -19102,14 +26568,14 @@ var app = (function () {
     	return { type };
     }
 
-    function instance$g($$self, $$props, $$invalidate) {
+    function instance$p($$self, $$props, $$invalidate) {
     	let name;
     	
     	
     	var currentuser;
     	let div;
     	let autoscroll;
-    	let input;
+    	let input1;
     	const socket = lib$1(serveradd);
 
     	beforeUpdate(() => {
@@ -19124,8 +26590,10 @@ var app = (function () {
 
     	function handleKeydown() {
     		if (event.which === 13 || event.type === "click") {
-    			const text = input.value;
+    			console.log("dasdasd");
+    			const text = input1.innerHTML;
     			if (!text) return;
+    			console.log(text);
 
     			socket.emit("chat message", {
     				"author": name,
@@ -19134,7 +26602,7 @@ var app = (function () {
     			});
 
     			console.log(comments);
-    			$$invalidate(2, input.value = "", input);
+    			$$invalidate(2, input1.innerHTML = "", input1);
     		}
 
     		
@@ -19187,17 +26655,20 @@ var app = (function () {
 
     			if (window.innerHeight < 680) {
     				tyy.style.height = "0";
-    				document.getElementById("msg-input").style.marginBottom = "5px";
     				div.scrollTo(0, div.scrollHeight);
     			} else {
     				tyy.style.height = "70px";
     				document.getElementById("chat").style.height = "70vh";
-    				document.getElementById("msg-input").style.marginBottom = "15px";
     			}
     		});
     	};
 
-    	function input0_input_handler() {
+    	function alertmsg(event) {
+    		$$invalidate(2, input1.innerHTML += event.detail.detail, input1);
+    		console.log(input1);
+    	}
+
+    	function input_input_handler() {
     		name = this.value;
     		$$invalidate(0, name);
     	}
@@ -19208,9 +26679,9 @@ var app = (function () {
     		});
     	}
 
-    	function input1_binding($$value) {
+    	function div6_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(2, input = $$value);
+    			$$invalidate(2, input1 = $$value);
     		});
     	}
 
@@ -19223,7 +26694,7 @@ var app = (function () {
     		if ("currentuser" in $$props) currentuser = $$props.currentuser;
     		if ("div" in $$props) $$invalidate(1, div = $$props.div);
     		if ("autoscroll" in $$props) autoscroll = $$props.autoscroll;
-    		if ("input" in $$props) $$invalidate(2, input = $$props.input);
+    		if ("input1" in $$props) $$invalidate(2, input1 = $$props.input1);
     		if ("formdata" in $$props) formdata = $$props.formdata;
     		if ("requestOptions" in $$props) requestOptions = $$props.requestOptions;
     		if ("comments" in $$props) $$invalidate(3, comments = $$props.comments);
@@ -19240,30 +26711,31 @@ var app = (function () {
     	return [
     		name,
     		div,
-    		input,
+    		input1,
     		comments,
     		handleKeydown,
+    		alertmsg,
     		autoscroll,
     		currentuser,
     		socket,
     		formdata,
     		requestOptions,
-    		input0_input_handler,
+    		input_input_handler,
     		div5_binding,
-    		input1_binding
+    		div6_binding
     	];
     }
 
     class App extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$g, create_fragment$g, safe_not_equal, {});
+    		init(this, options, instance$p, create_fragment$p, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "App",
     			options,
-    			id: create_fragment$g.name
+    			id: create_fragment$p.name
     		});
     	}
     }
