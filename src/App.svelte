@@ -4,7 +4,7 @@
 	import { beforeUpdate, afterUpdate } from "svelte";
 	import Linkpreview from "./components/Linkpreview.svelte";
 	import Headdiv from "./components/Headdiv.svelte";
-	import {Autocomplete} from 'svelte-autocomplete'
+
 	import Emoji from "./components/emoji.svelte";
 	import io from "socket.io-client";
 	
@@ -139,7 +139,7 @@
 		console.log(input1.length);
 	};
 
-	
+
 </script>
 
 <style>

@@ -2,7 +2,7 @@
 
 ---
 
-# Clone Messenger Web Chat with websocket 
+# Chat application web based
 
 This is a project based on [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template.
 

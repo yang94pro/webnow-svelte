@@ -2,8 +2,6 @@
     import {createEventDispatcher} from 'svelte';
     export let emoji;
     const dispatch = createEventDispatcher();
-    import { slide } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
 
 
 
