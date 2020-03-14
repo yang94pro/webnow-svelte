@@ -595,6 +595,1660 @@ var app = (function () {
         }
     }
 
+    function styleInject(css, ref) {
+      if ( ref === void 0 ) ref = {};
+      var insertAt = ref.insertAt;
+
+      if (!css || typeof document === 'undefined') { return; }
+
+      var head = document.head || document.getElementsByTagName('head')[0];
+      var style = document.createElement('style');
+      style.type = 'text/css';
+
+      if (insertAt === 'top') {
+        if (head.firstChild) {
+          head.insertBefore(style, head.firstChild);
+        } else {
+          head.appendChild(style);
+        }
+      } else {
+        head.appendChild(style);
+      }
+
+      if (style.styleSheet) {
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
+    }
+
+    var css = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
+    styleInject(css);
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cachedCssTransformPropertyName_;
+    /**
+     * Returns the name of the correct transform property to use on the current browser.
+     */
+    function getTransformPropertyName(globalObj, forceRefresh) {
+        if (forceRefresh === void 0) { forceRefresh = false; }
+        if (cachedCssTransformPropertyName_ === undefined || forceRefresh) {
+            var el = globalObj.document.createElement('div');
+            cachedCssTransformPropertyName_ = 'transform' in el.style ? 'transform' : 'webkitTransform';
+        }
+        return cachedCssTransformPropertyName_;
+    }
+    //# sourceMappingURL=util.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var cssClasses = {
+        ANCHOR: 'mdc-menu-surface--anchor',
+        ANIMATING_CLOSED: 'mdc-menu-surface--animating-closed',
+        ANIMATING_OPEN: 'mdc-menu-surface--animating-open',
+        FIXED: 'mdc-menu-surface--fixed',
+        OPEN: 'mdc-menu-surface--open',
+        ROOT: 'mdc-menu-surface',
+    };
+    // tslint:disable:object-literal-sort-keys
+    var strings = {
+        CLOSED_EVENT: 'MDCMenuSurface:closed',
+        OPENED_EVENT: 'MDCMenuSurface:opened',
+        FOCUSABLE_ELEMENTS: [
+            'button:not(:disabled)', '[href]:not([aria-disabled="true"])', 'input:not(:disabled)',
+            'select:not(:disabled)', 'textarea:not(:disabled)', '[tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])',
+        ].join(', '),
+    };
+    // tslint:enable:object-literal-sort-keys
+    var numbers = {
+        /** Total duration of menu-surface open animation. */
+        TRANSITION_OPEN_DURATION: 120,
+        /** Total duration of menu-surface close animation. */
+        TRANSITION_CLOSE_DURATION: 75,
+        /** Margin left to the edge of the viewport when menu-surface is at maximum possible height. */
+        MARGIN_TO_EDGE: 32,
+        /** Ratio of anchor width to menu-surface width for switching from corner positioning to center positioning. */
+        ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO: 0.67,
+    };
+    /**
+     * Enum for bits in the {@see Corner) bitmap.
+     */
+    var CornerBit;
+    (function (CornerBit) {
+        CornerBit[CornerBit["BOTTOM"] = 1] = "BOTTOM";
+        CornerBit[CornerBit["CENTER"] = 2] = "CENTER";
+        CornerBit[CornerBit["RIGHT"] = 4] = "RIGHT";
+        CornerBit[CornerBit["FLIP_RTL"] = 8] = "FLIP_RTL";
+    })(CornerBit || (CornerBit = {}));
+    /**
+     * Enum for representing an element corner for positioning the menu-surface.
+     *
+     * The START constants map to LEFT if element directionality is left
+     * to right and RIGHT if the directionality is right to left.
+     * Likewise END maps to RIGHT or LEFT depending on the directionality.
+     */
+    var Corner;
+    (function (Corner) {
+        Corner[Corner["TOP_LEFT"] = 0] = "TOP_LEFT";
+        Corner[Corner["TOP_RIGHT"] = 4] = "TOP_RIGHT";
+        Corner[Corner["BOTTOM_LEFT"] = 1] = "BOTTOM_LEFT";
+        Corner[Corner["BOTTOM_RIGHT"] = 5] = "BOTTOM_RIGHT";
+        Corner[Corner["TOP_START"] = 8] = "TOP_START";
+        Corner[Corner["TOP_END"] = 12] = "TOP_END";
+        Corner[Corner["BOTTOM_START"] = 9] = "BOTTOM_START";
+        Corner[Corner["BOTTOM_END"] = 13] = "BOTTOM_END";
+    })(Corner || (Corner = {}));
+    //# sourceMappingURL=constants.js.map
+
+    /*! *****************************************************************************
+    Copyright (c) Microsoft Corporation. All rights reserved.
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+    this file except in compliance with the License. You may obtain a copy of the
+    License at http://www.apache.org/licenses/LICENSE-2.0
+
+    THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+    WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+    MERCHANTABLITY OR NON-INFRINGEMENT.
+
+    See the Apache Version 2.0 License for specific language governing permissions
+    and limitations under the License.
+    ***************************************************************************** */
+    /* global Reflect, Promise */
+
+    var extendStatics = function(d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+
+    function __extends(d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    }
+
+    var __assign = function() {
+        __assign = Object.assign || function __assign(t) {
+            for (var s, i = 1, n = arguments.length; i < n; i++) {
+                s = arguments[i];
+                for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+            }
+            return t;
+        };
+        return __assign.apply(this, arguments);
+    };
+
+    function __values(o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m) return m.call(o);
+        if (o && typeof o.length === "number") return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+    }
+
+    function __read(o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    }
+
+    function __spread() {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    }
+
+    /**
+     * @license
+     * Copyright 2016 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCFoundation = /** @class */ (function () {
+        function MDCFoundation(adapter) {
+            if (adapter === void 0) { adapter = {}; }
+            this.adapter_ = adapter;
+        }
+        Object.defineProperty(MDCFoundation, "cssClasses", {
+            get: function () {
+                // Classes extending MDCFoundation should implement this method to return an object which exports every
+                // CSS class the foundation class needs as a property. e.g. {ACTIVE: 'mdc-component--active'}
+                return {};
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCFoundation, "strings", {
+            get: function () {
+                // Classes extending MDCFoundation should implement this method to return an object which exports all
+                // semantic strings as constants. e.g. {ARIA_ROLE: 'tablist'}
+                return {};
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCFoundation, "numbers", {
+            get: function () {
+                // Classes extending MDCFoundation should implement this method to return an object which exports all
+                // of its semantic numbers as constants. e.g. {ANIMATION_DELAY_MS: 350}
+                return {};
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCFoundation, "defaultAdapter", {
+            get: function () {
+                // Classes extending MDCFoundation may choose to implement this getter in order to provide a convenient
+                // way of viewing the necessary methods of an adapter. In the future, this could also be used for adapter
+                // validation.
+                return {};
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCFoundation.prototype.init = function () {
+            // Subclasses should override this method to perform initialization routines (registering events, etc.)
+        };
+        MDCFoundation.prototype.destroy = function () {
+            // Subclasses should override this method to perform de-initialization routines (de-registering events, etc.)
+        };
+        return MDCFoundation;
+    }());
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2016 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCComponent = /** @class */ (function () {
+        function MDCComponent(root, foundation) {
+            var args = [];
+            for (var _i = 2; _i < arguments.length; _i++) {
+                args[_i - 2] = arguments[_i];
+            }
+            this.root_ = root;
+            this.initialize.apply(this, __spread(args));
+            // Note that we initialize foundation here and not within the constructor's default param so that
+            // this.root_ is defined and can be used within the foundation class.
+            this.foundation_ = foundation === undefined ? this.getDefaultFoundation() : foundation;
+            this.foundation_.init();
+            this.initialSyncWithDOM();
+        }
+        MDCComponent.attachTo = function (root) {
+            // Subclasses which extend MDCBase should provide an attachTo() method that takes a root element and
+            // returns an instantiated component with its root set to that element. Also note that in the cases of
+            // subclasses, an explicit foundation class will not have to be passed in; it will simply be initialized
+            // from getDefaultFoundation().
+            return new MDCComponent(root, new MDCFoundation({}));
+        };
+        /* istanbul ignore next: method param only exists for typing purposes; it does not need to be unit tested */
+        MDCComponent.prototype.initialize = function () {
+            var _args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                _args[_i] = arguments[_i];
+            }
+            // Subclasses can override this to do any additional setup work that would be considered part of a
+            // "constructor". Essentially, it is a hook into the parent constructor before the foundation is
+            // initialized. Any additional arguments besides root and foundation will be passed in here.
+        };
+        MDCComponent.prototype.getDefaultFoundation = function () {
+            // Subclasses must override this method to return a properly configured foundation class for the
+            // component.
+            throw new Error('Subclasses must override getDefaultFoundation to return a properly configured ' +
+                'foundation class');
+        };
+        MDCComponent.prototype.initialSyncWithDOM = function () {
+            // Subclasses should override this method if they need to perform work to synchronize with a host DOM
+            // object. An example of this would be a form control wrapper that needs to synchronize its internal state
+            // to some property or attribute of the host DOM. Please note: this is *not* the place to perform DOM
+            // reads/writes that would cause layout / paint, as this is called synchronously from within the constructor.
+        };
+        MDCComponent.prototype.destroy = function () {
+            // Subclasses may implement this method to release any resources / deregister any listeners they have
+            // attached. An example of this might be deregistering a resize event from the window object.
+            this.foundation_.destroy();
+        };
+        MDCComponent.prototype.listen = function (evtType, handler, options) {
+            this.root_.addEventListener(evtType, handler, options);
+        };
+        MDCComponent.prototype.unlisten = function (evtType, handler, options) {
+            this.root_.removeEventListener(evtType, handler, options);
+        };
+        /**
+         * Fires a cross-browser-compatible custom event from the component root of the given type, with the given data.
+         */
+        MDCComponent.prototype.emit = function (evtType, evtData, shouldBubble) {
+            if (shouldBubble === void 0) { shouldBubble = false; }
+            var evt;
+            if (typeof CustomEvent === 'function') {
+                evt = new CustomEvent(evtType, {
+                    bubbles: shouldBubble,
+                    detail: evtData,
+                });
+            }
+            else {
+                evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(evtType, shouldBubble, false, evtData);
+            }
+            this.root_.dispatchEvent(evt);
+        };
+        return MDCComponent;
+    }());
+    //# sourceMappingURL=component.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenuSurfaceFoundation = /** @class */ (function (_super) {
+        __extends(MDCMenuSurfaceFoundation, _super);
+        function MDCMenuSurfaceFoundation(adapter) {
+            var _this = _super.call(this, __assign({}, MDCMenuSurfaceFoundation.defaultAdapter, adapter)) || this;
+            _this.isOpen_ = false;
+            _this.isQuickOpen_ = false;
+            _this.isHoistedElement_ = false;
+            _this.isFixedPosition_ = false;
+            _this.openAnimationEndTimerId_ = 0;
+            _this.closeAnimationEndTimerId_ = 0;
+            _this.animationRequestId_ = 0;
+            _this.anchorCorner_ = Corner.TOP_START;
+            _this.anchorMargin_ = { top: 0, right: 0, bottom: 0, left: 0 };
+            _this.position_ = { x: 0, y: 0 };
+            return _this;
+        }
+        Object.defineProperty(MDCMenuSurfaceFoundation, "cssClasses", {
+            get: function () {
+                return cssClasses;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "strings", {
+            get: function () {
+                return strings;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "numbers", {
+            get: function () {
+                return numbers;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "Corner", {
+            get: function () {
+                return Corner;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(MDCMenuSurfaceFoundation, "defaultAdapter", {
+            /**
+             * @see {@link MDCMenuSurfaceAdapter} for typing information on parameters and return types.
+             */
+            get: function () {
+                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+                return {
+                    addClass: function () { return undefined; },
+                    removeClass: function () { return undefined; },
+                    hasClass: function () { return false; },
+                    hasAnchor: function () { return false; },
+                    isElementInContainer: function () { return false; },
+                    isFocused: function () { return false; },
+                    isRtl: function () { return false; },
+                    getInnerDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getAnchorDimensions: function () { return null; },
+                    getWindowDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getBodyDimensions: function () { return ({ height: 0, width: 0 }); },
+                    getWindowScroll: function () { return ({ x: 0, y: 0 }); },
+                    setPosition: function () { return undefined; },
+                    setMaxHeight: function () { return undefined; },
+                    setTransformOrigin: function () { return undefined; },
+                    saveFocus: function () { return undefined; },
+                    restoreFocus: function () { return undefined; },
+                    notifyClose: function () { return undefined; },
+                    notifyOpen: function () { return undefined; },
+                };
+                // tslint:enable:object-literal-sort-keys
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MDCMenuSurfaceFoundation.prototype.init = function () {
+            var _a = MDCMenuSurfaceFoundation.cssClasses, ROOT = _a.ROOT, OPEN = _a.OPEN;
+            if (!this.adapter_.hasClass(ROOT)) {
+                throw new Error(ROOT + " class required in root element.");
+            }
+            if (this.adapter_.hasClass(OPEN)) {
+                this.isOpen_ = true;
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.destroy = function () {
+            clearTimeout(this.openAnimationEndTimerId_);
+            clearTimeout(this.closeAnimationEndTimerId_);
+            // Cancel any currently running animations.
+            cancelAnimationFrame(this.animationRequestId_);
+        };
+        /**
+         * @param corner Default anchor corner alignment of top-left menu surface corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.setAnchorCorner = function (corner) {
+            this.anchorCorner_ = corner;
+        };
+        /**
+         * @param margin Set of margin values from anchor.
+         */
+        MDCMenuSurfaceFoundation.prototype.setAnchorMargin = function (margin) {
+            this.anchorMargin_.top = margin.top || 0;
+            this.anchorMargin_.right = margin.right || 0;
+            this.anchorMargin_.bottom = margin.bottom || 0;
+            this.anchorMargin_.left = margin.left || 0;
+        };
+        /** Used to indicate if the menu-surface is hoisted to the body. */
+        MDCMenuSurfaceFoundation.prototype.setIsHoisted = function (isHoisted) {
+            this.isHoistedElement_ = isHoisted;
+        };
+        /** Used to set the menu-surface calculations based on a fixed position menu. */
+        MDCMenuSurfaceFoundation.prototype.setFixedPosition = function (isFixedPosition) {
+            this.isFixedPosition_ = isFixedPosition;
+        };
+        /** Sets the menu-surface position on the page. */
+        MDCMenuSurfaceFoundation.prototype.setAbsolutePosition = function (x, y) {
+            this.position_.x = this.isFinite_(x) ? x : 0;
+            this.position_.y = this.isFinite_(y) ? y : 0;
+        };
+        MDCMenuSurfaceFoundation.prototype.setQuickOpen = function (quickOpen) {
+            this.isQuickOpen_ = quickOpen;
+        };
+        MDCMenuSurfaceFoundation.prototype.isOpen = function () {
+            return this.isOpen_;
+        };
+        /**
+         * Open the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.open = function () {
+            var _this = this;
+            this.adapter_.saveFocus();
+            if (!this.isQuickOpen_) {
+                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
+            }
+            this.animationRequestId_ = requestAnimationFrame(function () {
+                _this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
+                _this.dimensions_ = _this.adapter_.getInnerDimensions();
+                _this.autoPosition_();
+                if (_this.isQuickOpen_) {
+                    _this.adapter_.notifyOpen();
+                }
+                else {
+                    _this.openAnimationEndTimerId_ = setTimeout(function () {
+                        _this.openAnimationEndTimerId_ = 0;
+                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
+                        _this.adapter_.notifyOpen();
+                    }, numbers.TRANSITION_OPEN_DURATION);
+                }
+            });
+            this.isOpen_ = true;
+        };
+        /**
+         * Closes the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.close = function (skipRestoreFocus) {
+            var _this = this;
+            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
+            if (!this.isQuickOpen_) {
+                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
+            }
+            requestAnimationFrame(function () {
+                _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
+                if (_this.isQuickOpen_) {
+                    _this.adapter_.notifyClose();
+                }
+                else {
+                    _this.closeAnimationEndTimerId_ = setTimeout(function () {
+                        _this.closeAnimationEndTimerId_ = 0;
+                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
+                        _this.adapter_.notifyClose();
+                    }, numbers.TRANSITION_CLOSE_DURATION);
+                }
+            });
+            this.isOpen_ = false;
+            if (!skipRestoreFocus) {
+                this.maybeRestoreFocus_();
+            }
+        };
+        /** Handle clicks and close if not within menu-surface element. */
+        MDCMenuSurfaceFoundation.prototype.handleBodyClick = function (evt) {
+            var el = evt.target;
+            if (this.adapter_.isElementInContainer(el)) {
+                return;
+            }
+            this.close();
+        };
+        /** Handle keys that close the surface. */
+        MDCMenuSurfaceFoundation.prototype.handleKeydown = function (evt) {
+            var keyCode = evt.keyCode, key = evt.key;
+            var isEscape = key === 'Escape' || keyCode === 27;
+            if (isEscape) {
+                this.close();
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.autoPosition_ = function () {
+            var _a;
+            // Compute measurements for autoposition methods reuse.
+            this.measurements_ = this.getAutoLayoutMeasurements_();
+            var corner = this.getOriginCorner_();
+            var maxMenuSurfaceHeight = this.getMenuSurfaceMaxHeight_(corner);
+            var verticalAlignment = this.hasBit_(corner, CornerBit.BOTTOM) ? 'bottom' : 'top';
+            var horizontalAlignment = this.hasBit_(corner, CornerBit.RIGHT) ? 'right' : 'left';
+            var horizontalOffset = this.getHorizontalOriginOffset_(corner);
+            var verticalOffset = this.getVerticalOriginOffset_(corner);
+            var _b = this.measurements_, anchorSize = _b.anchorSize, surfaceSize = _b.surfaceSize;
+            var position = (_a = {},
+                _a[horizontalAlignment] = horizontalOffset,
+                _a[verticalAlignment] = verticalOffset,
+                _a);
+            // Center align when anchor width is comparable or greater than menu surface, otherwise keep corner.
+            if (anchorSize.width / surfaceSize.width > numbers.ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO) {
+                horizontalAlignment = 'center';
+            }
+            // If the menu-surface has been hoisted to the body, it's no longer relative to the anchor element
+            if (this.isHoistedElement_ || this.isFixedPosition_) {
+                this.adjustPositionForHoistedElement_(position);
+            }
+            this.adapter_.setTransformOrigin(horizontalAlignment + " " + verticalAlignment);
+            this.adapter_.setPosition(position);
+            this.adapter_.setMaxHeight(maxMenuSurfaceHeight ? maxMenuSurfaceHeight + 'px' : '');
+        };
+        /**
+         * @return Measurements used to position menu surface popup.
+         */
+        MDCMenuSurfaceFoundation.prototype.getAutoLayoutMeasurements_ = function () {
+            var anchorRect = this.adapter_.getAnchorDimensions();
+            var bodySize = this.adapter_.getBodyDimensions();
+            var viewportSize = this.adapter_.getWindowDimensions();
+            var windowScroll = this.adapter_.getWindowScroll();
+            if (!anchorRect) {
+                // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
+                anchorRect = {
+                    top: this.position_.y,
+                    right: this.position_.x,
+                    bottom: this.position_.y,
+                    left: this.position_.x,
+                    width: 0,
+                    height: 0,
+                };
+                // tslint:enable:object-literal-sort-keys
+            }
+            return {
+                anchorSize: anchorRect,
+                bodySize: bodySize,
+                surfaceSize: this.dimensions_,
+                viewportDistance: {
+                    // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
+                    top: anchorRect.top,
+                    right: viewportSize.width - anchorRect.right,
+                    bottom: viewportSize.height - anchorRect.bottom,
+                    left: anchorRect.left,
+                },
+                viewportSize: viewportSize,
+                windowScroll: windowScroll,
+            };
+        };
+        /**
+         * Computes the corner of the anchor from which to animate and position the menu surface.
+         */
+        MDCMenuSurfaceFoundation.prototype.getOriginCorner_ = function () {
+            // Defaults: open from the top left.
+            var corner = Corner.TOP_LEFT;
+            var _a = this.measurements_, viewportDistance = _a.viewportDistance, anchorSize = _a.anchorSize, surfaceSize = _a.surfaceSize;
+            var isBottomAligned = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var availableTop = isBottomAligned ? viewportDistance.top + anchorSize.height + this.anchorMargin_.bottom
+                : viewportDistance.top + this.anchorMargin_.top;
+            var availableBottom = isBottomAligned ? viewportDistance.bottom - this.anchorMargin_.bottom
+                : viewportDistance.bottom + anchorSize.height - this.anchorMargin_.top;
+            var topOverflow = surfaceSize.height - availableTop;
+            var bottomOverflow = surfaceSize.height - availableBottom;
+            if (bottomOverflow > 0 && topOverflow < bottomOverflow) {
+                corner = this.setBit_(corner, CornerBit.BOTTOM);
+            }
+            var isRtl = this.adapter_.isRtl();
+            var isFlipRtl = this.hasBit_(this.anchorCorner_, CornerBit.FLIP_RTL);
+            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
+            var isAlignedRight = (avoidHorizontalOverlap && !isRtl) ||
+                (!avoidHorizontalOverlap && isFlipRtl && isRtl);
+            var availableLeft = isAlignedRight ? viewportDistance.left + anchorSize.width + this.anchorMargin_.right :
+                viewportDistance.left + this.anchorMargin_.left;
+            var availableRight = isAlignedRight ? viewportDistance.right - this.anchorMargin_.right :
+                viewportDistance.right + anchorSize.width - this.anchorMargin_.left;
+            var leftOverflow = surfaceSize.width - availableLeft;
+            var rightOverflow = surfaceSize.width - availableRight;
+            if ((leftOverflow < 0 && isAlignedRight && isRtl) ||
+                (avoidHorizontalOverlap && !isAlignedRight && leftOverflow < 0) ||
+                (rightOverflow > 0 && leftOverflow < rightOverflow)) {
+                corner = this.setBit_(corner, CornerBit.RIGHT);
+            }
+            return corner;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Maximum height of the menu surface, based on available space. 0 indicates should not be set.
+         */
+        MDCMenuSurfaceFoundation.prototype.getMenuSurfaceMaxHeight_ = function (corner) {
+            var viewportDistance = this.measurements_.viewportDistance;
+            var maxHeight = 0;
+            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
+            var isBottomAnchored = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var MARGIN_TO_EDGE = MDCMenuSurfaceFoundation.numbers.MARGIN_TO_EDGE;
+            // When maximum height is not specified, it is handled from CSS.
+            if (isBottomAligned) {
+                maxHeight = viewportDistance.top + this.anchorMargin_.top - MARGIN_TO_EDGE;
+                if (!isBottomAnchored) {
+                    maxHeight += this.measurements_.anchorSize.height;
+                }
+            }
+            else {
+                maxHeight =
+                    viewportDistance.bottom - this.anchorMargin_.bottom + this.measurements_.anchorSize.height - MARGIN_TO_EDGE;
+                if (isBottomAnchored) {
+                    maxHeight -= this.measurements_.anchorSize.height;
+                }
+            }
+            return maxHeight;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Horizontal offset of menu surface origin corner from corresponding anchor corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.getHorizontalOriginOffset_ = function (corner) {
+            var anchorSize = this.measurements_.anchorSize;
+            // isRightAligned corresponds to using the 'right' property on the surface.
+            var isRightAligned = this.hasBit_(corner, CornerBit.RIGHT);
+            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
+            if (isRightAligned) {
+                var rightOffset = avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.left : this.anchorMargin_.right;
+                // For hoisted or fixed elements, adjust the offset by the difference between viewport width and body width so
+                // when we calculate the right value (`adjustPositionForHoistedElement_`) based on the element position,
+                // the right property is correct.
+                if (this.isHoistedElement_ || this.isFixedPosition_) {
+                    return rightOffset - (this.measurements_.viewportSize.width - this.measurements_.bodySize.width);
+                }
+                return rightOffset;
+            }
+            return avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.right : this.anchorMargin_.left;
+        };
+        /**
+         * @param corner Origin corner of the menu surface.
+         * @return Vertical offset of menu surface origin corner from corresponding anchor corner.
+         */
+        MDCMenuSurfaceFoundation.prototype.getVerticalOriginOffset_ = function (corner) {
+            var anchorSize = this.measurements_.anchorSize;
+            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
+            var avoidVerticalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
+            var y = 0;
+            if (isBottomAligned) {
+                y = avoidVerticalOverlap ? anchorSize.height - this.anchorMargin_.top : -this.anchorMargin_.bottom;
+            }
+            else {
+                y = avoidVerticalOverlap ? (anchorSize.height + this.anchorMargin_.bottom) : this.anchorMargin_.top;
+            }
+            return y;
+        };
+        /** Calculates the offsets for positioning the menu-surface when the menu-surface has been hoisted to the body. */
+        MDCMenuSurfaceFoundation.prototype.adjustPositionForHoistedElement_ = function (position) {
+            var e_1, _a;
+            var _b = this.measurements_, windowScroll = _b.windowScroll, viewportDistance = _b.viewportDistance;
+            var props = Object.keys(position);
+            try {
+                for (var props_1 = __values(props), props_1_1 = props_1.next(); !props_1_1.done; props_1_1 = props_1.next()) {
+                    var prop = props_1_1.value;
+                    var value = position[prop] || 0;
+                    // Hoisted surfaces need to have the anchor elements location on the page added to the
+                    // position properties for proper alignment on the body.
+                    value += viewportDistance[prop];
+                    // Surfaces that are absolutely positioned need to have additional calculations for scroll
+                    // and bottom positioning.
+                    if (!this.isFixedPosition_) {
+                        if (prop === 'top') {
+                            value += windowScroll.y;
+                        }
+                        else if (prop === 'bottom') {
+                            value -= windowScroll.y;
+                        }
+                        else if (prop === 'left') {
+                            value += windowScroll.x;
+                        }
+                        else { // prop === 'right'
+                            value -= windowScroll.x;
+                        }
+                    }
+                    position[prop] = value;
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (props_1_1 && !props_1_1.done && (_a = props_1.return)) _a.call(props_1);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+        };
+        /**
+         * The last focused element when the menu surface was opened should regain focus, if the user is
+         * focused on or within the menu surface when it is closed.
+         */
+        MDCMenuSurfaceFoundation.prototype.maybeRestoreFocus_ = function () {
+            var isRootFocused = this.adapter_.isFocused();
+            var childHasFocus = document.activeElement && this.adapter_.isElementInContainer(document.activeElement);
+            if (isRootFocused || childHasFocus) {
+                this.adapter_.restoreFocus();
+            }
+        };
+        MDCMenuSurfaceFoundation.prototype.hasBit_ = function (corner, bit) {
+            return Boolean(corner & bit); // tslint:disable-line:no-bitwise
+        };
+        MDCMenuSurfaceFoundation.prototype.setBit_ = function (corner, bit) {
+            return corner | bit; // tslint:disable-line:no-bitwise
+        };
+        /**
+         * isFinite that doesn't force conversion to number type.
+         * Equivalent to Number.isFinite in ES2015, which is not supported in IE.
+         */
+        MDCMenuSurfaceFoundation.prototype.isFinite_ = function (num) {
+            return typeof num === 'number' && isFinite(num);
+        };
+        return MDCMenuSurfaceFoundation;
+    }(MDCFoundation));
+    //# sourceMappingURL=foundation.js.map
+
+    /**
+     * @license
+     * Copyright 2018 Google Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+    var MDCMenuSurface = /** @class */ (function (_super) {
+        __extends(MDCMenuSurface, _super);
+        function MDCMenuSurface() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        MDCMenuSurface.attachTo = function (root) {
+            return new MDCMenuSurface(root);
+        };
+        MDCMenuSurface.prototype.initialSyncWithDOM = function () {
+            var _this = this;
+            var parentEl = this.root_.parentElement;
+            this.anchorElement = parentEl && parentEl.classList.contains(cssClasses.ANCHOR) ? parentEl : null;
+            if (this.root_.classList.contains(cssClasses.FIXED)) {
+                this.setFixedPosition(true);
+            }
+            this.handleKeydown_ = function (evt) { return _this.foundation_.handleKeydown(evt); };
+            this.handleBodyClick_ = function (evt) { return _this.foundation_.handleBodyClick(evt); };
+            this.registerBodyClickListener_ = function () { return document.body.addEventListener('click', _this.handleBodyClick_); };
+            this.deregisterBodyClickListener_ = function () { return document.body.removeEventListener('click', _this.handleBodyClick_); };
+            this.listen('keydown', this.handleKeydown_);
+            this.listen(strings.OPENED_EVENT, this.registerBodyClickListener_);
+            this.listen(strings.CLOSED_EVENT, this.deregisterBodyClickListener_);
+        };
+        MDCMenuSurface.prototype.destroy = function () {
+            this.unlisten('keydown', this.handleKeydown_);
+            this.unlisten(strings.OPENED_EVENT, this.registerBodyClickListener_);
+            this.unlisten(strings.CLOSED_EVENT, this.deregisterBodyClickListener_);
+            _super.prototype.destroy.call(this);
+        };
+        MDCMenuSurface.prototype.isOpen = function () {
+            return this.foundation_.isOpen();
+        };
+        MDCMenuSurface.prototype.open = function () {
+            this.foundation_.open();
+        };
+        MDCMenuSurface.prototype.close = function (skipRestoreFocus) {
+            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
+            this.foundation_.close(skipRestoreFocus);
+        };
+        Object.defineProperty(MDCMenuSurface.prototype, "quickOpen", {
+            set: function (quickOpen) {
+                this.foundation_.setQuickOpen(quickOpen);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Removes the menu-surface from it's current location and appends it to the
+         * body to overcome any overflow:hidden issues.
+         */
+        MDCMenuSurface.prototype.hoistMenuToBody = function () {
+            document.body.appendChild(this.root_);
+            this.setIsHoisted(true);
+        };
+        /** Sets the foundation to use page offsets for an positioning when the menu is hoisted to the body. */
+        MDCMenuSurface.prototype.setIsHoisted = function (isHoisted) {
+            this.foundation_.setIsHoisted(isHoisted);
+        };
+        /** Sets the element that the menu-surface is anchored to. */
+        MDCMenuSurface.prototype.setMenuSurfaceAnchorElement = function (element) {
+            this.anchorElement = element;
+        };
+        /** Sets the menu-surface to position: fixed. */
+        MDCMenuSurface.prototype.setFixedPosition = function (isFixed) {
+            if (isFixed) {
+                this.root_.classList.add(cssClasses.FIXED);
+            }
+            else {
+                this.root_.classList.remove(cssClasses.FIXED);
+            }
+            this.foundation_.setFixedPosition(isFixed);
+        };
+        /** Sets the absolute x/y position to position based on. Requires the menu to be hoisted. */
+        MDCMenuSurface.prototype.setAbsolutePosition = function (x, y) {
+            this.foundation_.setAbsolutePosition(x, y);
+            this.setIsHoisted(true);
+        };
+        /**
+         * @param corner Default anchor corner alignment of top-left surface corner.
+         */
+        MDCMenuSurface.prototype.setAnchorCorner = function (corner) {
+            this.foundation_.setAnchorCorner(corner);
+        };
+        MDCMenuSurface.prototype.setAnchorMargin = function (margin) {
+            this.foundation_.setAnchorMargin(margin);
+        };
+        MDCMenuSurface.prototype.getDefaultFoundation = function () {
+            var _this = this;
+            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
+            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
+            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
+            var adapter = {
+                addClass: function (className) { return _this.root_.classList.add(className); },
+                removeClass: function (className) { return _this.root_.classList.remove(className); },
+                hasClass: function (className) { return _this.root_.classList.contains(className); },
+                hasAnchor: function () { return !!_this.anchorElement; },
+                notifyClose: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.CLOSED_EVENT, {}); },
+                notifyOpen: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.OPENED_EVENT, {}); },
+                isElementInContainer: function (el) { return _this.root_.contains(el); },
+                isRtl: function () { return getComputedStyle(_this.root_).getPropertyValue('direction') === 'rtl'; },
+                setTransformOrigin: function (origin) {
+                    var propertyName = getTransformPropertyName(window) + "-origin";
+                    _this.root_.style.setProperty(propertyName, origin);
+                },
+                isFocused: function () { return document.activeElement === _this.root_; },
+                saveFocus: function () {
+                    _this.previousFocus_ = document.activeElement;
+                },
+                restoreFocus: function () {
+                    if (_this.root_.contains(document.activeElement)) {
+                        if (_this.previousFocus_ && _this.previousFocus_.focus) {
+                            _this.previousFocus_.focus();
+                        }
+                    }
+                },
+                getInnerDimensions: function () {
+                    return { width: _this.root_.offsetWidth, height: _this.root_.offsetHeight };
+                },
+                getAnchorDimensions: function () { return _this.anchorElement ? _this.anchorElement.getBoundingClientRect() : null; },
+                getWindowDimensions: function () {
+                    return { width: window.innerWidth, height: window.innerHeight };
+                },
+                getBodyDimensions: function () {
+                    return { width: document.body.clientWidth, height: document.body.clientHeight };
+                },
+                getWindowScroll: function () {
+                    return { x: window.pageXOffset, y: window.pageYOffset };
+                },
+                setPosition: function (position) {
+                    _this.root_.style.left = 'left' in position ? position.left + "px" : '';
+                    _this.root_.style.right = 'right' in position ? position.right + "px" : '';
+                    _this.root_.style.top = 'top' in position ? position.top + "px" : '';
+                    _this.root_.style.bottom = 'bottom' in position ? position.bottom + "px" : '';
+                },
+                setMaxHeight: function (height) {
+                    _this.root_.style.maxHeight = height;
+                },
+            };
+            // tslint:enable:object-literal-sort-keys
+            return new MDCMenuSurfaceFoundation(adapter);
+        };
+        return MDCMenuSurface;
+    }(MDCComponent));
+    //# sourceMappingURL=component.js.map
+
+    function forwardEventsBuilder(component, additionalEvents = []) {
+      const events = [
+        'focus', 'blur',
+        'fullscreenchange', 'fullscreenerror', 'scroll',
+        'cut', 'copy', 'paste',
+        'keydown', 'keypress', 'keyup',
+        'auxclick', 'click', 'contextmenu', 'dblclick', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseover', 'mouseout', 'mouseup', 'pointerlockchange', 'pointerlockerror', 'select', 'wheel',
+        'drag', 'dragend', 'dragenter', 'dragstart', 'dragleave', 'dragover', 'drop',
+        'touchcancel', 'touchend', 'touchmove', 'touchstart',
+        'pointerover', 'pointerenter', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerout', 'pointerleave', 'gotpointercapture', 'lostpointercapture',
+        ...additionalEvents
+      ];
+
+      function forward(e) {
+        bubble(component, e);
+      }
+
+      return node => {
+        const destructors = [];
+
+        for (let i = 0; i < events.length; i++) {
+          destructors.push(listen(node, events[i], forward));
+        }
+
+        return {
+          destroy: () => {
+            for (let i = 0; i < destructors.length; i++) {
+              destructors[i]();
+            }
+          }
+        }
+      };
+    }
+
+    function exclude(obj, keys) {
+      let names = Object.getOwnPropertyNames(obj);
+      const newObj = {};
+
+      for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        const cashIndex = name.indexOf('$');
+        if (cashIndex !== -1 && keys.indexOf(name.substring(0, cashIndex + 1)) !== -1) {
+          continue;
+        }
+        if (keys.indexOf(name) !== -1) {
+          continue;
+        }
+        newObj[name] = obj[name];
+      }
+
+      return newObj;
+    }
+
+    function useActions(node, actions) {
+      let objects = [];
+
+      if (actions) {
+        for (let i = 0; i < actions.length; i++) {
+          const isArray = Array.isArray(actions[i]);
+          const action = isArray ? actions[i][0] : actions[i];
+          if (isArray && actions[i].length > 1) {
+            objects.push(action(node, actions[i][1]));
+          } else {
+            objects.push(action(node));
+          }
+        }
+      }
+
+      return {
+        update(actions) {
+          if ((actions && actions.length || 0) != objects.length) {
+            throw new Error('You must not change the length of an actions array.');
+          }
+
+          if (actions) {
+            for (let i = 0; i < actions.length; i++) {
+              if (objects[i] && 'update' in objects[i]) {
+                const isArray = Array.isArray(actions[i]);
+                if (isArray && actions[i].length > 1) {
+                  objects[i].update(actions[i][1]);
+                } else {
+                  objects[i].update();
+                }
+              }
+            }
+          }
+        },
+
+        destroy() {
+          for (let i = 0; i < objects.length; i++) {
+            if (objects[i] && 'destroy' in objects[i]) {
+              objects[i].destroy();
+            }
+          }
+        }
+      }
+    }
+
+    /* node_modules\@smui\menu-surface\MenuSurface.svelte generated by Svelte v3.18.1 */
+    const file = "node_modules\\@smui\\menu-surface\\MenuSurface.svelte";
+
+    function create_fragment(ctx) {
+    	let div;
+    	let useActions_action;
+    	let forwardEvents_action;
+    	let current;
+    	let dispose;
+    	const default_slot_template = /*$$slots*/ ctx[27].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[26], null);
+
+    	let div_levels = [
+    		{
+    			class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
+    		},
+    		exclude(/*$$props*/ ctx[7], [
+    			"use",
+    			"class",
+    			"static",
+    			"anchor",
+    			"fixed",
+    			"open",
+    			"quickOpen",
+    			"anchorElement",
+    			"anchorCorner",
+    			"element"
+    		])
+    	];
+
+    	let div_data = {};
+
+    	for (let i = 0; i < div_levels.length; i += 1) {
+    		div_data = assign(div_data, div_levels[i]);
+    	}
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			if (default_slot) default_slot.c();
+    			set_attributes(div, div_data);
+    			add_location(div, file, 0, 0, 0);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+
+    			if (default_slot) {
+    				default_slot.m(div, null);
+    			}
+
+    			/*div_binding*/ ctx[28](div);
+    			current = true;
+
+    			dispose = [
+    				action_destroyer(useActions_action = useActions.call(null, div, /*use*/ ctx[2])),
+    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[5].call(null, div)),
+    				listen_dev(div, "MDCMenuSurface:closed", /*updateOpen*/ ctx[6], false, false, false),
+    				listen_dev(div, "MDCMenuSurface:opened", /*updateOpen*/ ctx[6], false, false, false)
+    			];
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 67108864) {
+    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[26], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[26], dirty, null));
+    			}
+
+    			set_attributes(div, get_spread_update(div_levels, [
+    				dirty & /*className, fixed, isStatic*/ 25 && {
+    					class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
+    				},
+    				dirty & /*exclude, $$props*/ 128 && exclude(/*$$props*/ ctx[7], [
+    					"use",
+    					"class",
+    					"static",
+    					"anchor",
+    					"fixed",
+    					"open",
+    					"quickOpen",
+    					"anchorElement",
+    					"anchorCorner",
+    					"element"
+    				])
+    			]));
+
+    			if (useActions_action && is_function(useActions_action.update) && dirty & /*use*/ 4) useActions_action.update.call(null, /*use*/ ctx[2]);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(default_slot, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(default_slot, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			if (default_slot) default_slot.d(detaching);
+    			/*div_binding*/ ctx[28](null);
+    			run_all(dispose);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance($$self, $$props, $$invalidate) {
+    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCMenuSurface:closed", "MDCMenuSurface:opened"]);
+    	let { use = [] } = $$props;
+    	let { class: className = "" } = $$props;
+    	let { static: isStatic = false } = $$props;
+    	let { anchor = true } = $$props;
+    	let { fixed = false } = $$props;
+    	let { open = isStatic } = $$props;
+    	let { quickOpen = false } = $$props;
+    	let { anchorElement = null } = $$props;
+    	let { anchorCorner = null } = $$props;
+    	let { element = undefined } = $$props; // This is exported because Menu needs it.
+    	let menuSurface;
+    	let instantiate = getContext("SMUI:menu-surface:instantiate");
+    	let getInstance = getContext("SMUI:menu-surface:getInstance");
+    	setContext("SMUI:list:role", "menu");
+    	setContext("SMUI:list:item:role", "menuitem");
+    	let oldFixed = null;
+
+    	onMount(async () => {
+    		if (instantiate !== false) {
+    			$$invalidate(22, menuSurface = new MDCMenuSurface(element));
+    		} else {
+    			$$invalidate(22, menuSurface = await getInstance());
+    		}
+    	});
+
+    	onDestroy(() => {
+    		if (anchor) {
+    			element && element.parentNode.classList.remove("mdc-menu-surface--anchor");
+    		}
+
+    		let isHoisted = false;
+
+    		if (menuSurface) {
+    			isHoisted = menuSurface.foundation_.isHoistedElement_;
+
+    			if (instantiate !== false) {
+    				menuSurface.destroy();
+    			}
+    		}
+
+    		if (isHoisted) {
+    			element.parentNode.removeChild(element);
+    		}
+    	});
+
+    	function updateOpen() {
+    		if (menuSurface) {
+    			if (isStatic) {
+    				$$invalidate(8, open = true);
+    			} else {
+    				$$invalidate(8, open = menuSurface.isOpen());
+    			}
+    		}
+    	}
+
+    	function setOpen(value) {
+    		$$invalidate(8, open = value);
+    	}
+
+    	function setAnchorCorner(...args) {
+    		return menuSurface.setAnchorCorner(...args);
+    	}
+
+    	function setAnchorMargin(...args) {
+    		return menuSurface.setAnchorMargin(...args);
+    	}
+
+    	function setFixedPosition(isFixed, ...args) {
+    		$$invalidate(0, fixed = isFixed);
+    		return menuSurface.setFixedPosition(isFixed, ...args);
+    	}
+
+    	function setAbsolutePosition(...args) {
+    		return menuSurface.setAbsolutePosition(...args);
+    	}
+
+    	function setMenuSurfaceAnchorElement(...args) {
+    		return menuSurface.setMenuSurfaceAnchorElement(...args);
+    	}
+
+    	function hoistMenuToBody(...args) {
+    		return menuSurface.hoistMenuToBody(...args);
+    	}
+
+    	function setIsHoisted(...args) {
+    		return menuSurface.setIsHoisted(...args);
+    	}
+
+    	function getDefaultFoundation(...args) {
+    		return menuSurface.getDefaultFoundation(...args);
+    	}
+
+    	let { $$slots = {}, $$scope } = $$props;
+
+    	function div_binding($$value) {
+    		binding_callbacks[$$value ? "unshift" : "push"](() => {
+    			$$invalidate(1, element = $$value);
+    		});
+    	}
+
+    	$$self.$set = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
+    		if ("use" in $$new_props) $$invalidate(2, use = $$new_props.use);
+    		if ("class" in $$new_props) $$invalidate(3, className = $$new_props.class);
+    		if ("static" in $$new_props) $$invalidate(4, isStatic = $$new_props.static);
+    		if ("anchor" in $$new_props) $$invalidate(10, anchor = $$new_props.anchor);
+    		if ("fixed" in $$new_props) $$invalidate(0, fixed = $$new_props.fixed);
+    		if ("open" in $$new_props) $$invalidate(8, open = $$new_props.open);
+    		if ("quickOpen" in $$new_props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
+    		if ("anchorElement" in $$new_props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
+    		if ("anchorCorner" in $$new_props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
+    		if ("element" in $$new_props) $$invalidate(1, element = $$new_props.element);
+    		if ("$$scope" in $$new_props) $$invalidate(26, $$scope = $$new_props.$$scope);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return {
+    			use,
+    			className,
+    			isStatic,
+    			anchor,
+    			fixed,
+    			open,
+    			quickOpen,
+    			anchorElement,
+    			anchorCorner,
+    			element,
+    			menuSurface,
+    			instantiate,
+    			getInstance,
+    			oldFixed
+    		};
+    	};
+
+    	$$self.$inject_state = $$new_props => {
+    		$$invalidate(7, $$props = assign(assign({}, $$props), $$new_props));
+    		if ("use" in $$props) $$invalidate(2, use = $$new_props.use);
+    		if ("className" in $$props) $$invalidate(3, className = $$new_props.className);
+    		if ("isStatic" in $$props) $$invalidate(4, isStatic = $$new_props.isStatic);
+    		if ("anchor" in $$props) $$invalidate(10, anchor = $$new_props.anchor);
+    		if ("fixed" in $$props) $$invalidate(0, fixed = $$new_props.fixed);
+    		if ("open" in $$props) $$invalidate(8, open = $$new_props.open);
+    		if ("quickOpen" in $$props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
+    		if ("anchorElement" in $$props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
+    		if ("anchorCorner" in $$props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
+    		if ("element" in $$props) $$invalidate(1, element = $$new_props.element);
+    		if ("menuSurface" in $$props) $$invalidate(22, menuSurface = $$new_props.menuSurface);
+    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
+    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
+    		if ("oldFixed" in $$props) $$invalidate(23, oldFixed = $$new_props.oldFixed);
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*element, anchor*/ 1026) {
+    			 if (element && anchor && !element.parentNode.classList.contains("mdc-menu-surface--anchor")) {
+    				element.parentNode.classList.add("mdc-menu-surface--anchor");
+    				$$invalidate(9, anchorElement = element.parentNode);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, quickOpen*/ 4196352) {
+    			 if (menuSurface && menuSurface.quickOpen !== quickOpen) {
+    				$$invalidate(22, menuSurface.quickOpen = quickOpen, menuSurface);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, anchorElement*/ 4194816) {
+    			 if (menuSurface && menuSurface.anchorElement !== anchorElement) {
+    				$$invalidate(22, menuSurface.anchorElement = anchorElement, menuSurface);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, open*/ 4194560) {
+    			 if (menuSurface && menuSurface.isOpen() !== open) {
+    				if (open) {
+    					menuSurface.open();
+    				} else {
+    					menuSurface.close();
+    				}
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, oldFixed, fixed*/ 12582913) {
+    			 if (menuSurface && oldFixed !== fixed) {
+    				menuSurface.setFixedPosition(fixed);
+    				$$invalidate(23, oldFixed = fixed);
+    			}
+    		}
+
+    		if ($$self.$$.dirty & /*menuSurface, anchorCorner*/ 4198400) {
+    			 if (menuSurface && anchorCorner != null) {
+    				if (Corner.hasOwnProperty(anchorCorner)) {
+    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
+    				} else if (CornerBit.hasOwnProperty(anchorCorner)) {
+    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
+    				} else {
+    					menuSurface.setAnchorCorner(anchorCorner);
+    				}
+    			}
+    		}
+    	};
+
+    	$$props = exclude_internal_props($$props);
+
+    	return [
+    		fixed,
+    		element,
+    		use,
+    		className,
+    		isStatic,
+    		forwardEvents,
+    		updateOpen,
+    		$$props,
+    		open,
+    		anchorElement,
+    		anchor,
+    		quickOpen,
+    		anchorCorner,
+    		setOpen,
+    		setAnchorCorner,
+    		setAnchorMargin,
+    		setFixedPosition,
+    		setAbsolutePosition,
+    		setMenuSurfaceAnchorElement,
+    		hoistMenuToBody,
+    		setIsHoisted,
+    		getDefaultFoundation,
+    		menuSurface,
+    		oldFixed,
+    		instantiate,
+    		getInstance,
+    		$$scope,
+    		$$slots,
+    		div_binding
+    	];
+    }
+
+    class MenuSurface extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+
+    		init(this, options, instance, create_fragment, safe_not_equal, {
+    			use: 2,
+    			class: 3,
+    			static: 4,
+    			anchor: 10,
+    			fixed: 0,
+    			open: 8,
+    			quickOpen: 11,
+    			anchorElement: 9,
+    			anchorCorner: 12,
+    			element: 1,
+    			setOpen: 13,
+    			setAnchorCorner: 14,
+    			setAnchorMargin: 15,
+    			setFixedPosition: 16,
+    			setAbsolutePosition: 17,
+    			setMenuSurfaceAnchorElement: 18,
+    			hoistMenuToBody: 19,
+    			setIsHoisted: 20,
+    			getDefaultFoundation: 21
+    		});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "MenuSurface",
+    			options,
+    			id: create_fragment.name
+    		});
+    	}
+
+    	get use() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set use(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get class() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set class(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get static() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set static(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchor() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchor(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get fixed() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set fixed(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get open() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set open(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get quickOpen() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set quickOpen(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchorElement() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchorElement(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get anchorCorner() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchorCorner(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get element() {
+    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set element(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setOpen() {
+    		return this.$$.ctx[13];
+    	}
+
+    	set setOpen(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorCorner() {
+    		return this.$$.ctx[14];
+    	}
+
+    	set setAnchorCorner(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAnchorMargin() {
+    		return this.$$.ctx[15];
+    	}
+
+    	set setAnchorMargin(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setFixedPosition() {
+    		return this.$$.ctx[16];
+    	}
+
+    	set setFixedPosition(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setAbsolutePosition() {
+    		return this.$$.ctx[17];
+    	}
+
+    	set setAbsolutePosition(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setMenuSurfaceAnchorElement() {
+    		return this.$$.ctx[18];
+    	}
+
+    	set setMenuSurfaceAnchorElement(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get hoistMenuToBody() {
+    		return this.$$.ctx[19];
+    	}
+
+    	set hoistMenuToBody(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get setIsHoisted() {
+    		return this.$$.ctx[20];
+    	}
+
+    	set setIsHoisted(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get getDefaultFoundation() {
+    		return this.$$.ctx[21];
+    	}
+
+    	set getDefaultFoundation(value) {
+    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+    }
+
+    function Anchor(node) {
+      node.classList.add('mdc-menu-surface--anchor');
+
+      return {
+        destroy() {
+          node.classList.remove('mdc-menu-surface--anchor');
+        }
+      }
+    }
+
     var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
     function createCommonjsModule(fn, module) {
@@ -1362,9 +3016,9 @@ var app = (function () {
     });
 
     /* src\components\Linkpreview.svelte generated by Svelte v3.18.1 */
-    const file = "src\\components\\Linkpreview.svelte";
+    const file$1 = "src\\components\\Linkpreview.svelte";
 
-    function create_fragment(ctx) {
+    function create_fragment$1(ctx) {
     	let a;
     	let span;
     	let img;
@@ -1397,20 +3051,20 @@ var app = (function () {
     			if (img.src !== (img_src_value = /*image*/ ctx[3])) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "class", "lazyload svelte-1dv8vd1");
     			attr_dev(img, "alt", "Web logo");
-    			add_location(img, file, 51, 4, 774);
+    			add_location(img, file$1, 51, 4, 774);
     			attr_dev(h3, "class", "webtitle svelte-1dv8vd1");
-    			add_location(h3, file, 52, 4, 835);
+    			add_location(h3, file$1, 52, 4, 835);
     			attr_dev(p, "class", "svelte-1dv8vd1");
-    			add_location(p, file, 53, 4, 874);
+    			add_location(p, file$1, 53, 4, 874);
     			attr_dev(h5, "class", "svelte-1dv8vd1");
-    			add_location(h5, file, 54, 4, 900);
+    			add_location(h5, file$1, 54, 4, 900);
     			attr_dev(span, "class", "linkp svelte-1dv8vd1");
     			attr_dev(span, "href", /*url*/ ctx[1]);
-    			add_location(span, file, 50, 0, 737);
+    			add_location(span, file$1, 50, 0, 737);
     			attr_dev(a, "href", /*url*/ ctx[1]);
     			attr_dev(a, "target", "_blank");
     			attr_dev(a, "class", "svelte-1dv8vd1");
-    			add_location(a, file, 49, 0, 705);
+    			add_location(a, file$1, 49, 0, 705);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1455,7 +3109,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment.name,
+    		id: create_fragment$1.name,
     		type: "component",
     		source: "",
     		ctx
@@ -1464,7 +3118,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance($$self, $$props, $$invalidate) {
+    function instance$1($$self, $$props, $$invalidate) {
     	let { title } = $$props,
     		{ url } = $$props,
     		{ description } = $$props,
@@ -1501,7 +3155,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance, create_fragment, safe_not_equal, {
+    		init(this, options, instance$1, create_fragment$1, safe_not_equal, {
     			title: 0,
     			url: 1,
     			description: 2,
@@ -1512,7 +3166,7 @@ var app = (function () {
     			component: this,
     			tagName: "Linkpreview",
     			options,
-    			id: create_fragment.name
+    			id: create_fragment$1.name
     		});
 
     		const { ctx } = this.$$;
@@ -1568,35 +3222,8 @@ var app = (function () {
     	}
     }
 
-    function styleInject(css, ref) {
-      if ( ref === void 0 ) ref = {};
-      var insertAt = ref.insertAt;
-
-      if (!css || typeof document === 'undefined') { return; }
-
-      var head = document.head || document.getElementsByTagName('head')[0];
-      var style = document.createElement('style');
-      style.type = 'text/css';
-
-      if (insertAt === 'top') {
-        if (head.firstChild) {
-          head.insertBefore(style, head.firstChild);
-        } else {
-          head.appendChild(style);
-        }
-      } else {
-        head.appendChild(style);
-      }
-
-      if (style.styleSheet) {
-        style.styleSheet.cssText = css;
-      } else {
-        style.appendChild(document.createTextNode(css));
-      }
-    }
-
-    var css = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-dialog,.mdc-dialog__scrim{position:fixed;top:0;left:0;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%}.mdc-dialog{display:none;z-index:7}.mdc-dialog .mdc-dialog__surface{background-color:#fff;background-color:var(--mdc-theme-surface,#fff)}.mdc-dialog .mdc-dialog__scrim{background-color:rgba(0,0,0,.32)}.mdc-dialog .mdc-dialog__title{color:rgba(0,0,0,.87)}.mdc-dialog .mdc-dialog__content{color:rgba(0,0,0,.6)}.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__actions,.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__title{border-color:rgba(0,0,0,.12)}.mdc-dialog .mdc-dialog__surface{min-width:280px}@media (max-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:calc(100vw - 32px)}}@media (min-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:560px}}.mdc-dialog .mdc-dialog__surface{max-height:calc(100% - 32px)}.mdc-dialog .mdc-dialog__surface{border-radius:4px}.mdc-dialog__scrim{opacity:0;z-index:-1}.mdc-dialog__container{display:flex;flex-direction:row;align-items:center;justify-content:space-around;box-sizing:border-box;height:100%;transform:scale(.8);opacity:0;pointer-events:none}.mdc-dialog__surface{box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);display:flex;flex-direction:column;flex-grow:0;flex-shrink:0;box-sizing:border-box;max-width:100%;max-height:100%;pointer-events:auto;overflow-y:auto}.mdc-dialog[dir=rtl] .mdc-dialog__surface,[dir=rtl] .mdc-dialog .mdc-dialog__surface{text-align:right}.mdc-dialog__title{line-height:normal;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1.25rem;line-height:2rem;font-weight:500;letter-spacing:.0125em;text-decoration:inherit;text-transform:inherit;display:block;position:relative;flex-shrink:0;box-sizing:border-box;margin:0;padding:0 24px 9px;border-bottom:1px solid transparent}.mdc-dialog__title:before{display:inline-block;width:0;height:40px;content:\"\";vertical-align:0}.mdc-dialog[dir=rtl] .mdc-dialog__title,[dir=rtl] .mdc-dialog .mdc-dialog__title{text-align:right}.mdc-dialog--scrollable .mdc-dialog__title{padding-bottom:15px}.mdc-dialog__content{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.5rem;font-weight:400;letter-spacing:.03125em;text-decoration:inherit;text-transform:inherit;flex-grow:1;box-sizing:border-box;margin:0;padding:20px 24px;overflow:auto;-webkit-overflow-scrolling:touch}.mdc-dialog__content>:first-child{margin-top:0}.mdc-dialog__content>:last-child{margin-bottom:0}.mdc-dialog__title+.mdc-dialog__content{padding-top:0}.mdc-dialog--scrollable .mdc-dialog__content{padding-top:8px;padding-bottom:8px}.mdc-dialog__content .mdc-list:first-child:last-child{padding:6px 0 0}.mdc-dialog--scrollable .mdc-dialog__content .mdc-list:first-child:last-child{padding:0}.mdc-dialog__actions{display:flex;position:relative;flex-shrink:0;flex-wrap:wrap;align-items:center;justify-content:flex-end;box-sizing:border-box;min-height:52px;margin:0;padding:8px;border-top:1px solid transparent}.mdc-dialog--stacked .mdc-dialog__actions{flex-direction:column;align-items:flex-end}.mdc-dialog__button{margin-left:8px;margin-right:0;max-width:100%;text-align:right}.mdc-dialog__button[dir=rtl],[dir=rtl] .mdc-dialog__button{margin-left:0;margin-right:8px}.mdc-dialog__button:first-child,.mdc-dialog__button:first-child[dir=rtl],[dir=rtl] .mdc-dialog__button:first-child{margin-left:0;margin-right:0}.mdc-dialog[dir=rtl] .mdc-dialog__button,[dir=rtl] .mdc-dialog .mdc-dialog__button{text-align:left}.mdc-dialog--stacked .mdc-dialog__button:not(:first-child){margin-top:12px}.mdc-dialog--closing,.mdc-dialog--open,.mdc-dialog--opening{display:flex}.mdc-dialog--opening .mdc-dialog__scrim{transition:opacity .15s linear}.mdc-dialog--opening .mdc-dialog__container{transition:opacity 75ms linear,transform .15s cubic-bezier(0,0,.2,1) 0ms}.mdc-dialog--closing .mdc-dialog__container,.mdc-dialog--closing .mdc-dialog__scrim{transition:opacity 75ms linear}.mdc-dialog--closing .mdc-dialog__container{transform:scale(1)}.mdc-dialog--open .mdc-dialog__scrim{opacity:1}.mdc-dialog--open .mdc-dialog__container{transform:scale(1);opacity:1}.mdc-dialog-scroll-lock{overflow:hidden}";
-    styleInject(css);
+    var css$1 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-dialog,.mdc-dialog__scrim{position:fixed;top:0;left:0;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%}.mdc-dialog{display:none;z-index:7}.mdc-dialog .mdc-dialog__surface{background-color:#fff;background-color:var(--mdc-theme-surface,#fff)}.mdc-dialog .mdc-dialog__scrim{background-color:rgba(0,0,0,.32)}.mdc-dialog .mdc-dialog__title{color:rgba(0,0,0,.87)}.mdc-dialog .mdc-dialog__content{color:rgba(0,0,0,.6)}.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__actions,.mdc-dialog.mdc-dialog--scrollable .mdc-dialog__title{border-color:rgba(0,0,0,.12)}.mdc-dialog .mdc-dialog__surface{min-width:280px}@media (max-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:calc(100vw - 32px)}}@media (min-width:592px){.mdc-dialog .mdc-dialog__surface{max-width:560px}}.mdc-dialog .mdc-dialog__surface{max-height:calc(100% - 32px)}.mdc-dialog .mdc-dialog__surface{border-radius:4px}.mdc-dialog__scrim{opacity:0;z-index:-1}.mdc-dialog__container{display:flex;flex-direction:row;align-items:center;justify-content:space-around;box-sizing:border-box;height:100%;transform:scale(.8);opacity:0;pointer-events:none}.mdc-dialog__surface{box-shadow:0 11px 15px -7px rgba(0,0,0,.2),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12);display:flex;flex-direction:column;flex-grow:0;flex-shrink:0;box-sizing:border-box;max-width:100%;max-height:100%;pointer-events:auto;overflow-y:auto}.mdc-dialog[dir=rtl] .mdc-dialog__surface,[dir=rtl] .mdc-dialog .mdc-dialog__surface{text-align:right}.mdc-dialog__title{line-height:normal;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1.25rem;line-height:2rem;font-weight:500;letter-spacing:.0125em;text-decoration:inherit;text-transform:inherit;display:block;position:relative;flex-shrink:0;box-sizing:border-box;margin:0;padding:0 24px 9px;border-bottom:1px solid transparent}.mdc-dialog__title:before{display:inline-block;width:0;height:40px;content:\"\";vertical-align:0}.mdc-dialog[dir=rtl] .mdc-dialog__title,[dir=rtl] .mdc-dialog .mdc-dialog__title{text-align:right}.mdc-dialog--scrollable .mdc-dialog__title{padding-bottom:15px}.mdc-dialog__content{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.5rem;font-weight:400;letter-spacing:.03125em;text-decoration:inherit;text-transform:inherit;flex-grow:1;box-sizing:border-box;margin:0;padding:20px 24px;overflow:auto;-webkit-overflow-scrolling:touch}.mdc-dialog__content>:first-child{margin-top:0}.mdc-dialog__content>:last-child{margin-bottom:0}.mdc-dialog__title+.mdc-dialog__content{padding-top:0}.mdc-dialog--scrollable .mdc-dialog__content{padding-top:8px;padding-bottom:8px}.mdc-dialog__content .mdc-list:first-child:last-child{padding:6px 0 0}.mdc-dialog--scrollable .mdc-dialog__content .mdc-list:first-child:last-child{padding:0}.mdc-dialog__actions{display:flex;position:relative;flex-shrink:0;flex-wrap:wrap;align-items:center;justify-content:flex-end;box-sizing:border-box;min-height:52px;margin:0;padding:8px;border-top:1px solid transparent}.mdc-dialog--stacked .mdc-dialog__actions{flex-direction:column;align-items:flex-end}.mdc-dialog__button{margin-left:8px;margin-right:0;max-width:100%;text-align:right}.mdc-dialog__button[dir=rtl],[dir=rtl] .mdc-dialog__button{margin-left:0;margin-right:8px}.mdc-dialog__button:first-child,.mdc-dialog__button:first-child[dir=rtl],[dir=rtl] .mdc-dialog__button:first-child{margin-left:0;margin-right:0}.mdc-dialog[dir=rtl] .mdc-dialog__button,[dir=rtl] .mdc-dialog .mdc-dialog__button{text-align:left}.mdc-dialog--stacked .mdc-dialog__button:not(:first-child){margin-top:12px}.mdc-dialog--closing,.mdc-dialog--open,.mdc-dialog--opening{display:flex}.mdc-dialog--opening .mdc-dialog__scrim{transition:opacity .15s linear}.mdc-dialog--opening .mdc-dialog__container{transition:opacity 75ms linear,transform .15s cubic-bezier(0,0,.2,1) 0ms}.mdc-dialog--closing .mdc-dialog__container,.mdc-dialog--closing .mdc-dialog__scrim{transition:opacity 75ms linear}.mdc-dialog--closing .mdc-dialog__container{transform:scale(1)}.mdc-dialog--open .mdc-dialog__scrim{opacity:1}.mdc-dialog--open .mdc-dialog__container{transform:scale(1);opacity:1}.mdc-dialog-scroll-lock{overflow:hidden}";
+    styleInject(css$1);
 
     var candidateSelectors = [
       'input',
@@ -2147,253 +3774,6 @@ var app = (function () {
     }
     //# sourceMappingURL=util.js.map
 
-    /*! *****************************************************************************
-    Copyright (c) Microsoft Corporation. All rights reserved.
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-    this file except in compliance with the License. You may obtain a copy of the
-    License at http://www.apache.org/licenses/LICENSE-2.0
-
-    THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-    KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-    WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
-    MERCHANTABLITY OR NON-INFRINGEMENT.
-
-    See the Apache Version 2.0 License for specific language governing permissions
-    and limitations under the License.
-    ***************************************************************************** */
-    /* global Reflect, Promise */
-
-    var extendStatics = function(d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-
-    function __extends(d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    }
-
-    var __assign = function() {
-        __assign = Object.assign || function __assign(t) {
-            for (var s, i = 1, n = arguments.length; i < n; i++) {
-                s = arguments[i];
-                for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-            }
-            return t;
-        };
-        return __assign.apply(this, arguments);
-    };
-
-    function __values(o) {
-        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-        if (m) return m.call(o);
-        if (o && typeof o.length === "number") return {
-            next: function () {
-                if (o && i >= o.length) o = void 0;
-                return { value: o && o[i++], done: !o };
-            }
-        };
-        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-    }
-
-    function __read(o, n) {
-        var m = typeof Symbol === "function" && o[Symbol.iterator];
-        if (!m) return o;
-        var i = m.call(o), r, ar = [], e;
-        try {
-            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-        }
-        catch (error) { e = { error: error }; }
-        finally {
-            try {
-                if (r && !r.done && (m = i["return"])) m.call(i);
-            }
-            finally { if (e) throw e.error; }
-        }
-        return ar;
-    }
-
-    function __spread() {
-        for (var ar = [], i = 0; i < arguments.length; i++)
-            ar = ar.concat(__read(arguments[i]));
-        return ar;
-    }
-
-    /**
-     * @license
-     * Copyright 2016 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var MDCFoundation = /** @class */ (function () {
-        function MDCFoundation(adapter) {
-            if (adapter === void 0) { adapter = {}; }
-            this.adapter_ = adapter;
-        }
-        Object.defineProperty(MDCFoundation, "cssClasses", {
-            get: function () {
-                // Classes extending MDCFoundation should implement this method to return an object which exports every
-                // CSS class the foundation class needs as a property. e.g. {ACTIVE: 'mdc-component--active'}
-                return {};
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCFoundation, "strings", {
-            get: function () {
-                // Classes extending MDCFoundation should implement this method to return an object which exports all
-                // semantic strings as constants. e.g. {ARIA_ROLE: 'tablist'}
-                return {};
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCFoundation, "numbers", {
-            get: function () {
-                // Classes extending MDCFoundation should implement this method to return an object which exports all
-                // of its semantic numbers as constants. e.g. {ANIMATION_DELAY_MS: 350}
-                return {};
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCFoundation, "defaultAdapter", {
-            get: function () {
-                // Classes extending MDCFoundation may choose to implement this getter in order to provide a convenient
-                // way of viewing the necessary methods of an adapter. In the future, this could also be used for adapter
-                // validation.
-                return {};
-            },
-            enumerable: true,
-            configurable: true
-        });
-        MDCFoundation.prototype.init = function () {
-            // Subclasses should override this method to perform initialization routines (registering events, etc.)
-        };
-        MDCFoundation.prototype.destroy = function () {
-            // Subclasses should override this method to perform de-initialization routines (de-registering events, etc.)
-        };
-        return MDCFoundation;
-    }());
-    //# sourceMappingURL=foundation.js.map
-
-    /**
-     * @license
-     * Copyright 2016 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var MDCComponent = /** @class */ (function () {
-        function MDCComponent(root, foundation) {
-            var args = [];
-            for (var _i = 2; _i < arguments.length; _i++) {
-                args[_i - 2] = arguments[_i];
-            }
-            this.root_ = root;
-            this.initialize.apply(this, __spread(args));
-            // Note that we initialize foundation here and not within the constructor's default param so that
-            // this.root_ is defined and can be used within the foundation class.
-            this.foundation_ = foundation === undefined ? this.getDefaultFoundation() : foundation;
-            this.foundation_.init();
-            this.initialSyncWithDOM();
-        }
-        MDCComponent.attachTo = function (root) {
-            // Subclasses which extend MDCBase should provide an attachTo() method that takes a root element and
-            // returns an instantiated component with its root set to that element. Also note that in the cases of
-            // subclasses, an explicit foundation class will not have to be passed in; it will simply be initialized
-            // from getDefaultFoundation().
-            return new MDCComponent(root, new MDCFoundation({}));
-        };
-        /* istanbul ignore next: method param only exists for typing purposes; it does not need to be unit tested */
-        MDCComponent.prototype.initialize = function () {
-            var _args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                _args[_i] = arguments[_i];
-            }
-            // Subclasses can override this to do any additional setup work that would be considered part of a
-            // "constructor". Essentially, it is a hook into the parent constructor before the foundation is
-            // initialized. Any additional arguments besides root and foundation will be passed in here.
-        };
-        MDCComponent.prototype.getDefaultFoundation = function () {
-            // Subclasses must override this method to return a properly configured foundation class for the
-            // component.
-            throw new Error('Subclasses must override getDefaultFoundation to return a properly configured ' +
-                'foundation class');
-        };
-        MDCComponent.prototype.initialSyncWithDOM = function () {
-            // Subclasses should override this method if they need to perform work to synchronize with a host DOM
-            // object. An example of this would be a form control wrapper that needs to synchronize its internal state
-            // to some property or attribute of the host DOM. Please note: this is *not* the place to perform DOM
-            // reads/writes that would cause layout / paint, as this is called synchronously from within the constructor.
-        };
-        MDCComponent.prototype.destroy = function () {
-            // Subclasses may implement this method to release any resources / deregister any listeners they have
-            // attached. An example of this might be deregistering a resize event from the window object.
-            this.foundation_.destroy();
-        };
-        MDCComponent.prototype.listen = function (evtType, handler, options) {
-            this.root_.addEventListener(evtType, handler, options);
-        };
-        MDCComponent.prototype.unlisten = function (evtType, handler, options) {
-            this.root_.removeEventListener(evtType, handler, options);
-        };
-        /**
-         * Fires a cross-browser-compatible custom event from the component root of the given type, with the given data.
-         */
-        MDCComponent.prototype.emit = function (evtType, evtData, shouldBubble) {
-            if (shouldBubble === void 0) { shouldBubble = false; }
-            var evt;
-            if (typeof CustomEvent === 'function') {
-                evt = new CustomEvent(evtType, {
-                    bubbles: shouldBubble,
-                    detail: evtData,
-                });
-            }
-            else {
-                evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(evtType, shouldBubble, false, evtData);
-            }
-            this.root_.dispatchEvent(evt);
-        };
-        return MDCComponent;
-    }());
-    //# sourceMappingURL=component.js.map
-
     /**
      * @license
      * Copyright 2018 Google Inc.
@@ -2515,7 +3895,7 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses = {
+    var cssClasses$1 = {
         // Ripple is a special case where the "root" component is really a "mixin" of sorts,
         // given that it's an 'upgrade' to an existing component. That being said it is the root
         // CSS class that all other CSS classes derive from.
@@ -2525,7 +3905,7 @@ var app = (function () {
         ROOT: 'mdc-ripple-upgraded',
         UNBOUNDED: 'mdc-ripple-upgraded--unbounded',
     };
-    var strings = {
+    var strings$1 = {
         VAR_FG_SCALE: '--mdc-ripple-fg-scale',
         VAR_FG_SIZE: '--mdc-ripple-fg-size',
         VAR_FG_TRANSLATE_END: '--mdc-ripple-fg-translate-end',
@@ -2533,7 +3913,7 @@ var app = (function () {
         VAR_LEFT: '--mdc-ripple-left',
         VAR_TOP: '--mdc-ripple-top',
     };
-    var numbers = {
+    var numbers$1 = {
         DEACTIVATION_TIMEOUT_MS: 225,
         FG_DEACTIVATION_MS: 150,
         INITIAL_ORIGIN_SCALE: 0.6,
@@ -2677,21 +4057,21 @@ var app = (function () {
         }
         Object.defineProperty(MDCRippleFoundation, "cssClasses", {
             get: function () {
-                return cssClasses;
+                return cssClasses$1;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCRippleFoundation, "strings", {
             get: function () {
-                return strings;
+                return strings$1;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCRippleFoundation, "numbers", {
             get: function () {
-                return numbers;
+                return numbers$1;
             },
             enumerable: true,
             configurable: true
@@ -2992,7 +4372,7 @@ var app = (function () {
                 this.adapter_.addClass(FG_DEACTIVATION);
                 this.fgDeactivationRemovalTimer_ = setTimeout(function () {
                     _this.adapter_.removeClass(FG_DEACTIVATION);
-                }, numbers.FG_DEACTIVATION_MS);
+                }, numbers$1.FG_DEACTIVATION_MS);
             }
         };
         MDCRippleFoundation.prototype.rmBoundedActivationClasses_ = function () {
@@ -3201,7 +4581,7 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses$1 = {
+    var cssClasses$2 = {
         CLOSING: 'mdc-dialog--closing',
         OPEN: 'mdc-dialog--open',
         OPENING: 'mdc-dialog--opening',
@@ -3209,7 +4589,7 @@ var app = (function () {
         SCROLL_LOCK: 'mdc-dialog-scroll-lock',
         STACKED: 'mdc-dialog--stacked',
     };
-    var strings$1 = {
+    var strings$2 = {
         ACTION_ATTRIBUTE: 'data-mdc-dialog-action',
         BUTTON_DEFAULT_ATTRIBUTE: 'data-mdc-dialog-button-default',
         BUTTON_SELECTOR: '.mdc-dialog__button',
@@ -3229,7 +4609,7 @@ var app = (function () {
         ].join(', '),
         SURFACE_SELECTOR: '.mdc-dialog__surface',
     };
-    var numbers$1 = {
+    var numbers$2 = {
         DIALOG_ANIMATION_CLOSE_TIME_MS: 75,
         DIALOG_ANIMATION_OPEN_TIME_MS: 150,
     };
@@ -3265,29 +4645,29 @@ var app = (function () {
             _this.animationFrame_ = 0;
             _this.animationTimer_ = 0;
             _this.layoutFrame_ = 0;
-            _this.escapeKeyAction_ = strings$1.CLOSE_ACTION;
-            _this.scrimClickAction_ = strings$1.CLOSE_ACTION;
+            _this.escapeKeyAction_ = strings$2.CLOSE_ACTION;
+            _this.scrimClickAction_ = strings$2.CLOSE_ACTION;
             _this.autoStackButtons_ = true;
             _this.areButtonsStacked_ = false;
             return _this;
         }
         Object.defineProperty(MDCDialogFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$1;
+                return cssClasses$2;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCDialogFoundation, "strings", {
             get: function () {
-                return strings$1;
+                return strings$2;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCDialogFoundation, "numbers", {
             get: function () {
-                return numbers$1;
+                return numbers$2;
             },
             enumerable: true,
             configurable: true
@@ -3319,13 +4699,13 @@ var app = (function () {
             configurable: true
         });
         MDCDialogFoundation.prototype.init = function () {
-            if (this.adapter_.hasClass(cssClasses$1.STACKED)) {
+            if (this.adapter_.hasClass(cssClasses$2.STACKED)) {
                 this.setAutoStackButtons(false);
             }
         };
         MDCDialogFoundation.prototype.destroy = function () {
             if (this.isOpen_) {
-                this.close(strings$1.DESTROY_ACTION);
+                this.close(strings$2.DESTROY_ACTION);
             }
             if (this.animationTimer_) {
                 clearTimeout(this.animationTimer_);
@@ -3340,17 +4720,17 @@ var app = (function () {
             var _this = this;
             this.isOpen_ = true;
             this.adapter_.notifyOpening();
-            this.adapter_.addClass(cssClasses$1.OPENING);
+            this.adapter_.addClass(cssClasses$2.OPENING);
             // Wait a frame once display is no longer "none", to establish basis for animation
             this.runNextAnimationFrame_(function () {
-                _this.adapter_.addClass(cssClasses$1.OPEN);
-                _this.adapter_.addBodyClass(cssClasses$1.SCROLL_LOCK);
+                _this.adapter_.addClass(cssClasses$2.OPEN);
+                _this.adapter_.addBodyClass(cssClasses$2.SCROLL_LOCK);
                 _this.layout();
                 _this.animationTimer_ = setTimeout(function () {
                     _this.handleAnimationTimerEnd_();
                     _this.adapter_.trapFocus(_this.adapter_.getInitialFocusEl());
                     _this.adapter_.notifyOpened();
-                }, numbers$1.DIALOG_ANIMATION_OPEN_TIME_MS);
+                }, numbers$2.DIALOG_ANIMATION_OPEN_TIME_MS);
             });
         };
         MDCDialogFoundation.prototype.close = function (action) {
@@ -3362,9 +4742,9 @@ var app = (function () {
             }
             this.isOpen_ = false;
             this.adapter_.notifyClosing(action);
-            this.adapter_.addClass(cssClasses$1.CLOSING);
-            this.adapter_.removeClass(cssClasses$1.OPEN);
-            this.adapter_.removeBodyClass(cssClasses$1.SCROLL_LOCK);
+            this.adapter_.addClass(cssClasses$2.CLOSING);
+            this.adapter_.removeClass(cssClasses$2.OPEN);
+            this.adapter_.removeBodyClass(cssClasses$2.SCROLL_LOCK);
             cancelAnimationFrame(this.animationFrame_);
             this.animationFrame_ = 0;
             clearTimeout(this.animationTimer_);
@@ -3372,7 +4752,7 @@ var app = (function () {
                 _this.adapter_.releaseFocus();
                 _this.handleAnimationTimerEnd_();
                 _this.adapter_.notifyClosed(action);
-            }, numbers$1.DIALOG_ANIMATION_CLOSE_TIME_MS);
+            }, numbers$2.DIALOG_ANIMATION_CLOSE_TIME_MS);
         };
         MDCDialogFoundation.prototype.isOpen = function () {
             return this.isOpen_;
@@ -3407,7 +4787,7 @@ var app = (function () {
         };
         /** Handles click on the dialog root element. */
         MDCDialogFoundation.prototype.handleClick = function (evt) {
-            var isScrim = this.adapter_.eventTargetMatches(evt.target, strings$1.SCRIM_SELECTOR);
+            var isScrim = this.adapter_.eventTargetMatches(evt.target, strings$2.SCRIM_SELECTOR);
             // Check for scrim click first since it doesn't require querying ancestors.
             if (isScrim && this.scrimClickAction_ !== '') {
                 this.close(this.scrimClickAction_);
@@ -3431,7 +4811,7 @@ var app = (function () {
                 // since space/enter keydowns on buttons trigger click events.
                 return;
             }
-            var isDefault = !this.adapter_.eventTargetMatches(evt.target, strings$1.SUPPRESS_DEFAULT_PRESS_SELECTOR);
+            var isDefault = !this.adapter_.eventTargetMatches(evt.target, strings$2.SUPPRESS_DEFAULT_PRESS_SELECTOR);
             if (isEnter && isDefault) {
                 this.adapter_.clickDefaultButton();
             }
@@ -3451,8 +4831,8 @@ var app = (function () {
         };
         MDCDialogFoundation.prototype.handleAnimationTimerEnd_ = function () {
             this.animationTimer_ = 0;
-            this.adapter_.removeClass(cssClasses$1.OPENING);
-            this.adapter_.removeClass(cssClasses$1.CLOSING);
+            this.adapter_.removeClass(cssClasses$2.OPENING);
+            this.adapter_.removeClass(cssClasses$2.CLOSING);
         };
         /**
          * Runs the given logic on the next animation frame, using setTimeout to factor in Firefox reflow behavior.
@@ -3468,10 +4848,10 @@ var app = (function () {
         };
         MDCDialogFoundation.prototype.detectStackedButtons_ = function () {
             // Remove the class first to let us measure the buttons' natural positions.
-            this.adapter_.removeClass(cssClasses$1.STACKED);
+            this.adapter_.removeClass(cssClasses$2.STACKED);
             var areButtonsStacked = this.adapter_.areButtonsStacked();
             if (areButtonsStacked) {
-                this.adapter_.addClass(cssClasses$1.STACKED);
+                this.adapter_.addClass(cssClasses$2.STACKED);
             }
             if (areButtonsStacked !== this.areButtonsStacked_) {
                 this.adapter_.reverseButtons();
@@ -3480,9 +4860,9 @@ var app = (function () {
         };
         MDCDialogFoundation.prototype.detectScrollableContent_ = function () {
             // Remove the class first to let us measure the natural height of the content.
-            this.adapter_.removeClass(cssClasses$1.SCROLLABLE);
+            this.adapter_.removeClass(cssClasses$2.SCROLLABLE);
             if (this.adapter_.isContentScrollable()) {
-                this.adapter_.addClass(cssClasses$1.SCROLLABLE);
+                this.adapter_.addClass(cssClasses$2.SCROLLABLE);
             }
         };
         return MDCDialogFoundation;
@@ -3511,7 +4891,7 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var strings$2 = MDCDialogFoundation.strings;
+    var strings$3 = MDCDialogFoundation.strings;
     var MDCDialog = /** @class */ (function (_super) {
         __extends(MDCDialog, _super);
         function MDCDialog() {
@@ -3559,14 +4939,14 @@ var app = (function () {
         };
         MDCDialog.prototype.initialize = function (focusTrapFactory) {
             var e_1, _a;
-            var container = this.root_.querySelector(strings$2.CONTAINER_SELECTOR);
+            var container = this.root_.querySelector(strings$3.CONTAINER_SELECTOR);
             if (!container) {
-                throw new Error("Dialog component requires a " + strings$2.CONTAINER_SELECTOR + " container element");
+                throw new Error("Dialog component requires a " + strings$3.CONTAINER_SELECTOR + " container element");
             }
             this.container_ = container;
-            this.content_ = this.root_.querySelector(strings$2.CONTENT_SELECTOR);
-            this.buttons_ = [].slice.call(this.root_.querySelectorAll(strings$2.BUTTON_SELECTOR));
-            this.defaultButton_ = this.root_.querySelector("[" + strings$2.BUTTON_DEFAULT_ATTRIBUTE + "]");
+            this.content_ = this.root_.querySelector(strings$3.CONTENT_SELECTOR);
+            this.buttons_ = [].slice.call(this.root_.querySelectorAll(strings$3.BUTTON_SELECTOR));
+            this.defaultButton_ = this.root_.querySelector("[" + strings$3.BUTTON_DEFAULT_ATTRIBUTE + "]");
             this.focusTrapFactory_ = focusTrapFactory;
             this.buttonRipples_ = [];
             try {
@@ -3601,14 +4981,14 @@ var app = (function () {
             };
             this.listen('click', this.handleClick_);
             this.listen('keydown', this.handleKeydown_);
-            this.listen(strings$2.OPENING_EVENT, this.handleOpening_);
-            this.listen(strings$2.CLOSING_EVENT, this.handleClosing_);
+            this.listen(strings$3.OPENING_EVENT, this.handleOpening_);
+            this.listen(strings$3.CLOSING_EVENT, this.handleClosing_);
         };
         MDCDialog.prototype.destroy = function () {
             this.unlisten('click', this.handleClick_);
             this.unlisten('keydown', this.handleKeydown_);
-            this.unlisten(strings$2.OPENING_EVENT, this.handleOpening_);
-            this.unlisten(strings$2.CLOSING_EVENT, this.handleClosing_);
+            this.unlisten(strings$3.OPENING_EVENT, this.handleOpening_);
+            this.unlisten(strings$3.CLOSING_EVENT, this.handleClosing_);
             this.handleClosing_();
             this.buttonRipples_.forEach(function (ripple) { return ripple.destroy(); });
             _super.prototype.destroy.call(this);
@@ -3637,16 +5017,16 @@ var app = (function () {
                     if (!evt.target) {
                         return '';
                     }
-                    var element = closest(evt.target, "[" + strings$2.ACTION_ATTRIBUTE + "]");
-                    return element && element.getAttribute(strings$2.ACTION_ATTRIBUTE);
+                    var element = closest(evt.target, "[" + strings$3.ACTION_ATTRIBUTE + "]");
+                    return element && element.getAttribute(strings$3.ACTION_ATTRIBUTE);
                 },
                 getInitialFocusEl: function () { return _this.getInitialFocusEl_(); },
                 hasClass: function (className) { return _this.root_.classList.contains(className); },
                 isContentScrollable: function () { return isScrollable(_this.content_); },
-                notifyClosed: function (action) { return _this.emit(strings$2.CLOSED_EVENT, action ? { action: action } : {}); },
-                notifyClosing: function (action) { return _this.emit(strings$2.CLOSING_EVENT, action ? { action: action } : {}); },
-                notifyOpened: function () { return _this.emit(strings$2.OPENED_EVENT, {}); },
-                notifyOpening: function () { return _this.emit(strings$2.OPENING_EVENT, {}); },
+                notifyClosed: function (action) { return _this.emit(strings$3.CLOSED_EVENT, action ? { action: action } : {}); },
+                notifyClosing: function (action) { return _this.emit(strings$3.CLOSING_EVENT, action ? { action: action } : {}); },
+                notifyOpened: function () { return _this.emit(strings$3.OPENED_EVENT, {}); },
+                notifyOpening: function () { return _this.emit(strings$3.OPENING_EVENT, {}); },
                 releaseFocus: function () { return _this.focusTrap_.deactivate(); },
                 removeBodyClass: function (className) { return document.body.classList.remove(className); },
                 removeClass: function (className) { return _this.root_.classList.remove(className); },
@@ -3661,114 +5041,16 @@ var app = (function () {
             return new MDCDialogFoundation(adapter);
         };
         MDCDialog.prototype.getInitialFocusEl_ = function () {
-            return document.querySelector("[" + strings$2.INITIAL_FOCUS_ATTRIBUTE + "]");
+            return document.querySelector("[" + strings$3.INITIAL_FOCUS_ATTRIBUTE + "]");
         };
         return MDCDialog;
     }(MDCComponent));
     //# sourceMappingURL=component.js.map
 
-    function forwardEventsBuilder(component, additionalEvents = []) {
-      const events = [
-        'focus', 'blur',
-        'fullscreenchange', 'fullscreenerror', 'scroll',
-        'cut', 'copy', 'paste',
-        'keydown', 'keypress', 'keyup',
-        'auxclick', 'click', 'contextmenu', 'dblclick', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseover', 'mouseout', 'mouseup', 'pointerlockchange', 'pointerlockerror', 'select', 'wheel',
-        'drag', 'dragend', 'dragenter', 'dragstart', 'dragleave', 'dragover', 'drop',
-        'touchcancel', 'touchend', 'touchmove', 'touchstart',
-        'pointerover', 'pointerenter', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerout', 'pointerleave', 'gotpointercapture', 'lostpointercapture',
-        ...additionalEvents
-      ];
-
-      function forward(e) {
-        bubble(component, e);
-      }
-
-      return node => {
-        const destructors = [];
-
-        for (let i = 0; i < events.length; i++) {
-          destructors.push(listen(node, events[i], forward));
-        }
-
-        return {
-          destroy: () => {
-            for (let i = 0; i < destructors.length; i++) {
-              destructors[i]();
-            }
-          }
-        }
-      };
-    }
-
-    function exclude(obj, keys) {
-      let names = Object.getOwnPropertyNames(obj);
-      const newObj = {};
-
-      for (let i = 0; i < names.length; i++) {
-        const name = names[i];
-        const cashIndex = name.indexOf('$');
-        if (cashIndex !== -1 && keys.indexOf(name.substring(0, cashIndex + 1)) !== -1) {
-          continue;
-        }
-        if (keys.indexOf(name) !== -1) {
-          continue;
-        }
-        newObj[name] = obj[name];
-      }
-
-      return newObj;
-    }
-
-    function useActions(node, actions) {
-      let objects = [];
-
-      if (actions) {
-        for (let i = 0; i < actions.length; i++) {
-          const isArray = Array.isArray(actions[i]);
-          const action = isArray ? actions[i][0] : actions[i];
-          if (isArray && actions[i].length > 1) {
-            objects.push(action(node, actions[i][1]));
-          } else {
-            objects.push(action(node));
-          }
-        }
-      }
-
-      return {
-        update(actions) {
-          if ((actions && actions.length || 0) != objects.length) {
-            throw new Error('You must not change the length of an actions array.');
-          }
-
-          if (actions) {
-            for (let i = 0; i < actions.length; i++) {
-              if (objects[i] && 'update' in objects[i]) {
-                const isArray = Array.isArray(actions[i]);
-                if (isArray && actions[i].length > 1) {
-                  objects[i].update(actions[i][1]);
-                } else {
-                  objects[i].update();
-                }
-              }
-            }
-          }
-        },
-
-        destroy() {
-          for (let i = 0; i < objects.length; i++) {
-            if (objects[i] && 'destroy' in objects[i]) {
-              objects[i].destroy();
-            }
-          }
-        }
-      }
-    }
-
     /* node_modules\@smui\dialog\Dialog.svelte generated by Svelte v3.18.1 */
-    const file$1 = "node_modules\\@smui\\dialog\\Dialog.svelte";
+    const file$2 = "node_modules\\@smui\\dialog\\Dialog.svelte";
 
-    function create_fragment$1(ctx) {
+    function create_fragment$2(ctx) {
     	let div3;
     	let div1;
     	let div0;
@@ -3805,13 +5087,13 @@ var app = (function () {
     			t = space();
     			div2 = element("div");
     			attr_dev(div0, "class", "mdc-dialog__surface");
-    			add_location(div0, file$1, 11, 4, 273);
+    			add_location(div0, file$2, 11, 4, 273);
     			attr_dev(div1, "class", "mdc-dialog__container");
-    			add_location(div1, file$1, 10, 2, 233);
+    			add_location(div1, file$2, 10, 2, 233);
     			attr_dev(div2, "class", "mdc-dialog__scrim");
-    			add_location(div2, file$1, 15, 2, 349);
+    			add_location(div2, file$2, 15, 2, 349);
     			set_attributes(div3, div3_data);
-    			add_location(div3, file$1, 0, 0, 0);
+    			add_location(div3, file$2, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -3871,7 +5153,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$1.name,
+    		id: create_fragment$2.name,
     		type: "component",
     		source: "",
     		ctx
@@ -3880,7 +5162,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$1($$self, $$props, $$invalidate) {
+    function instance$2($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, [
     		"MDCDialog:opening",
     		"MDCDialog:opened",
@@ -4043,7 +5325,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$1, create_fragment$1, safe_not_equal, {
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {
     			use: 0,
     			class: 1,
     			escapeKeyAction: 6,
@@ -4059,7 +5341,7 @@ var app = (function () {
     			component: this,
     			tagName: "Dialog",
     			options,
-    			id: create_fragment$1.name
+    			id: create_fragment$2.name
     		});
     	}
 
@@ -4185,7 +5467,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$2(ctx) {
+    function create_fragment$3(ctx) {
     	let switch_instance_anchor;
     	let current;
 
@@ -4295,7 +5577,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$2.name,
+    		id: create_fragment$3.name,
     		type: "component",
     		source: "",
     		ctx
@@ -4310,7 +5592,7 @@ var app = (function () {
     	contexts: {}
     };
 
-    function instance$2($$self, $$props, $$invalidate) {
+    function instance$3($$self, $$props, $$invalidate) {
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
     	let { component = internals.component } = $$props;
@@ -4373,7 +5655,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {
     			use: 0,
     			class: 1,
     			component: 2,
@@ -4384,7 +5666,7 @@ var app = (function () {
     			component: this,
     			tagName: "ClassAdder",
     			options,
-    			id: create_fragment$2.name
+    			id: create_fragment$3.name
     		});
     	}
 
@@ -4441,9 +5723,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\H2.svelte generated by Svelte v3.18.1 */
-    const file$2 = "node_modules\\@smui\\common\\H2.svelte";
+    const file$3 = "node_modules\\@smui\\common\\H2.svelte";
 
-    function create_fragment$3(ctx) {
+    function create_fragment$4(ctx) {
     	let h2;
     	let useActions_action;
     	let forwardEvents_action;
@@ -4463,7 +5745,7 @@ var app = (function () {
     			h2 = element("h2");
     			if (default_slot) default_slot.c();
     			set_attributes(h2, h2_data);
-    			add_location(h2, file$2, 0, 0, 0);
+    			add_location(h2, file$3, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -4508,7 +5790,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$3.name,
+    		id: create_fragment$4.name,
     		type: "component",
     		source: "",
     		ctx
@@ -4517,7 +5799,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$3($$self, $$props, $$invalidate) {
+    function instance$4($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -4544,13 +5826,13 @@ var app = (function () {
     class H2 extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { use: 0 });
+    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "H2",
     			options,
-    			id: create_fragment$3.name
+    			id: create_fragment$4.name
     		});
     	}
 
@@ -4570,9 +5852,9 @@ var app = (function () {
     });
 
     /* node_modules\@smui\common\Div.svelte generated by Svelte v3.18.1 */
-    const file$3 = "node_modules\\@smui\\common\\Div.svelte";
+    const file$4 = "node_modules\\@smui\\common\\Div.svelte";
 
-    function create_fragment$4(ctx) {
+    function create_fragment$5(ctx) {
     	let div;
     	let useActions_action;
     	let forwardEvents_action;
@@ -4592,7 +5874,7 @@ var app = (function () {
     			div = element("div");
     			if (default_slot) default_slot.c();
     			set_attributes(div, div_data);
-    			add_location(div, file$3, 0, 0, 0);
+    			add_location(div, file$4, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -4637,7 +5919,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$4.name,
+    		id: create_fragment$5.name,
     		type: "component",
     		source: "",
     		ctx
@@ -4646,7 +5928,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$4($$self, $$props, $$invalidate) {
+    function instance$5($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -4673,13 +5955,13 @@ var app = (function () {
     class Div extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { use: 0 });
+    		init(this, options, instance$5, create_fragment$5, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Div",
     			options,
-    			id: create_fragment$4.name
+    			id: create_fragment$5.name
     		});
     	}
 
@@ -4699,9 +5981,9 @@ var app = (function () {
     });
 
     /* node_modules\@smui\common\Footer.svelte generated by Svelte v3.18.1 */
-    const file$4 = "node_modules\\@smui\\common\\Footer.svelte";
+    const file$5 = "node_modules\\@smui\\common\\Footer.svelte";
 
-    function create_fragment$5(ctx) {
+    function create_fragment$6(ctx) {
     	let footer;
     	let useActions_action;
     	let forwardEvents_action;
@@ -4721,7 +6003,7 @@ var app = (function () {
     			footer = element("footer");
     			if (default_slot) default_slot.c();
     			set_attributes(footer, footer_data);
-    			add_location(footer, file$4, 0, 0, 0);
+    			add_location(footer, file$5, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -4766,7 +6048,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$5.name,
+    		id: create_fragment$6.name,
     		type: "component",
     		source: "",
     		ctx
@@ -4775,7 +6057,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$5($$self, $$props, $$invalidate) {
+    function instance$6($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -4802,13 +6084,13 @@ var app = (function () {
     class Footer extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$5, create_fragment$5, safe_not_equal, { use: 0 });
+    		init(this, options, instance$6, create_fragment$6, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Footer",
     			options,
-    			id: create_fragment$5.name
+    			id: create_fragment$6.name
     		});
     	}
 
@@ -4829,13 +6111,13 @@ var app = (function () {
       }
     });
 
-    var css$1 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-button{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;padding:0 8px;display:inline-flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:64px;height:36px;border:none;outline:none;line-height:inherit;user-select:none;-webkit-appearance:none;overflow:hidden;vertical-align:middle;border-radius:4px}.mdc-button::-moz-focus-inner{padding:0;border:0}.mdc-button:active{outline:none}.mdc-button:hover{cursor:pointer}.mdc-button:disabled{background-color:transparent;color:rgba(0,0,0,.37);cursor:default;pointer-events:none}.mdc-button.mdc-button--dense{border-radius:4px}.mdc-button:not(:disabled){background-color:transparent}.mdc-button .mdc-button__icon{margin-left:0;margin-right:8px;display:inline-block;width:18px;height:18px;font-size:18px;vertical-align:top}.mdc-button .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button .mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button:not(:disabled){color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-button__label+.mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button__label+.mdc-button__icon{margin-left:0;margin-right:8px}svg.mdc-button__icon{fill:currentColor}.mdc-button--outlined .mdc-button__icon,.mdc-button--raised .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--outlined .mdc-button__icon[dir=rtl],.mdc-button--outlined .mdc-button__label+.mdc-button__icon,.mdc-button--raised .mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon,.mdc-button--unelevated .mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--outlined .mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__icon{margin-left:8px;margin-right:-4px}.mdc-button--outlined .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--outlined .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__label+.mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--raised,.mdc-button--unelevated{padding:0 16px}.mdc-button--raised:disabled,.mdc-button--unelevated:disabled{background-color:rgba(0,0,0,.12);color:rgba(0,0,0,.37)}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-primary,#fff)}.mdc-button--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);transition:box-shadow .28s cubic-bezier(.4,0,.2,1)}.mdc-button--raised:focus,.mdc-button--raised:hover{box-shadow:0 2px 4px -1px rgba(0,0,0,.2),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)}.mdc-button--raised:active{box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)}.mdc-button--raised:disabled{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.mdc-button--outlined{border-style:solid;padding:0 15px;border-width:1px}.mdc-button--outlined:disabled{border-color:rgba(0,0,0,.37)}.mdc-button--outlined:not(:disabled){border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-button--dense{height:32px;font-size:.8125rem}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-button{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}.mdc-button:after,.mdc-button:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-button:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-button.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-button.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-button.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-button.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-button.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-button:after,.mdc-button:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-button.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-button:after,.mdc-button:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button:after,.mdc-button:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button:hover:before{opacity:.04}.mdc-button.mdc-ripple-upgraded--background-focused:before,.mdc-button:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-button:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-button.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-primary,#fff)}}.mdc-button--raised:hover:before,.mdc-button--unelevated:hover:before{opacity:.08}.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.mdc-button--raised:not(.mdc-ripple-upgraded):after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.mdc-button--raised.mdc-ripple-upgraded,.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary:not(:disabled){color:#018786;color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-secondary,#fff)}.smui-button--color-secondary.mdc-button--outlined:not(:disabled){border-color:#018786;border-color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary:hover:before{opacity:.04}.smui-button--color-secondary.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.smui-button--color-secondary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.smui-button--color-secondary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-secondary,#fff)}}.smui-button--color-secondary.mdc-button--raised:hover:before,.smui-button--color-secondary.mdc-button--unelevated:hover:before{opacity:.08}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.smui-button__group{display:inline-flex}.smui-button__group>.mdc-button,.smui-button__group>.smui-button__group-item>.mdc-button{margin-left:0;margin-right:0}.smui-button__group>.mdc-button:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button{border-top-right-radius:0;border-bottom-right-radius:0}.smui-button__group>.mdc-button:not(:first-child),.smui-button__group>.smui-button__group-item:not(:first-child)>.mdc-button{border-top-left-radius:0;border-bottom-left-radius:0}.smui-button__group.smui-button__group--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised,.smui-button__group>.smui-button__group-item>.mdc-button--raised{border-radius:4px;box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised.mdc-button--dense,.smui-button__group>.smui-button__group-item>.mdc-button--raised.mdc-button--dense{border-radius:4px}.smui-button__group>.mdc-button--raised:active,.smui-button__group>.mdc-button--raised:disabled,.smui-button__group>.mdc-button--raised:focus,.smui-button__group>.mdc-button--raised:hover,.smui-button__group>.smui-button__group-item>.mdc-button--raised:active,.smui-button__group>.smui-button__group-item>.mdc-button--raised:disabled,.smui-button__group>.smui-button__group-item>.mdc-button--raised:focus,.smui-button__group>.smui-button__group-item>.mdc-button--raised:hover{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--outlined:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button--outlined{border-right-width:0}";
-    styleInject(css$1);
+    var css$2 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-button{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;padding:0 8px;display:inline-flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:64px;height:36px;border:none;outline:none;line-height:inherit;user-select:none;-webkit-appearance:none;overflow:hidden;vertical-align:middle;border-radius:4px}.mdc-button::-moz-focus-inner{padding:0;border:0}.mdc-button:active{outline:none}.mdc-button:hover{cursor:pointer}.mdc-button:disabled{background-color:transparent;color:rgba(0,0,0,.37);cursor:default;pointer-events:none}.mdc-button.mdc-button--dense{border-radius:4px}.mdc-button:not(:disabled){background-color:transparent}.mdc-button .mdc-button__icon{margin-left:0;margin-right:8px;display:inline-block;width:18px;height:18px;font-size:18px;vertical-align:top}.mdc-button .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button .mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button:not(:disabled){color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-button__label+.mdc-button__icon{margin-left:8px;margin-right:0}.mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button__label+.mdc-button__icon{margin-left:0;margin-right:8px}svg.mdc-button__icon{fill:currentColor}.mdc-button--outlined .mdc-button__icon,.mdc-button--raised .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--outlined .mdc-button__icon[dir=rtl],.mdc-button--outlined .mdc-button__label+.mdc-button__icon,.mdc-button--raised .mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon,.mdc-button--unelevated .mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--outlined .mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__icon{margin-left:8px;margin-right:-4px}.mdc-button--outlined .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--raised .mdc-button__label+.mdc-button__icon[dir=rtl],.mdc-button--unelevated .mdc-button__label+.mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--outlined .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--raised .mdc-button__label+.mdc-button__icon,[dir=rtl] .mdc-button--unelevated .mdc-button__label+.mdc-button__icon{margin-left:-4px;margin-right:8px}.mdc-button--raised,.mdc-button--unelevated{padding:0 16px}.mdc-button--raised:disabled,.mdc-button--unelevated:disabled{background-color:rgba(0,0,0,.12);color:rgba(0,0,0,.37)}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-primary,#fff)}.mdc-button--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);transition:box-shadow .28s cubic-bezier(.4,0,.2,1)}.mdc-button--raised:focus,.mdc-button--raised:hover{box-shadow:0 2px 4px -1px rgba(0,0,0,.2),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)}.mdc-button--raised:active{box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)}.mdc-button--raised:disabled{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.mdc-button--outlined{border-style:solid;padding:0 15px;border-width:1px}.mdc-button--outlined:disabled{border-color:rgba(0,0,0,.37)}.mdc-button--outlined:not(:disabled){border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-button--dense{height:32px;font-size:.8125rem}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-button{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}.mdc-button:after,.mdc-button:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-button:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-button.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-button.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-button.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-button.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-button.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-button:after,.mdc-button:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-button.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-button:after,.mdc-button:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-button:after,.mdc-button:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-button:hover:before{opacity:.04}.mdc-button.mdc-ripple-upgraded--background-focused:before,.mdc-button:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-button:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-button.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.mdc-button--raised:after,.mdc-button--raised:before,.mdc-button--unelevated:after,.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-primary,#fff)}}.mdc-button--raised:hover:before,.mdc-button--unelevated:hover:before{opacity:.08}.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.mdc-button--raised:not(.mdc-ripple-upgraded):after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.mdc-button--raised.mdc-ripple-upgraded,.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary:not(:disabled){color:#018786;color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary.mdc-button--raised:not(:disabled),.smui-button--color-secondary.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-secondary,#fff)}.smui-button--color-secondary.mdc-button--outlined:not(:disabled){border-color:#018786;border-color:var(--mdc-theme-secondary,#018786)}.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:#018786}@supports not (-ms-ime-align:auto){.smui-button--color-secondary:after,.smui-button--color-secondary:before{background-color:var(--mdc-theme-secondary,#018786)}}.smui-button--color-secondary:hover:before{opacity:.04}.smui-button--color-secondary.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.smui-button--color-secondary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.smui-button--color-secondary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:#fff}@supports not (-ms-ime-align:auto){.smui-button--color-secondary.mdc-button--raised:after,.smui-button--color-secondary.mdc-button--raised:before,.smui-button--color-secondary.mdc-button--unelevated:after,.smui-button--color-secondary.mdc-button--unelevated:before{background-color:var(--mdc-theme-on-secondary,#fff)}}.smui-button--color-secondary.mdc-button--raised:hover:before,.smui-button--color-secondary.mdc-button--unelevated:hover:before{opacity:.08}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):focus:before,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded--background-focused:before,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.smui-button--color-secondary.mdc-button--raised:not(.mdc-ripple-upgraded):active:after,.smui-button--color-secondary.mdc-button--unelevated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}.smui-button--color-secondary.mdc-button--raised.mdc-ripple-upgraded,.smui-button--color-secondary.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}.smui-button__group{display:inline-flex}.smui-button__group>.mdc-button,.smui-button__group>.smui-button__group-item>.mdc-button{margin-left:0;margin-right:0}.smui-button__group>.mdc-button:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button{border-top-right-radius:0;border-bottom-right-radius:0}.smui-button__group>.mdc-button:not(:first-child),.smui-button__group>.smui-button__group-item:not(:first-child)>.mdc-button{border-top-left-radius:0;border-bottom-left-radius:0}.smui-button__group.smui-button__group--raised{box-shadow:0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised,.smui-button__group>.smui-button__group-item>.mdc-button--raised{border-radius:4px;box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--raised.mdc-button--dense,.smui-button__group>.smui-button__group-item>.mdc-button--raised.mdc-button--dense{border-radius:4px}.smui-button__group>.mdc-button--raised:active,.smui-button__group>.mdc-button--raised:disabled,.smui-button__group>.mdc-button--raised:focus,.smui-button__group>.mdc-button--raised:hover,.smui-button__group>.smui-button__group-item>.mdc-button--raised:active,.smui-button__group>.smui-button__group-item>.mdc-button--raised:disabled,.smui-button__group>.smui-button__group-item>.mdc-button--raised:focus,.smui-button__group>.smui-button__group-item>.mdc-button--raised:hover{box-shadow:0 0 0 0 rgba(0,0,0,.2),0 0 0 0 rgba(0,0,0,.14),0 0 0 0 rgba(0,0,0,.12)}.smui-button__group>.mdc-button--outlined:not(:last-child),.smui-button__group>.smui-button__group-item:not(:last-child)>.mdc-button--outlined{border-right-width:0}";
+    styleInject(css$2);
 
     /* node_modules\@smui\common\A.svelte generated by Svelte v3.18.1 */
-    const file$5 = "node_modules\\@smui\\common\\A.svelte";
+    const file$6 = "node_modules\\@smui\\common\\A.svelte";
 
-    function create_fragment$6(ctx) {
+    function create_fragment$7(ctx) {
     	let a;
     	let useActions_action;
     	let forwardEvents_action;
@@ -4855,7 +6137,7 @@ var app = (function () {
     			a = element("a");
     			if (default_slot) default_slot.c();
     			set_attributes(a, a_data);
-    			add_location(a, file$5, 0, 0, 0);
+    			add_location(a, file$6, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -4904,7 +6186,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$6.name,
+    		id: create_fragment$7.name,
     		type: "component",
     		source: "",
     		ctx
@@ -4913,7 +6195,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$6($$self, $$props, $$invalidate) {
+    function instance$7($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { href = "javascript:void(0);" } = $$props;
@@ -4943,13 +6225,13 @@ var app = (function () {
     class A extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$6, create_fragment$6, safe_not_equal, { use: 0, href: 1 });
+    		init(this, options, instance$7, create_fragment$7, safe_not_equal, { use: 0, href: 1 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "A",
     			options,
-    			id: create_fragment$6.name
+    			id: create_fragment$7.name
     		});
     	}
 
@@ -4971,9 +6253,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\Button.svelte generated by Svelte v3.18.1 */
-    const file$6 = "node_modules\\@smui\\common\\Button.svelte";
+    const file$7 = "node_modules\\@smui\\common\\Button.svelte";
 
-    function create_fragment$7(ctx) {
+    function create_fragment$8(ctx) {
     	let button;
     	let useActions_action;
     	let forwardEvents_action;
@@ -4993,7 +6275,7 @@ var app = (function () {
     			button = element("button");
     			if (default_slot) default_slot.c();
     			set_attributes(button, button_data);
-    			add_location(button, file$6, 0, 0, 0);
+    			add_location(button, file$7, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -5038,7 +6320,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$7.name,
+    		id: create_fragment$8.name,
     		type: "component",
     		source: "",
     		ctx
@@ -5047,7 +6329,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$7($$self, $$props, $$invalidate) {
+    function instance$8($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -5074,13 +6356,13 @@ var app = (function () {
     class Button extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$7, create_fragment$7, safe_not_equal, { use: 0 });
+    		init(this, options, instance$8, create_fragment$8, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Button",
     			options,
-    			id: create_fragment$7.name
+    			id: create_fragment$8.name
     		});
     	}
 
@@ -5252,7 +6534,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$8(ctx) {
+    function create_fragment$9(ctx) {
     	let switch_instance_anchor;
     	let current;
 
@@ -5444,7 +6726,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$8.name,
+    		id: create_fragment$9.name,
     		type: "component",
     		source: "",
     		ctx
@@ -5453,7 +6735,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$8($$self, $$props, $$invalidate) {
+    function instance$9($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -5575,7 +6857,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$8, create_fragment$8, safe_not_equal, {
+    		init(this, options, instance$9, create_fragment$9, safe_not_equal, {
     			use: 0,
     			class: 1,
     			ripple: 2,
@@ -5592,7 +6874,7 @@ var app = (function () {
     			component: this,
     			tagName: "Button_1",
     			options,
-    			id: create_fragment$8.name
+    			id: create_fragment$9.name
     		});
     	}
 
@@ -5678,9 +6960,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\Label.svelte generated by Svelte v3.18.1 */
-    const file$7 = "node_modules\\@smui\\common\\Label.svelte";
+    const file$8 = "node_modules\\@smui\\common\\Label.svelte";
 
-    function create_fragment$9(ctx) {
+    function create_fragment$a(ctx) {
     	let span;
     	let useActions_action;
     	let forwardEvents_action;
@@ -5718,7 +7000,7 @@ var app = (function () {
     			span = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$7, 0, 0, 0);
+    			add_location(span, file$8, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -5780,7 +7062,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$9.name,
+    		id: create_fragment$a.name,
     		type: "component",
     		source: "",
     		ctx
@@ -5789,7 +7071,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$9($$self, $$props, $$invalidate) {
+    function instance$a($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -5820,13 +7102,13 @@ var app = (function () {
     class Label extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$9, create_fragment$9, safe_not_equal, { use: 0, class: 1 });
+    		init(this, options, instance$a, create_fragment$a, safe_not_equal, { use: 0, class: 1 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Label",
     			options,
-    			id: create_fragment$9.name
+    			id: create_fragment$a.name
     		});
     	}
 
@@ -5848,9 +7130,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\Icon.svelte generated by Svelte v3.18.1 */
-    const file$8 = "node_modules\\@smui\\common\\Icon.svelte";
+    const file$9 = "node_modules\\@smui\\common\\Icon.svelte";
 
-    function create_fragment$a(ctx) {
+    function create_fragment$b(ctx) {
     	let i;
     	let useActions_action;
     	let forwardEvents_action;
@@ -5890,7 +7172,7 @@ var app = (function () {
     			i = element("i");
     			if (default_slot) default_slot.c();
     			set_attributes(i, i_data);
-    			add_location(i, file$8, 0, 0, 0);
+    			add_location(i, file$9, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -5954,7 +7236,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$a.name,
+    		id: create_fragment$b.name,
     		type: "component",
     		source: "",
     		ctx
@@ -5963,7 +7245,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$a($$self, $$props, $$invalidate) {
+    function instance$b($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -6027,7 +7309,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$a, create_fragment$a, safe_not_equal, {
+    		init(this, options, instance$b, create_fragment$b, safe_not_equal, {
     			use: 0,
     			class: 1,
     			on: 2,
@@ -6040,7 +7322,7 @@ var app = (function () {
     			component: this,
     			tagName: "Icon",
     			options,
-    			id: create_fragment$a.name
+    			id: create_fragment$b.name
     		});
     	}
 
@@ -6093,8 +7375,8 @@ var app = (function () {
     	}
     }
 
-    var css$2 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px;font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;line-height:1.5rem;margin:0;padding:8px 0;list-style-type:none;color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list:focus{outline:none}.mdc-list-item__secondary-text{color:rgba(0,0,0,.54);color:var(--mdc-theme-text-secondary-on-background,rgba(0,0,0,.54))}.mdc-list-item__graphic{background-color:transparent;color:rgba(0,0,0,.38);color:var(--mdc-theme-text-icon-on-background,rgba(0,0,0,.38))}.mdc-list-item__meta{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-hint-on-background,rgba(0,0,0,.38))}.mdc-list-group__subheader{color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list--dense{padding-top:4px;padding-bottom:4px;font-size:.812rem}.mdc-list-item{display:flex;position:relative;align-items:center;justify-content:flex-start;height:48px;padding:0 16px;overflow:hidden}.mdc-list-item:focus{outline:none}.mdc-list-item--activated,.mdc-list-item--activated .mdc-list-item__graphic,.mdc-list-item--selected,.mdc-list-item--selected .mdc-list-item__graphic{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-list-item--disabled{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-disabled-on-background,rgba(0,0,0,.38))}.mdc-list-item__graphic{margin-left:0;margin-right:32px;width:24px;height:24px;flex-shrink:0;align-items:center;justify-content:center;fill:currentColor}.mdc-list-item[dir=rtl] .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list-item__graphic{margin-left:32px;margin-right:0}.mdc-list .mdc-list-item__graphic{display:inline-flex}.mdc-list-item__meta{margin-left:auto;margin-right:0}.mdc-list-item__meta:not(.material-icons){font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.75rem;line-height:1.25rem;font-weight:400;letter-spacing:.03333em;text-decoration:inherit;text-transform:inherit}.mdc-list-item[dir=rtl] .mdc-list-item__meta,[dir=rtl] .mdc-list-item .mdc-list-item__meta{margin-left:0;margin-right:auto}.mdc-list-item__text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.mdc-list-item__text[for]{pointer-events:none}.mdc-list-item__primary-text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;margin-bottom:-20px;display:block}.mdc-list-item__primary-text:before{display:inline-block;width:0;height:32px;content:\"\";vertical-align:0}.mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list--dense .mdc-list-item__primary-text{display:block;margin-top:0;line-height:normal;margin-bottom:-20px}.mdc-list--dense .mdc-list-item__primary-text:before{display:inline-block;width:0;height:24px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list-item__secondary-text{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:1.25rem;font-weight:400;letter-spacing:.01786em;text-decoration:inherit;text-transform:inherit;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;display:block}.mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__secondary-text{display:block;margin-top:0;line-height:normal;font-size:inherit}.mdc-list--dense .mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item{height:40px}.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:36px;width:20px;height:20px}.mdc-list-item[dir=rtl] .mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--dense .mdc-list-item__graphic{margin-left:36px;margin-right:0}.mdc-list--avatar-list .mdc-list-item{height:56px}.mdc-list--avatar-list .mdc-list-item__graphic{margin-left:0;margin-right:16px;width:40px;height:40px;border-radius:50%}.mdc-list-item[dir=rtl] .mdc-list--avatar-list .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list .mdc-list-item__graphic{margin-left:16px;margin-right:0}.mdc-list--two-line .mdc-list-item__text{align-self:flex-start}.mdc-list--two-line .mdc-list-item{height:72px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item,.mdc-list--two-line.mdc-list--dense .mdc-list-item{height:60px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:20px;width:36px;height:36px}.mdc-list-item[dir=rtl] .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:20px;margin-right:0}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{cursor:pointer}a.mdc-list-item{color:inherit;text-decoration:none}.mdc-list-divider{height:0;margin:0;border:none;border-bottom:1px solid;border-bottom-color:rgba(0,0,0,.12)}.mdc-list-divider--padded{margin:0 16px}.mdc-list-divider--inset{margin-left:72px;margin-right:0;width:calc(100% - 72px)}.mdc-list-group[dir=rtl] .mdc-list-divider--inset,[dir=rtl] .mdc-list-group .mdc-list-divider--inset{margin-left:0;margin-right:72px}.mdc-list-divider--inset.mdc-list-divider--padded{width:calc(100% - 88px)}.mdc-list-group .mdc-list{padding:0}.mdc-list-group__subheader{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;margin:.75rem 16px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{background-color:#000}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:hover:before{opacity:.04}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:hover:before{opacity:.16}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{opacity:.08}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:hover:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.2}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{background-color:#000}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-list--three-line .mdc-list-item__text{align-self:flex-start}.smui-list--three-line .mdc-list-item{height:88px}.smui-list--three-line.mdc-list--dense .mdc-list-item{height:76px}";
-    styleInject(css$2);
+    var css$3 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-list{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;line-height:1.5rem;margin:0;padding:8px 0;list-style-type:none;color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list:focus{outline:none}.mdc-list-item__secondary-text{color:rgba(0,0,0,.54);color:var(--mdc-theme-text-secondary-on-background,rgba(0,0,0,.54))}.mdc-list-item__graphic{background-color:transparent;color:rgba(0,0,0,.38);color:var(--mdc-theme-text-icon-on-background,rgba(0,0,0,.38))}.mdc-list-item__meta{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-hint-on-background,rgba(0,0,0,.38))}.mdc-list-group__subheader{color:rgba(0,0,0,.87);color:var(--mdc-theme-text-primary-on-background,rgba(0,0,0,.87))}.mdc-list--dense{padding-top:4px;padding-bottom:4px;font-size:.812rem}.mdc-list-item{display:flex;position:relative;align-items:center;justify-content:flex-start;height:48px;padding:0 16px;overflow:hidden}.mdc-list-item:focus{outline:none}.mdc-list-item--activated,.mdc-list-item--activated .mdc-list-item__graphic,.mdc-list-item--selected,.mdc-list-item--selected .mdc-list-item__graphic{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-list-item--disabled{color:rgba(0,0,0,.38);color:var(--mdc-theme-text-disabled-on-background,rgba(0,0,0,.38))}.mdc-list-item__graphic{margin-left:0;margin-right:32px;width:24px;height:24px;flex-shrink:0;align-items:center;justify-content:center;fill:currentColor}.mdc-list-item[dir=rtl] .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list-item__graphic{margin-left:32px;margin-right:0}.mdc-list .mdc-list-item__graphic{display:inline-flex}.mdc-list-item__meta{margin-left:auto;margin-right:0}.mdc-list-item__meta:not(.material-icons){font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.75rem;line-height:1.25rem;font-weight:400;letter-spacing:.03333em;text-decoration:inherit;text-transform:inherit}.mdc-list-item[dir=rtl] .mdc-list-item__meta,[dir=rtl] .mdc-list-item .mdc-list-item__meta{margin-left:0;margin-right:auto}.mdc-list-item__text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.mdc-list-item__text[for]{pointer-events:none}.mdc-list-item__primary-text{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;margin-bottom:-20px;display:block}.mdc-list-item__primary-text:before{display:inline-block;width:0;height:32px;content:\"\";vertical-align:0}.mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list--dense .mdc-list-item__primary-text{display:block;margin-top:0;line-height:normal;margin-bottom:-20px}.mdc-list--dense .mdc-list-item__primary-text:before{display:inline-block;width:0;height:24px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__primary-text:after{display:inline-block;width:0;height:20px;content:\"\";vertical-align:-20px}.mdc-list-item__secondary-text{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:1.25rem;font-weight:400;letter-spacing:.01786em;text-decoration:inherit;text-transform:inherit;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;margin-top:0;line-height:normal;display:block}.mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item__secondary-text{display:block;margin-top:0;line-height:normal;font-size:inherit}.mdc-list--dense .mdc-list-item__secondary-text:before{display:inline-block;width:0;height:20px;content:\"\";vertical-align:0}.mdc-list--dense .mdc-list-item{height:40px}.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:36px;width:20px;height:20px}.mdc-list-item[dir=rtl] .mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--dense .mdc-list-item__graphic{margin-left:36px;margin-right:0}.mdc-list--avatar-list .mdc-list-item{height:56px}.mdc-list--avatar-list .mdc-list-item__graphic{margin-left:0;margin-right:16px;width:40px;height:40px;border-radius:50%}.mdc-list-item[dir=rtl] .mdc-list--avatar-list .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list .mdc-list-item__graphic{margin-left:16px;margin-right:0}.mdc-list--two-line .mdc-list-item__text{align-self:flex-start}.mdc-list--two-line .mdc-list-item{height:72px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item,.mdc-list--two-line.mdc-list--dense .mdc-list-item{height:60px}.mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:0;margin-right:20px;width:36px;height:36px}.mdc-list-item[dir=rtl] .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic,[dir=rtl] .mdc-list-item .mdc-list--avatar-list.mdc-list--dense .mdc-list-item__graphic{margin-left:20px;margin-right:0}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{cursor:pointer}a.mdc-list-item{color:inherit;text-decoration:none}.mdc-list-divider{height:0;margin:0;border:none;border-bottom:1px solid;border-bottom-color:rgba(0,0,0,.12)}.mdc-list-divider--padded{margin:0 16px}.mdc-list-divider--inset{margin-left:72px;margin-right:0;width:calc(100% - 72px)}.mdc-list-group[dir=rtl] .mdc-list-divider--inset,[dir=rtl] .mdc-list-group .mdc-list-divider--inset{margin-left:0;margin-right:72px}.mdc-list-divider--inset.mdc-list-divider--padded{width:calc(100% - 88px)}.mdc-list-group .mdc-list{padding:0}.mdc-list-group__subheader{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:1rem;line-height:1.75rem;font-weight:400;letter-spacing:.00937em;text-decoration:inherit;text-transform:inherit;margin:.75rem 16px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:before{background-color:#000}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:hover:before{opacity:.04}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:hover:before{opacity:.16}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--activated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.24}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{opacity:.08}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:after,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:before{background-color:var(--mdc-theme-primary,#6200ee)}}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:hover:before{opacity:.12}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.2}:not(.mdc-list--non-interactive)>:not(.mdc-list-item--disabled).mdc-list-item--selected.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.2}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{top:-50%;left:-50%;width:200%;height:200%}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:after,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:before{background-color:#000}:not(.mdc-list--non-interactive)>.mdc-list-item--disabled.mdc-ripple-upgraded--background-focused:before,:not(.mdc-list--non-interactive)>.mdc-list-item--disabled:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:relative;outline:none;overflow:hidden}.mdc-ripple-surface:after,.mdc-ripple-surface:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-ripple-surface:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-ripple-surface.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-ripple-surface.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-ripple-surface.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-ripple-surface:after,.mdc-ripple-surface:before{background-color:#000}.mdc-ripple-surface:hover:before{opacity:.04}.mdc-ripple-surface.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface:after,.mdc-ripple-surface:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-ripple-surface.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]{overflow:visible}.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded]:before{top:0;left:0;width:100%;height:100%}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after,.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:before{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0);width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface[data-mdc-ripple-is-unbounded].mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--primary:after,.mdc-ripple-surface--primary:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-ripple-surface--primary:hover:before{opacity:.04}.mdc-ripple-surface--primary.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--primary:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--primary.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:#018786}@supports not (-ms-ime-align:auto){.mdc-ripple-surface--accent:after,.mdc-ripple-surface--accent:before{background-color:var(--mdc-theme-secondary,#018786)}}.mdc-ripple-surface--accent:hover:before{opacity:.04}.mdc-ripple-surface--accent.mdc-ripple-upgraded--background-focused:before,.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-ripple-surface--accent:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-ripple-surface--accent.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.smui-list--three-line .mdc-list-item__text{align-self:flex-start}.smui-list--three-line .mdc-list-item{height:88px}.smui-list--three-line.mdc-list--dense .mdc-list-item{height:76px}";
+    styleInject(css$3);
 
     /**
      * @license
@@ -6118,14 +7400,14 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses$2 = {
+    var cssClasses$3 = {
         LIST_ITEM_ACTIVATED_CLASS: 'mdc-list-item--activated',
         LIST_ITEM_CLASS: 'mdc-list-item',
         LIST_ITEM_DISABLED_CLASS: 'mdc-list-item--disabled',
         LIST_ITEM_SELECTED_CLASS: 'mdc-list-item--selected',
         ROOT: 'mdc-list',
     };
-    var strings$3 = {
+    var strings$4 = {
         ACTION_EVENT: 'MDCList:action',
         ARIA_CHECKED: 'aria-checked',
         ARIA_CHECKED_CHECKBOX_SELECTOR: '[role="checkbox"][aria-checked="true"]',
@@ -6138,11 +7420,11 @@ var app = (function () {
         ARIA_SELECTED: 'aria-selected',
         CHECKBOX_RADIO_SELECTOR: 'input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled)',
         CHECKBOX_SELECTOR: 'input[type="checkbox"]:not(:disabled)',
-        CHILD_ELEMENTS_TO_TOGGLE_TABINDEX: "\n    ." + cssClasses$2.LIST_ITEM_CLASS + " button:not(:disabled),\n    ." + cssClasses$2.LIST_ITEM_CLASS + " a\n  ",
-        FOCUSABLE_CHILD_ELEMENTS: "\n    ." + cssClasses$2.LIST_ITEM_CLASS + " button:not(:disabled),\n    ." + cssClasses$2.LIST_ITEM_CLASS + " a,\n    ." + cssClasses$2.LIST_ITEM_CLASS + " input[type=\"radio\"]:not(:disabled),\n    ." + cssClasses$2.LIST_ITEM_CLASS + " input[type=\"checkbox\"]:not(:disabled)\n  ",
+        CHILD_ELEMENTS_TO_TOGGLE_TABINDEX: "\n    ." + cssClasses$3.LIST_ITEM_CLASS + " button:not(:disabled),\n    ." + cssClasses$3.LIST_ITEM_CLASS + " a\n  ",
+        FOCUSABLE_CHILD_ELEMENTS: "\n    ." + cssClasses$3.LIST_ITEM_CLASS + " button:not(:disabled),\n    ." + cssClasses$3.LIST_ITEM_CLASS + " a,\n    ." + cssClasses$3.LIST_ITEM_CLASS + " input[type=\"radio\"]:not(:disabled),\n    ." + cssClasses$3.LIST_ITEM_CLASS + " input[type=\"checkbox\"]:not(:disabled)\n  ",
         RADIO_SELECTOR: 'input[type="radio"]:not(:disabled)',
     };
-    var numbers$2 = {
+    var numbers$3 = {
         UNSET_INDEX: -1,
     };
     //# sourceMappingURL=constants.js.map
@@ -6180,8 +7462,8 @@ var app = (function () {
             _this.wrapFocus_ = false;
             _this.isVertical_ = true;
             _this.isSingleSelectionList_ = false;
-            _this.selectedIndex_ = numbers$2.UNSET_INDEX;
-            _this.focusedItemIndex_ = numbers$2.UNSET_INDEX;
+            _this.selectedIndex_ = numbers$3.UNSET_INDEX;
+            _this.focusedItemIndex_ = numbers$3.UNSET_INDEX;
             _this.useActivatedClass_ = false;
             _this.ariaCurrentAttrValue_ = null;
             _this.isCheckboxList_ = false;
@@ -6190,21 +7472,21 @@ var app = (function () {
         }
         Object.defineProperty(MDCListFoundation, "strings", {
             get: function () {
-                return strings$3;
+                return strings$4;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCListFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$2;
+                return cssClasses$3;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCListFoundation, "numbers", {
             get: function () {
-                return numbers$2;
+                return numbers$3;
             },
             enumerable: true,
             configurable: true
@@ -6383,7 +7665,7 @@ var app = (function () {
          * Click handler for the list.
          */
         MDCListFoundation.prototype.handleClick = function (index, toggleCheckbox) {
-            if (index === numbers$2.UNSET_INDEX) {
+            if (index === numbers$3.UNSET_INDEX) {
                 return;
             }
             if (this.isSelectableList_()) {
@@ -6446,12 +7728,12 @@ var app = (function () {
                 return;
             }
             if (isEnabled) {
-                this.adapter_.removeClassForElementIndex(itemIndex, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
-                this.adapter_.setAttributeForElementIndex(itemIndex, strings$3.ARIA_DISABLED, 'false');
+                this.adapter_.removeClassForElementIndex(itemIndex, cssClasses$3.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.setAttributeForElementIndex(itemIndex, strings$4.ARIA_DISABLED, 'false');
             }
             else {
-                this.adapter_.addClassForElementIndex(itemIndex, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
-                this.adapter_.setAttributeForElementIndex(itemIndex, strings$3.ARIA_DISABLED, 'true');
+                this.adapter_.addClassForElementIndex(itemIndex, cssClasses$3.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.setAttributeForElementIndex(itemIndex, strings$4.ARIA_DISABLED, 'true');
             }
         };
         /**
@@ -6469,11 +7751,11 @@ var app = (function () {
             if (this.selectedIndex_ === index) {
                 return;
             }
-            var selectedClassName = cssClasses$2.LIST_ITEM_SELECTED_CLASS;
+            var selectedClassName = cssClasses$3.LIST_ITEM_SELECTED_CLASS;
             if (this.useActivatedClass_) {
-                selectedClassName = cssClasses$2.LIST_ITEM_ACTIVATED_CLASS;
+                selectedClassName = cssClasses$3.LIST_ITEM_ACTIVATED_CLASS;
             }
-            if (this.selectedIndex_ !== numbers$2.UNSET_INDEX) {
+            if (this.selectedIndex_ !== numbers$3.UNSET_INDEX) {
                 this.adapter_.removeClassForElementIndex(this.selectedIndex_, selectedClassName);
             }
             this.adapter_.addClassForElementIndex(index, selectedClassName);
@@ -6485,13 +7767,13 @@ var app = (function () {
          */
         MDCListFoundation.prototype.setAriaForSingleSelectionAtIndex_ = function (index) {
             // Detect the presence of aria-current and get the value only during list initialization when it is in unset state.
-            if (this.selectedIndex_ === numbers$2.UNSET_INDEX) {
+            if (this.selectedIndex_ === numbers$3.UNSET_INDEX) {
                 this.ariaCurrentAttrValue_ =
-                    this.adapter_.getAttributeForElementIndex(index, strings$3.ARIA_CURRENT);
+                    this.adapter_.getAttributeForElementIndex(index, strings$4.ARIA_CURRENT);
             }
             var isAriaCurrent = this.ariaCurrentAttrValue_ !== null;
-            var ariaAttribute = isAriaCurrent ? strings$3.ARIA_CURRENT : strings$3.ARIA_SELECTED;
-            if (this.selectedIndex_ !== numbers$2.UNSET_INDEX) {
+            var ariaAttribute = isAriaCurrent ? strings$4.ARIA_CURRENT : strings$4.ARIA_SELECTED;
+            if (this.selectedIndex_ !== numbers$3.UNSET_INDEX) {
                 this.adapter_.setAttributeForElementIndex(this.selectedIndex_, ariaAttribute, 'false');
             }
             var ariaAttributeValue = isAriaCurrent ? this.ariaCurrentAttrValue_ : 'true';
@@ -6502,10 +7784,10 @@ var app = (function () {
          */
         MDCListFoundation.prototype.setRadioAtIndex_ = function (index) {
             this.adapter_.setCheckedCheckboxOrRadioAtIndex(index, true);
-            if (this.selectedIndex_ !== numbers$2.UNSET_INDEX) {
-                this.adapter_.setAttributeForElementIndex(this.selectedIndex_, strings$3.ARIA_CHECKED, 'false');
+            if (this.selectedIndex_ !== numbers$3.UNSET_INDEX) {
+                this.adapter_.setAttributeForElementIndex(this.selectedIndex_, strings$4.ARIA_CHECKED, 'false');
             }
-            this.adapter_.setAttributeForElementIndex(index, strings$3.ARIA_CHECKED, 'true');
+            this.adapter_.setAttributeForElementIndex(index, strings$4.ARIA_CHECKED, 'true');
             this.selectedIndex_ = index;
         };
         MDCListFoundation.prototype.setCheckboxAtIndex_ = function (index) {
@@ -6515,12 +7797,12 @@ var app = (function () {
                     isChecked = true;
                 }
                 this.adapter_.setCheckedCheckboxOrRadioAtIndex(i, isChecked);
-                this.adapter_.setAttributeForElementIndex(i, strings$3.ARIA_CHECKED, isChecked ? 'true' : 'false');
+                this.adapter_.setAttributeForElementIndex(i, strings$4.ARIA_CHECKED, isChecked ? 'true' : 'false');
             }
             this.selectedIndex_ = index;
         };
         MDCListFoundation.prototype.setTabindexAtIndex_ = function (index) {
-            if (this.focusedItemIndex_ === numbers$2.UNSET_INDEX && index !== 0) {
+            if (this.focusedItemIndex_ === numbers$3.UNSET_INDEX && index !== 0) {
                 // If no list item was selected set first list item's tabindex to -1.
                 // Generally, tabindex is set to 0 on first list item of list that has no preselected items.
                 this.adapter_.setAttributeForElementIndex(0, 'tabindex', '-1');
@@ -6539,7 +7821,7 @@ var app = (function () {
         MDCListFoundation.prototype.setTabindexToFirstSelectedItem_ = function () {
             var targetIndex = 0;
             if (this.isSelectableList_()) {
-                if (typeof this.selectedIndex_ === 'number' && this.selectedIndex_ !== numbers$2.UNSET_INDEX) {
+                if (typeof this.selectedIndex_ === 'number' && this.selectedIndex_ !== numbers$3.UNSET_INDEX) {
                     targetIndex = this.selectedIndex_;
                 }
                 else if (isNumberArray(this.selectedIndex_) && this.selectedIndex_.length > 0) {
@@ -6590,9 +7872,9 @@ var app = (function () {
                 isChecked = !isChecked;
                 this.adapter_.setCheckedCheckboxOrRadioAtIndex(index, isChecked);
             }
-            this.adapter_.setAttributeForElementIndex(index, strings$3.ARIA_CHECKED, isChecked ? 'true' : 'false');
+            this.adapter_.setAttributeForElementIndex(index, strings$4.ARIA_CHECKED, isChecked ? 'true' : 'false');
             // If none of the checkbox items are selected and selectedIndex is not initialized then provide a default value.
-            var selectedIndexes = this.selectedIndex_ === numbers$2.UNSET_INDEX ? [] : this.selectedIndex_.slice();
+            var selectedIndexes = this.selectedIndex_ === numbers$3.UNSET_INDEX ? [] : this.selectedIndex_.slice();
             if (isChecked) {
                 selectedIndexes.push(index);
             }
@@ -6641,7 +7923,7 @@ var app = (function () {
         });
         Object.defineProperty(MDCList.prototype, "listElements", {
             get: function () {
-                return [].slice.call(this.root_.querySelectorAll("." + cssClasses$2.LIST_ITEM_CLASS));
+                return [].slice.call(this.root_.querySelectorAll("." + cssClasses$3.LIST_ITEM_CLASS));
             },
             enumerable: true,
             configurable: true
@@ -6692,15 +7974,15 @@ var app = (function () {
             this.unlisten('focusout', this.focusOutEventListener_);
         };
         MDCList.prototype.layout = function () {
-            var direction = this.root_.getAttribute(strings$3.ARIA_ORIENTATION);
-            this.vertical = direction !== strings$3.ARIA_ORIENTATION_HORIZONTAL;
+            var direction = this.root_.getAttribute(strings$4.ARIA_ORIENTATION);
+            this.vertical = direction !== strings$4.ARIA_ORIENTATION_HORIZONTAL;
             // List items need to have at least tabindex=-1 to be focusable.
             [].slice.call(this.root_.querySelectorAll('.mdc-list-item:not([tabindex])'))
                 .forEach(function (el) {
                 el.setAttribute('tabindex', '-1');
             });
             // Child button/a elements are not tabbable until the list item is focused.
-            [].slice.call(this.root_.querySelectorAll(strings$3.FOCUSABLE_CHILD_ELEMENTS))
+            [].slice.call(this.root_.querySelectorAll(strings$4.FOCUSABLE_CHILD_ELEMENTS))
                 .forEach(function (el) { return el.setAttribute('tabindex', '-1'); });
             this.foundation_.layout();
         };
@@ -6709,16 +7991,16 @@ var app = (function () {
          */
         MDCList.prototype.initializeListType = function () {
             var _this = this;
-            var checkboxListItems = this.root_.querySelectorAll(strings$3.ARIA_ROLE_CHECKBOX_SELECTOR);
-            var singleSelectedListItem = this.root_.querySelector("\n      ." + cssClasses$2.LIST_ITEM_ACTIVATED_CLASS + ",\n      ." + cssClasses$2.LIST_ITEM_SELECTED_CLASS + "\n    ");
-            var radioSelectedListItem = this.root_.querySelector(strings$3.ARIA_CHECKED_RADIO_SELECTOR);
+            var checkboxListItems = this.root_.querySelectorAll(strings$4.ARIA_ROLE_CHECKBOX_SELECTOR);
+            var singleSelectedListItem = this.root_.querySelector("\n      ." + cssClasses$3.LIST_ITEM_ACTIVATED_CLASS + ",\n      ." + cssClasses$3.LIST_ITEM_SELECTED_CLASS + "\n    ");
+            var radioSelectedListItem = this.root_.querySelector(strings$4.ARIA_CHECKED_RADIO_SELECTOR);
             if (checkboxListItems.length) {
-                var preselectedItems = this.root_.querySelectorAll(strings$3.ARIA_CHECKED_CHECKBOX_SELECTOR);
+                var preselectedItems = this.root_.querySelectorAll(strings$4.ARIA_CHECKED_CHECKBOX_SELECTOR);
                 this.selectedIndex =
                     [].map.call(preselectedItems, function (listItem) { return _this.listElements.indexOf(listItem); });
             }
             else if (singleSelectedListItem) {
-                if (singleSelectedListItem.classList.contains(cssClasses$2.LIST_ITEM_ACTIVATED_CLASS)) {
+                if (singleSelectedListItem.classList.contains(cssClasses$3.LIST_ITEM_ACTIVATED_CLASS)) {
                     this.foundation_.setUseActivatedClass(true);
                 }
                 this.singleSelection = true;
@@ -6758,15 +8040,15 @@ var app = (function () {
                 getListItemCount: function () { return _this.listElements.length; },
                 hasCheckboxAtIndex: function (index) {
                     var listItem = _this.listElements[index];
-                    return !!listItem.querySelector(strings$3.CHECKBOX_SELECTOR);
+                    return !!listItem.querySelector(strings$4.CHECKBOX_SELECTOR);
                 },
                 hasRadioAtIndex: function (index) {
                     var listItem = _this.listElements[index];
-                    return !!listItem.querySelector(strings$3.RADIO_SELECTOR);
+                    return !!listItem.querySelector(strings$4.RADIO_SELECTOR);
                 },
                 isCheckboxCheckedAtIndex: function (index) {
                     var listItem = _this.listElements[index];
-                    var toggleEl = listItem.querySelector(strings$3.CHECKBOX_SELECTOR);
+                    var toggleEl = listItem.querySelector(strings$4.CHECKBOX_SELECTOR);
                     return toggleEl.checked;
                 },
                 isFocusInsideList: function () {
@@ -6774,7 +8056,7 @@ var app = (function () {
                 },
                 isRootFocused: function () { return document.activeElement === _this.root_; },
                 notifyAction: function (index) {
-                    _this.emit(strings$3.ACTION_EVENT, { index: index }, /** shouldBubble */ true);
+                    _this.emit(strings$4.ACTION_EVENT, { index: index }, /** shouldBubble */ true);
                 },
                 removeClassForElementIndex: function (index, className) {
                     var element = _this.listElements[index];
@@ -6790,7 +8072,7 @@ var app = (function () {
                 },
                 setCheckedCheckboxOrRadioAtIndex: function (index, isChecked) {
                     var listItem = _this.listElements[index];
-                    var toggleEl = listItem.querySelector(strings$3.CHECKBOX_RADIO_SELECTOR);
+                    var toggleEl = listItem.querySelector(strings$4.CHECKBOX_RADIO_SELECTOR);
                     toggleEl.checked = isChecked;
                     var event = document.createEvent('Event');
                     event.initEvent('change', true, true);
@@ -6798,7 +8080,7 @@ var app = (function () {
                 },
                 setTabIndexForListItemChildren: function (listItemIndex, tabIndexValue) {
                     var element = _this.listElements[listItemIndex];
-                    var listItemChildren = [].slice.call(element.querySelectorAll(strings$3.CHILD_ELEMENTS_TO_TOGGLE_TABINDEX));
+                    var listItemChildren = [].slice.call(element.querySelectorAll(strings$4.CHILD_ELEMENTS_TO_TOGGLE_TABINDEX));
                     listItemChildren.forEach(function (el) { return el.setAttribute('tabindex', tabIndexValue); });
                 },
             };
@@ -6810,9 +8092,9 @@ var app = (function () {
          */
         MDCList.prototype.getListItemIndex_ = function (evt) {
             var eventTarget = evt.target;
-            var nearestParent = closest(eventTarget, "." + cssClasses$2.LIST_ITEM_CLASS + ", ." + cssClasses$2.ROOT);
+            var nearestParent = closest(eventTarget, "." + cssClasses$3.LIST_ITEM_CLASS + ", ." + cssClasses$3.ROOT);
             // Get the index of the element if it is a list item.
-            if (nearestParent && matches$1(nearestParent, "." + cssClasses$2.LIST_ITEM_CLASS)) {
+            if (nearestParent && matches$1(nearestParent, "." + cssClasses$3.LIST_ITEM_CLASS)) {
                 return this.listElements.indexOf(nearestParent);
             }
             return -1;
@@ -6838,7 +8120,7 @@ var app = (function () {
         MDCList.prototype.handleKeydownEvent_ = function (evt) {
             var index = this.getListItemIndex_(evt);
             var target = evt.target;
-            this.foundation_.handleKeydown(evt, target.classList.contains(cssClasses$2.LIST_ITEM_CLASS), index);
+            this.foundation_.handleKeydown(evt, target.classList.contains(cssClasses$3.LIST_ITEM_CLASS), index);
         };
         /**
          * Used to figure out which element was clicked before sending the event to the foundation.
@@ -6847,7 +8129,7 @@ var app = (function () {
             var index = this.getListItemIndex_(evt);
             var target = evt.target;
             // Toggle the checkbox only if it's not the target of the event, or the checkbox will have 2 change events.
-            var toggleCheckbox = !matches$1(target, strings$3.CHECKBOX_RADIO_SELECTOR);
+            var toggleCheckbox = !matches$1(target, strings$4.CHECKBOX_RADIO_SELECTOR);
             this.foundation_.handleClick(index, toggleCheckbox);
         };
         return MDCList;
@@ -6855,7 +8137,7 @@ var app = (function () {
     //# sourceMappingURL=component.js.map
 
     /* node_modules\@smui\list\List.svelte generated by Svelte v3.18.1 */
-    const file$9 = "node_modules\\@smui\\list\\List.svelte";
+    const file$a = "node_modules\\@smui\\list\\List.svelte";
 
     // (18:0) {:else}
     function create_else_block(ctx) {
@@ -6890,7 +8172,7 @@ var app = (function () {
     			ul = element("ul");
     			if (default_slot) default_slot.c();
     			set_attributes(ul, ul_data);
-    			add_location(ul, file$9, 18, 2, 478);
+    			add_location(ul, file$a, 18, 2, 478);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, ul, anchor);
@@ -6987,7 +8269,7 @@ var app = (function () {
     			nav_1 = element("nav");
     			if (default_slot) default_slot.c();
     			set_attributes(nav_1, nav_1_data);
-    			add_location(nav_1, file$9, 1, 2, 12);
+    			add_location(nav_1, file$a, 1, 2, 12);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, nav_1, anchor);
@@ -7051,7 +8333,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$b(ctx) {
+    function create_fragment$c(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
@@ -7100,7 +8382,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$b.name,
+    		id: create_fragment$c.name,
     		type: "component",
     		source: "",
     		ctx
@@ -7109,7 +8391,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$b($$self, $$props, $$invalidate) {
+    function instance$c($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, ["MDCList:action"]);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -7372,8 +8654,8 @@ var app = (function () {
     		init(
     			this,
     			options,
-    			instance$b,
-    			create_fragment$b,
+    			instance$c,
+    			create_fragment$c,
     			safe_not_equal,
     			{
     				use: 0,
@@ -7400,7 +8682,7 @@ var app = (function () {
     			component: this,
     			tagName: "List",
     			options,
-    			id: create_fragment$b.name
+    			id: create_fragment$c.name
     		});
     	}
 
@@ -7534,7 +8816,7 @@ var app = (function () {
     }
 
     /* node_modules\@smui\list\Item.svelte generated by Svelte v3.18.1 */
-    const file$a = "node_modules\\@smui\\list\\Item.svelte";
+    const file$b = "node_modules\\@smui\\list\\Item.svelte";
 
     // (40:0) {:else}
     function create_else_block$1(ctx) {
@@ -7579,7 +8861,7 @@ var app = (function () {
     			li = element("li");
     			if (default_slot) default_slot.c();
     			set_attributes(li, li_data);
-    			add_location(li, file$a, 40, 2, 1053);
+    			add_location(li, file$b, 40, 2, 1053);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, li, anchor);
@@ -7696,7 +8978,7 @@ var app = (function () {
     			span = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$a, 21, 2, 547);
+    			add_location(span, file$b, 21, 2, 547);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -7802,7 +9084,7 @@ var app = (function () {
     			a = element("a");
     			if (default_slot) default_slot.c();
     			set_attributes(a, a_data);
-    			add_location(a, file$a, 1, 2, 20);
+    			add_location(a, file$b, 1, 2, 20);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, a, anchor);
@@ -7877,7 +9159,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$c(ctx) {
+    function create_fragment$d(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
@@ -7949,7 +9231,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$c.name,
+    		id: create_fragment$d.name,
     		type: "component",
     		source: "",
     		ctx
@@ -7960,7 +9242,7 @@ var app = (function () {
 
     let counter = 0;
 
-    function instance$c($$self, $$props, $$invalidate) {
+    function instance$d($$self, $$props, $$invalidate) {
     	const dispatch = createEventDispatcher();
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let checked = false;
@@ -8194,7 +9476,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$c, create_fragment$c, safe_not_equal, {
+    		init(this, options, instance$d, create_fragment$d, safe_not_equal, {
     			use: 1,
     			class: 2,
     			ripple: 3,
@@ -8213,7 +9495,7 @@ var app = (function () {
     			component: this,
     			tagName: "Item",
     			options,
-    			id: create_fragment$c.name
+    			id: create_fragment$d.name
     		});
     	}
 
@@ -8315,9 +9597,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\common\Span.svelte generated by Svelte v3.18.1 */
-    const file$b = "node_modules\\@smui\\common\\Span.svelte";
+    const file$c = "node_modules\\@smui\\common\\Span.svelte";
 
-    function create_fragment$d(ctx) {
+    function create_fragment$e(ctx) {
     	let span;
     	let useActions_action;
     	let forwardEvents_action;
@@ -8337,7 +9619,7 @@ var app = (function () {
     			span = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$b, 0, 0, 0);
+    			add_location(span, file$c, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8382,7 +9664,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$d.name,
+    		id: create_fragment$e.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8391,7 +9673,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$d($$self, $$props, $$invalidate) {
+    function instance$e($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -8418,13 +9700,13 @@ var app = (function () {
     class Span extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$d, create_fragment$d, safe_not_equal, { use: 0 });
+    		init(this, options, instance$e, create_fragment$e, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Span",
     			options,
-    			id: create_fragment$d.name
+    			id: create_fragment$e.name
     		});
     	}
 
@@ -8474,9 +9756,9 @@ var app = (function () {
     });
 
     /* node_modules\@smui\common\H3.svelte generated by Svelte v3.18.1 */
-    const file$c = "node_modules\\@smui\\common\\H3.svelte";
+    const file$d = "node_modules\\@smui\\common\\H3.svelte";
 
-    function create_fragment$e(ctx) {
+    function create_fragment$f(ctx) {
     	let h3;
     	let useActions_action;
     	let forwardEvents_action;
@@ -8496,7 +9778,7 @@ var app = (function () {
     			h3 = element("h3");
     			if (default_slot) default_slot.c();
     			set_attributes(h3, h3_data);
-    			add_location(h3, file$c, 0, 0, 0);
+    			add_location(h3, file$d, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8541,7 +9823,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$e.name,
+    		id: create_fragment$f.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8550,7 +9832,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$e($$self, $$props, $$invalidate) {
+    function instance$f($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { $$slots = {}, $$scope } = $$props;
@@ -8577,13 +9859,13 @@ var app = (function () {
     class H3 extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$e, create_fragment$e, safe_not_equal, { use: 0 });
+    		init(this, options, instance$f, create_fragment$f, safe_not_equal, { use: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "H3",
     			options,
-    			id: create_fragment$e.name
+    			id: create_fragment$f.name
     		});
     	}
 
@@ -8624,10 +9906,10 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var strings$4 = {
+    var strings$5 = {
         NATIVE_CONTROL_SELECTOR: '.mdc-radio__native-control',
     };
-    var cssClasses$3 = {
+    var cssClasses$4 = {
         DISABLED: 'mdc-radio--disabled',
         ROOT: 'mdc-radio',
     };
@@ -8662,14 +9944,14 @@ var app = (function () {
         }
         Object.defineProperty(MDCRadioFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$3;
+                return cssClasses$4;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCRadioFoundation, "strings", {
             get: function () {
-                return strings$4;
+                return strings$5;
             },
             enumerable: true,
             configurable: true
@@ -8826,9 +10108,9 @@ var app = (function () {
     }
 
     /* node_modules\@smui\radio\Radio.svelte generated by Svelte v3.18.1 */
-    const file$d = "node_modules\\@smui\\radio\\Radio.svelte";
+    const file$e = "node_modules\\@smui\\radio\\Radio.svelte";
 
-    function create_fragment$f(ctx) {
+    function create_fragment$g(ctx) {
     	let div3;
     	let input;
     	let useActions_action;
@@ -8886,15 +10168,15 @@ var app = (function () {
     			t1 = space();
     			div1 = element("div");
     			set_attributes(input, input_data);
-    			add_location(input, file$d, 11, 2, 256);
+    			add_location(input, file$e, 11, 2, 256);
     			attr_dev(div0, "class", "mdc-radio__outer-circle");
-    			add_location(div0, file$d, 24, 4, 642);
+    			add_location(div0, file$e, 24, 4, 642);
     			attr_dev(div1, "class", "mdc-radio__inner-circle");
-    			add_location(div1, file$d, 25, 4, 690);
+    			add_location(div1, file$e, 25, 4, 690);
     			attr_dev(div2, "class", "mdc-radio__background");
-    			add_location(div2, file$d, 23, 2, 602);
+    			add_location(div2, file$e, 23, 2, 602);
     			set_attributes(div3, div3_data);
-    			add_location(div3, file$d, 0, 0, 0);
+    			add_location(div3, file$e, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -8957,7 +10239,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$f.name,
+    		id: create_fragment$g.name,
     		type: "component",
     		source: "",
     		ctx
@@ -8966,7 +10248,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$f($$self, $$props, $$invalidate) {
+    function instance$g($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
 
     	let uninitializedValue = () => {
@@ -9144,7 +10426,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$f, create_fragment$f, safe_not_equal, {
+    		init(this, options, instance$g, create_fragment$g, safe_not_equal, {
     			use: 0,
     			class: 1,
     			disabled: 2,
@@ -9160,7 +10442,7 @@ var app = (function () {
     			component: this,
     			tagName: "Radio",
     			options,
-    			id: create_fragment$f.name
+    			id: create_fragment$g.name
     		});
     	}
 
@@ -9238,7 +10520,7 @@ var app = (function () {
     }
 
     /* src\components\Theme.svelte generated by Svelte v3.18.1 */
-    const file$e = "src\\components\\Theme.svelte";
+    const file$f = "src\\components\\Theme.svelte";
 
     // (73:6) <Title id="list-selection-title">
     function create_default_slot_18(ctx) {
@@ -10279,7 +11561,7 @@ var app = (function () {
     			h4 = element("h4");
     			h4.textContent = "Theme";
     			attr_dev(h4, "class", "svelte-11h90ix");
-    			add_location(h4, file$e, 105, 56, 3150);
+    			add_location(h4, file$f, 105, 56, 3150);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, h4, anchor);
@@ -10300,7 +11582,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$g(ctx) {
+    function create_fragment$h(ctx) {
     	let div;
     	let t;
     	let current;
@@ -10332,7 +11614,7 @@ var app = (function () {
     			create_component(dialog.$$.fragment);
     			t = space();
     			create_component(button.$$.fragment);
-    			add_location(div, file$e, 63, 1, 1984);
+    			add_location(div, file$f, 63, 1, 1984);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10381,7 +11663,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$g.name,
+    		id: create_fragment$h.name,
     		type: "component",
     		source: "",
     		ctx
@@ -10431,7 +11713,7 @@ var app = (function () {
     	}
     }
 
-    function instance$g($$self, $$props, $$invalidate) {
+    function instance$h($$self, $$props, $$invalidate) {
     	
     	
 
@@ -10504,21 +11786,323 @@ var app = (function () {
     class Theme extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$g, create_fragment$g, safe_not_equal, {});
+    		init(this, options, instance$h, create_fragment$h, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Theme",
     			options,
-    			id: create_fragment$g.name
+    			id: create_fragment$h.name
     		});
+    	}
+    }
+
+    /* src\components\Headdiv.svelte generated by Svelte v3.18.1 */
+    const file$g = "src\\components\\Headdiv.svelte";
+
+    function create_fragment$i(ctx) {
+    	let div0;
+    	let h1;
+    	let t0;
+    	let t1;
+    	let t2;
+    	let t3;
+    	let div2;
+    	let div1;
+    	let p0;
+    	let t5;
+    	let p1;
+    	let t7;
+    	let p2;
+    	let t9;
+    	let div4;
+    	let center;
+    	let label;
+    	let h4;
+    	let t11;
+    	let input;
+    	let t12;
+    	let div3;
+    	let current;
+    	let dispose;
+    	const theme = new Theme({ $$inline: true });
+
+    	const block = {
+    		c: function create() {
+    			div0 = element("div");
+    			h1 = element("h1");
+    			t0 = text("Hello ");
+    			t1 = text(/*name*/ ctx[0]);
+    			t2 = text(" !");
+    			t3 = space();
+    			div2 = element("div");
+    			div1 = element("div");
+    			p0 = element("p");
+    			p0.textContent = "* Please insert your name as your username";
+    			t5 = space();
+    			p1 = element("p");
+    			p1.textContent = "* This is an open chat";
+    			t7 = space();
+    			p2 = element("p");
+    			p2.textContent = "* AI bot in trainning. Currently offline.";
+    			t9 = space();
+    			div4 = element("div");
+    			center = element("center");
+    			label = element("label");
+    			h4 = element("h4");
+    			h4.textContent = "Name:";
+    			t11 = space();
+    			input = element("input");
+    			t12 = space();
+    			div3 = element("div");
+    			create_component(theme.$$.fragment);
+    			attr_dev(h1, "class", "svelte-1hjznpi");
+    			add_location(h1, file$g, 99, 20, 2835);
+    			attr_dev(div0, "class", "title svelte-1hjznpi");
+    			add_location(div0, file$g, 99, 0, 2815);
+    			attr_dev(p0, "class", "svelte-1hjznpi");
+    			add_location(p0, file$g, 102, 1, 2916);
+    			attr_dev(p1, "class", "svelte-1hjznpi");
+    			add_location(p1, file$g, 103, 1, 2968);
+    			attr_dev(p2, "class", "svelte-1hjznpi");
+    			add_location(p2, file$g, 104, 1, 3000);
+    			attr_dev(div1, "class", "side_note svelte-1hjznpi");
+    			add_location(div1, file$g, 101, 0, 2890);
+    			attr_dev(div2, "id", "typewriter");
+    			attr_dev(div2, "class", "svelte-1hjznpi");
+    			add_location(div2, file$g, 100, 0, 2866);
+    			attr_dev(h4, "class", "svelte-1hjznpi");
+    			add_location(h4, file$g, 108, 16, 3105);
+    			attr_dev(label, "class", "svelte-1hjznpi");
+    			add_location(label, file$g, 108, 9, 3098);
+    			add_location(center, file$g, 108, 1, 3090);
+    			attr_dev(input, "type", "text");
+    			attr_dev(input, "class", "user_input svelte-1hjznpi");
+    			add_location(input, file$g, 109, 1, 3140);
+    			attr_dev(div3, "class", "theme");
+    			add_location(div3, file$g, 110, 1, 3200);
+    			attr_dev(div4, "class", "headdiv svelte-1hjznpi");
+    			add_location(div4, file$g, 107, 0, 3066);
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div0, anchor);
+    			append_dev(div0, h1);
+    			append_dev(h1, t0);
+    			append_dev(h1, t1);
+    			append_dev(h1, t2);
+    			insert_dev(target, t3, anchor);
+    			insert_dev(target, div2, anchor);
+    			append_dev(div2, div1);
+    			append_dev(div1, p0);
+    			append_dev(div1, t5);
+    			append_dev(div1, p1);
+    			append_dev(div1, t7);
+    			append_dev(div1, p2);
+    			insert_dev(target, t9, anchor);
+    			insert_dev(target, div4, anchor);
+    			append_dev(div4, center);
+    			append_dev(center, label);
+    			append_dev(label, h4);
+    			append_dev(div4, t11);
+    			append_dev(div4, input);
+    			set_input_value(input, /*name*/ ctx[0]);
+    			append_dev(div4, t12);
+    			append_dev(div4, div3);
+    			mount_component(theme, div3, null);
+    			current = true;
+    			dispose = listen_dev(input, "input", /*input_input_handler*/ ctx[1]);
+    		},
+    		p: function update(ctx, [dirty]) {
+    			if (!current || dirty & /*name*/ 1) set_data_dev(t1, /*name*/ ctx[0]);
+
+    			if (dirty & /*name*/ 1 && input.value !== /*name*/ ctx[0]) {
+    				set_input_value(input, /*name*/ ctx[0]);
+    			}
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(theme.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(theme.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div0);
+    			if (detaching) detach_dev(t3);
+    			if (detaching) detach_dev(div2);
+    			if (detaching) detach_dev(t9);
+    			if (detaching) detach_dev(div4);
+    			destroy_component(theme);
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$i.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function setupTypewriter(t) {
+    	var HTML = t.innerHTML;
+    	t.innerHTML = "";
+
+    	var cursorPosition = 0,
+    		tag = "",
+    		writingTag = true,
+    		tagOpen = true,
+    		typeSpeed = 10,
+    		tempTypeSpeed = 0;
+
+    	var type = function () {
+    		if (writingTag === true) {
+    			tag += HTML[cursorPosition];
+    		}
+
+    		if (HTML[cursorPosition] === "<") {
+    			tempTypeSpeed = 0;
+
+    			if (tagOpen) {
+    				tagOpen = false;
+    				writingTag = true;
+    			} else {
+    				tag = "";
+    				tagOpen = true;
+    				writingTag = true;
+    				tag += HTML[cursorPosition];
+    			}
+    		}
+
+    		if (!writingTag && tagOpen) {
+    			tag.innerHTML += HTML[cursorPosition];
+    		}
+
+    		if (!writingTag && !tagOpen) {
+    			if (HTML[cursorPosition] === " ") {
+    				tempTypeSpeed = 0;
+    			} else {
+    				tempTypeSpeed = Math.random() * typeSpeed + 50;
+    			}
+
+    			t.innerHTML += HTML[cursorPosition];
+    		}
+
+    		if (writingTag === true && HTML[cursorPosition] === ">") {
+    			tempTypeSpeed = Math.random() * typeSpeed + 50;
+    			writingTag = false;
+
+    			if (tagOpen) {
+    				var newSpan = document.createElement("span");
+    				t.appendChild(newSpan);
+    				newSpan.innerHTML = tag;
+    				tag = newSpan.firstChild;
+    				tag.style.margin = 0;
+    				tag.style.color = "var(--default-text-color)";
+    				tag.style.letterSpacing = "1px";
+    				tag.style.alignItems = "center";
+    			}
+    		}
+
+    		cursorPosition += 1;
+
+    		if (cursorPosition < HTML.length - 1) {
+    			setTimeout(type, tempTypeSpeed);
+    		}
+    	};
+
+    	return { type };
+    }
+
+    function instance$i($$self, $$props, $$invalidate) {
+    	let { name } = $$props;
+    	
+
+    	window.onload = () => {
+    		var tyy = document.getElementById("typewriter");
+    		var typewriter = setupTypewriter(tyy);
+    		let div = document.getElementsByClassName("scrollable")[0];
+    		typewriter.type();
+
+    		window.addEventListener("resize", function () {
+    			if (window.innerHeight < 680) {
+    				tyy.style.height = "0";
+    				div.scrollTo(0, div.scrollHeight);
+    			} else {
+    				tyy.style.height = "70px";
+    				document.getElementById("chat").style.height = "70vh";
+    			}
+    		});
+    	};
+
+    	const writable_props = ["name"];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Headdiv> was created with unknown prop '${key}'`);
+    	});
+
+    	function input_input_handler() {
+    		name = this.value;
+    		$$invalidate(0, name);
+    	}
+
+    	$$self.$set = $$props => {
+    		if ("name" in $$props) $$invalidate(0, name = $$props.name);
+    	};
+
+    	$$self.$capture_state = () => {
+    		return { name };
+    	};
+
+    	$$self.$inject_state = $$props => {
+    		if ("name" in $$props) $$invalidate(0, name = $$props.name);
+    	};
+
+    	return [name, input_input_handler];
+    }
+
+    class Headdiv extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$i, create_fragment$i, safe_not_equal, { name: 0 });
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Headdiv",
+    			options,
+    			id: create_fragment$i.name
+    		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*name*/ ctx[0] === undefined && !("name" in props)) {
+    			console.warn("<Headdiv> was created without expected prop 'name'");
+    		}
+    	}
+
+    	get name() {
+    		throw new Error("<Headdiv>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set name(value) {
+    		throw new Error("<Headdiv>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
 
     var temoji = [{"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f600.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f603.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f604.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f601.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f606.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f605.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f923.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f602.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f642.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f643.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f609.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f607.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f970.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f929.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f618.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f617.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u263a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/263a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f619.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f911.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f917.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f914.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f910.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f928.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f610.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f611.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f636.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f612.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f644.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f925.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f614.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f924.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f634.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f637.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f912.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f915.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f922.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f927.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f975.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f976.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f974.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f635.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f920.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f973.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f60e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f913.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d0.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f615.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f641.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2639\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2639.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f632.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f633.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f626.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f627.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f628.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f630.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f625.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f622.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f631.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f616.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f623.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f61e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f613.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f629.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f62b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f971.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f624.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f621.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f620.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f92c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f608.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f480.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2620\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2620.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a9.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f921.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f479.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f916.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f638.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f639.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f640.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f63e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f648.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f649.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f498.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f496.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f497.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f493.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f495.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49f.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2763\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2763.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f494.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2764\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2764.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e1.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49b.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49a.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f499.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f49c.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90e.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a4.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90d.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4af.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a2.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a5.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ab.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a6.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a8.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f573.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a3.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ac.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f441.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e8.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5ef.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcad\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ad.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a4.png\"/>", "group": "Smileys & Emotion"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f590.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f596.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f90f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f918.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f919.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f448.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f449.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f446.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f595.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f447.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u261d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/261d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f44f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f450.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f932.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f91d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f485.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f933.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4aa.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9be.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bf.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f442.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bb.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f443.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e0.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f440.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f445.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f444.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f476.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d2.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f466.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f467.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d1.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f471.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f468.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f469.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f474.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f475.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f645.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f646.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f481.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f64b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddcf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9cf.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f647.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f926.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f937.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f575.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f482.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f477.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f934.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f478.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f473.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f472.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f935.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f470.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f930.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f931.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f47c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f385.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f936.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b8.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9da.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9db.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9dc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9dd.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9de.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udddf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9df.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f486.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f487.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddcd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9cd.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ce.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f483.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f57a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f574.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d6.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f7.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c2.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ca.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f9.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cb.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b4.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b5.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f938.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93e.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f939.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9d8.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c0.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cc.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46d.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46b.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46c.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48f.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f491.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f46a.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e3.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f464.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f465.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f463.png\"/>", "group": "People & Body"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fb.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fc.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fd.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fe.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ff.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b0.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b1.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b3.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9b2.png\"/>", "group": "Component"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f435.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f412.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a7.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f436.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f415.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ae.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f429.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f431.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f408.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f981.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f405.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f406.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f434.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f984.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f993.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f402.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f403.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f404.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f437.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f416.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f417.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f411.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f410.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f999.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f992.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f418.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f401.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f400.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f439.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f430.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f407.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f994.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f987.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f428.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a5.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a6.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a8.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f998.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a1.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f43e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f983.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f414.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f413.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f423.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f424.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f425.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f426.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f427.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f985.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f986.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a2.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f989.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a9.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f438.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f422.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f432.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f409.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f995.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f996.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f433.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f42c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f420.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f421.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f988.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f419.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f40c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f98b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41d.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f41e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f997.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f577.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f578.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f982.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udda0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9a0.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f490.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f338.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ae.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f5.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f339.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f940.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33a.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33b.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33c.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f337.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f331.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f332.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f333.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f334.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f335.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33e.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33f.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2618\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2618.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf40\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f340.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f341.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f342.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f343.png\"/>", "group": "Animals & Nature"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f347.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f348.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f349.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f34f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f350.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f351.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f352.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f353.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f345.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f965.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f951.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf46\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f346.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f954.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f955.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f33d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f336.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f952.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f966.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c4.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c5.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f344.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f330.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f950.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f956.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f968.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c7.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c0.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f356.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f357.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f969.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f953.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f354.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f355.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f959.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c6.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f373.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f958.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f372.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f963.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f957.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c8.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c2.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f371.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f358.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f359.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f35d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f360.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f362.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f363.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f364.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f365.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f96e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f361.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f960.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f961.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f980.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f99e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f990.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f991.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9aa.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f366.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f367.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf68\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f368.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf69\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f369.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f382.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f370.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c1.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f967.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f36f.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37c.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f95b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2615\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2615.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf75\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f375.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f376.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37e.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf77\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f377.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f378.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f379.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37b.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd42\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f942.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd43\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f943.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f964.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c3.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9c9.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ca.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f962.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f37d.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf74\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f374.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd44\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f944.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52a.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udffa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3fa.png\"/>", "group": "Food & Drink"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f310.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fe.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udded\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ed.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3dc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3dd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3de.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3df.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfdb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3db.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3da.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ea.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3eb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ec.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfed\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ed.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ef.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f492.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5fd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ea.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26e9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26fa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f301.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f303.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f304.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f305.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f306.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f307.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f309.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2668\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2668.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f488.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3aa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f682.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f683.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f684.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude85\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f685.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f686.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f687.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f688.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f689.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f690.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f691.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f692.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f693.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f694.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f695.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f696.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f697.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f698.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f699.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ce.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9bc.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udefa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6fa.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f68f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26fd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26fd.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2693\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2693.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f6.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2708\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2708.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e9.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6eb.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ec.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude82\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa82.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ba.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f681.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f69f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\ude80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f680.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udece\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ce.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u231b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/231b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f3.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u231a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/231a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f0.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f2.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f570.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd67\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f567.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f550.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f551.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f552.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f553.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f554.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f560.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f555.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f561.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f556.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f562.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f557.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd63\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f563.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f558.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd64\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f564.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f559.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd65\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f565.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f55a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd66\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f566.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f311.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f312.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f313.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f314.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f315.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f316.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f317.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f318.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f319.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f321.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2600\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2600.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31d.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31e.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa90.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b50.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f31f.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f320.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2601\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2601.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c5.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c8.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f324.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f325.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f326.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f327.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f328.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f329.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32b.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f32c.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f300.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f308.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f302.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2602\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2602.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2614\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2614.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26a1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26a1.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2744\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2744.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2603\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2603.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26c4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26c4.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2604\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2604.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd25\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f525.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a7.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f30a.png\"/>", "group": "Travel & Places"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf83\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f383.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f384.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf86\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f386.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f387.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2728\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2728.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf88\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f388.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f389.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38a.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38b.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38d.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf90\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f390.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f391.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e7.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f380.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f381.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f397.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ab.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f396.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c6.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c5.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd47\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f947.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd48\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f948.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f949.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26bd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26bd.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26be\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26be.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c9.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3be.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfcf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3cf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d1.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d2.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94d.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3d3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94a.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94b.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd45\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f945.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26f8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a3.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd3f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f93f.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bd.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udef7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6f7.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd4c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f94c.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3af.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude80\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa80.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude81\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa81.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b1.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52e.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ff.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ae.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f579.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b0.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b2.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e9.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2660\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2660.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2665\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2665.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2666\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2666.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2663\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2663.png\"/>", "group": "Activities"}, {"code": "\u265f", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udccf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f0cf.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udc04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f004.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b4.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfad\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ad.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5bc.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a8.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f5.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f6.png\"/>", "group": "Activities"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc53\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f453.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd76\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f576.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ba.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc54\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f454.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f455.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc56\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f456.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc57\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f457.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc58\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f458.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa71.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude72\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa72.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude73\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa73.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc59\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f459.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f392.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc5f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f45f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f97f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc60\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f460.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc61\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f461.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa70.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc62\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f462.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f451.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc52\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f452.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f393.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udde2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9e2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ff.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc84\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f484.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f507.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd08\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f508.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd09\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f509.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ef.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd14\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f514.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd15\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f515.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f399.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3b9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ba.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3bb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa95.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\udd41\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f941.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u260e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/260e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4de.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4df.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udda8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5a8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2328\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2328.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5b2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4be.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf9e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f39e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ac.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4fc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50e.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd6f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f56f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd26\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f526.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa94.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcda\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4da.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4dc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddde\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5de.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd16\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f516.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fe.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcb2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4b2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2709\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2709.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udceb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4eb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ea.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ec.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udced\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ed.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ee.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5f3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u270f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/270f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2712\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2712.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd8d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f58d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4dd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcbc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4bc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c5.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c6.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c8.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcc9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4c9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcca\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ca.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4ce.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd87\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f587.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udccf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcd0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4d0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2702\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2702.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddc4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5c4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddd1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5d1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd12\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f512.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd13\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f513.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd0f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f50f.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd10\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f510.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd11\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f511.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udddd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5dd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd28\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f528.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa93.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26cf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2692\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2692.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udde1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2694\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2694.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52b.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udee1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd27\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f527.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd29\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f529.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2699\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2699.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udddc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5dc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2696\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2696.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9af.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd17\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f517.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d3.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2697\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2697.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ea.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9eb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ec.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52c.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52d.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udce1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4e1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc89\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f489.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude78\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa78.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udc8a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f48a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude79\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa79.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude7a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa7a.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeaa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6aa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udecb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6cb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa91.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bf.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\ude92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1fa92.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f4.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f7.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9f9.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fa.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fb.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fc.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9fd.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83e\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f9ef.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d2.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeac\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ac.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26b0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26b0.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26b1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26b1.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f5ff.png\"/>", "group": "Objects"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfe7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3e7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeae\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ae.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeba\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ba.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6bc.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udebe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6be.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udec5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6c5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26a0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26a0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26d4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26d4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udead\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6ad.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeaf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6af.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udeb7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6b7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2622\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2622.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2623\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2623.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b06.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2197\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2197.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27a1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27a1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2198\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2198.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b07\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b07.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2199\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2199.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b05.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2196\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2196.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2195\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2195.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2194\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2194.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u21a9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/21a9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u21aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/21aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2934\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2934.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2935\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2935.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd03\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f503.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd04\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f504.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd19\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f519.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\uded0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6d0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u269b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/269b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd49\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f549.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2721\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2721.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2638\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2638.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u271d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/271d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2626\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2626.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u262e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/262e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd4e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f54e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f52f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2648\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2648.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2649\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2649.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u264f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/264f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2650\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2650.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2651\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2651.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2652\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2652.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2653\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2653.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ce\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ce.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd00\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f500.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f501.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f502.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25b6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25b6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23e9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23e9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ed\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ed.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ef.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25c0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25c0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ea.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ee.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23eb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23eb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23ec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23ec.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23f9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23f9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23fa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23fa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u23cf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/23cf.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfa6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3a6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd05\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f505.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd06\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f506.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4f4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2640\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2640.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2642\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2642.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2695\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2695.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u267b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/267b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u269c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/269c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd31\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f531.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udcdb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4db.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd30\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f530.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b55\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b55.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2705\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2705.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2611\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2611.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2714\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2714.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2716\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2716.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u274c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/274c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u274e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/274e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2795\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2795.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2796\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2796.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2797\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2797.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27b0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27b0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u27bf\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/27bf.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u303d\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/303d.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2733\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2733.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2734\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2734.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2747\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2747.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u203c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/203c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2049\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2049.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2753\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2753.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2754\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2754.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2755\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2755.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2757\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2757.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3030\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3030.png\"/>", "group": "Symbols"}, {"code": "\u00a9", "group": "Symbols"}, {"code": "\u00ae", "group": "Symbols"}, {"code": "\u2122", "group": "Symbols"}, {"code": "#", "group": "Symbols"}, {"code": "*", "group": "Symbols"}, {"code": "0", "group": "Symbols"}, {"code": "1", "group": "Symbols"}, {"code": "2", "group": "Symbols"}, {"code": "3", "group": "Symbols"}, {"code": "4", "group": "Symbols"}, {"code": "5", "group": "Symbols"}, {"code": "6", "group": "Symbols"}, {"code": "7", "group": "Symbols"}, {"code": "8", "group": "Symbols"}, {"code": "9", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd1f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f51f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd20\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f520.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd21\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f521.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd22\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f522.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd23\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f523.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd24\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f524.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd70\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f170.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd8e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f18e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd71\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f171.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd91\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f191.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd92\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f192.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd93\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f193.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2139\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2139.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd94\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f194.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u24c2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/24c2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd95\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f195.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd96\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f196.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd7e\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f17e.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd97\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f197.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd7f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f17f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd98\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f198.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd99\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f199.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udd9a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f19a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude01\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f201.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude02\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f202.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f237.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f236.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude2f\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f22f.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude50\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f250.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f239.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude1a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f21a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f232.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude51\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f251.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f238.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f234.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f233.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3297\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3297.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u3299\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/3299.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f23a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\ude35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f235.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd34\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f534.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e1.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e2.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd35\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f535.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e3.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e4.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26ab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u26aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/26aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e5.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e7.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e8.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e9.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfe6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7e6.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7ea.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udfeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f7eb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b1b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b1b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u2b1c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/2b1c.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fc.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fb.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fe.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25fd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25fd.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25aa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25aa.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\u25ab\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/25ab.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd36\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f536.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd37\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f537.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd38\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f538.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd39\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f539.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3a\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53a.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd3b\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f53b.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udca0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f4a0.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd18\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f518.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd33\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f533.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udd32\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f532.png\"/>", "group": "Symbols"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udfc1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3c1.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83d\udea9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f6a9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udf8c\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f38c.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f4.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udff3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f3f3.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e6.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e7.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e8.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udde9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1e9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddea\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ea.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddeb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1eb.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddec\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ec.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\udded\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ed.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddee\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ee.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddef\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ef.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf0\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f0.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf1\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f1.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf2\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f2.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf3\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f3.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf4\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f4.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf5\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f5.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf6\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f6.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf7\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f7.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf8\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f8.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddf9\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1f9.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfa\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fa.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfb\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fb.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfc\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fc.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfd\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fd.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddfe\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1fe.png\"/>", "group": "Flags"}, {"code": "<img class=\"emoji\" draggable=\"false\" alt=\"\ud83c\uddff\" src=\"https://twemoji.maxcdn.com/v/12.1.5/72x72/1f1ff.png\"/>", "group": "Flags"}];
 
     /* src\components\emojitab.svelte generated by Svelte v3.18.1 */
-    const file$f = "src\\components\\emojitab.svelte";
+    const file$h = "src\\components\\emojitab.svelte";
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -10526,7 +12110,7 @@ var app = (function () {
     	return child_ctx;
     }
 
-    // (10:16) {#each emoji as emo}
+    // (12:8) {#each emoji as emo}
     function create_each_block(ctx) {
     	let span;
     	let raw_value = /*emo*/ ctx[3].code + "";
@@ -10539,8 +12123,8 @@ var app = (function () {
     	const block = {
     		c: function create() {
     			span = element("span");
-    			attr_dev(span, "class", "svelte-13ox7h6");
-    			add_location(span, file$f, 10, 23, 232);
+    			attr_dev(span, "class", "svelte-3l6t7j");
+    			add_location(span, file$h, 12, 12, 307);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -10560,14 +12144,14 @@ var app = (function () {
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(10:16) {#each emoji as emo}",
+    		source: "(12:8) {#each emoji as emo}",
     		ctx
     	});
 
     	return block;
     }
 
-    function create_fragment$h(ctx) {
+    function create_fragment$j(ctx) {
     	let div;
     	let each_value = /*emoji*/ ctx[0];
     	let each_blocks = [];
@@ -10585,8 +12169,8 @@ var app = (function () {
     			}
 
     			attr_dev(div, "id", "emojii");
-    			attr_dev(div, "class", "svelte-13ox7h6");
-    			add_location(div, file$f, 8, 4, 152);
+    			attr_dev(div, "class", "svelte-3l6t7j");
+    			add_location(div, file$h, 10, 4, 244);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -10632,7 +12216,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$h.name,
+    		id: create_fragment$j.name,
     		type: "component",
     		source: "",
     		ctx
@@ -10641,7 +12225,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$h($$self, $$props, $$invalidate) {
+    function instance$j($$self, $$props, $$invalidate) {
     	let { emoji } = $$props;
     	const dispatch = createEventDispatcher();
     	const writable_props = ["emoji"];
@@ -10670,13 +12254,13 @@ var app = (function () {
     class Emojitab extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$h, create_fragment$h, safe_not_equal, { emoji: 0 });
+    		init(this, options, instance$j, create_fragment$j, safe_not_equal, { emoji: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Emojitab",
     			options,
-    			id: create_fragment$h.name
+    			id: create_fragment$j.name
     		});
 
     		const { ctx } = this.$$;
@@ -10696,8 +12280,8 @@ var app = (function () {
     	}
     }
 
-    var css$3 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-tab{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;position:relative;display:flex;flex:1 0 auto;justify-content:center;box-sizing:border-box;height:48px;margin:0;padding:0 24px;border:none;outline:none;background:none;text-align:center;white-space:nowrap;cursor:pointer;-webkit-appearance:none;z-index:1}.mdc-tab .mdc-tab__text-label{color:rgba(0,0,0,.6)}.mdc-tab .mdc-tab__icon{color:rgba(0,0,0,.54);fill:currentColor}.mdc-tab::-moz-focus-inner{padding:0;border:0}.mdc-tab--min-width{flex:0 1 auto}.mdc-tab__content{position:relative;display:flex;align-items:center;justify-content:center;height:inherit;pointer-events:none}.mdc-tab__icon,.mdc-tab__text-label{transition:color .15s linear;display:inline-block;line-height:1;z-index:2}.mdc-tab--stacked{height:72px}.mdc-tab--stacked .mdc-tab__content{flex-direction:column;align-items:center;justify-content:space-between}.mdc-tab--stacked .mdc-tab__icon{padding-top:12px}.mdc-tab--stacked .mdc-tab__text-label{padding-bottom:16px}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-tab--active .mdc-tab__icon{fill:currentColor}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{transition-delay:.1s}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:8px;padding-right:0}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label[dir=rtl],[dir=rtl] .mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:0;padding-right:8px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-tab__ripple{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden}.mdc-tab__ripple:after,.mdc-tab__ripple:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-tab__ripple:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-tab__ripple.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-tab__ripple.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple:after,.mdc-tab__ripple:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-tab__ripple.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-tab__ripple:hover:before{opacity:.04}.mdc-tab__ripple.mdc-ripple-upgraded--background-focused:before,.mdc-tab__ripple:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-tab__ripple:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-tab__ripple:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-tab__ripple.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-tab-indicator{display:flex;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-tab-indicator .mdc-tab-indicator__content--icon{color:#018786;color:var(--mdc-theme-secondary,#018786)}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-top-width:2px}.mdc-tab-indicator .mdc-tab-indicator__content--icon{height:34px;font-size:34px}.mdc-tab-indicator__content{transform-origin:left;opacity:0}.mdc-tab-indicator__content--underline{align-self:flex-end;box-sizing:border-box;width:100%;border-top-style:solid}.mdc-tab-indicator__content--icon{align-self:center;margin:0 auto}.mdc-tab-indicator--active .mdc-tab-indicator__content{opacity:1}.mdc-tab-indicator .mdc-tab-indicator__content{transition:transform .25s cubic-bezier(.4,0,.2,1)}.mdc-tab-indicator--no-transition .mdc-tab-indicator__content{transition:none}.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition:opacity .15s linear}.mdc-tab-indicator--active.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition-delay:.1s}";
-    styleInject(css$3);
+    var css$4 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-tab{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.08929em;text-decoration:none;text-transform:uppercase;position:relative;display:flex;flex:1 0 auto;justify-content:center;box-sizing:border-box;height:48px;margin:0;padding:0 24px;border:none;outline:none;background:none;text-align:center;white-space:nowrap;cursor:pointer;-webkit-appearance:none;z-index:1}.mdc-tab .mdc-tab__text-label{color:rgba(0,0,0,.6)}.mdc-tab .mdc-tab__icon{color:rgba(0,0,0,.54);fill:currentColor}.mdc-tab::-moz-focus-inner{padding:0;border:0}.mdc-tab--min-width{flex:0 1 auto}.mdc-tab__content{position:relative;display:flex;align-items:center;justify-content:center;height:inherit;pointer-events:none}.mdc-tab__icon,.mdc-tab__text-label{transition:color .15s linear;display:inline-block;line-height:1;z-index:2}.mdc-tab--stacked{height:72px}.mdc-tab--stacked .mdc-tab__content{flex-direction:column;align-items:center;justify-content:space-between}.mdc-tab--stacked .mdc-tab__icon{padding-top:12px}.mdc-tab--stacked .mdc-tab__text-label{padding-bottom:16px}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{color:#6200ee;color:var(--mdc-theme-primary,#6200ee)}.mdc-tab--active .mdc-tab__icon{fill:currentColor}.mdc-tab--active .mdc-tab__icon,.mdc-tab--active .mdc-tab__text-label{transition-delay:.1s}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:8px;padding-right:0}.mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label[dir=rtl],[dir=rtl] .mdc-tab:not(.mdc-tab--stacked) .mdc-tab__icon+.mdc-tab__text-label{padding-left:0;padding-right:8px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-tab__ripple{--mdc-ripple-fg-size:0;--mdc-ripple-left:0;--mdc-ripple-top:0;--mdc-ripple-fg-scale:1;--mdc-ripple-fg-translate-end:0;--mdc-ripple-fg-translate-start:0;-webkit-tap-highlight-color:rgba(0,0,0,0);position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden}.mdc-tab__ripple:after,.mdc-tab__ripple:before{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:\"\"}.mdc-tab__ripple:before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-tab__ripple.mdc-ripple-upgraded:before{transform:scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple.mdc-ripple-upgraded:after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-tab__ripple.mdc-ripple-upgraded--unbounded:after{top:var(--mdc-ripple-top,0);left:var(--mdc-ripple-left,0)}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-activation:after{animation:mdc-ripple-fg-radius-in 225ms forwards,mdc-ripple-fg-opacity-in 75ms forwards}.mdc-tab__ripple.mdc-ripple-upgraded--foreground-deactivation:after{animation:mdc-ripple-fg-opacity-out .15s;transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}.mdc-tab__ripple:after,.mdc-tab__ripple:before{top:-50%;left:-50%;width:200%;height:200%}.mdc-tab__ripple.mdc-ripple-upgraded:after{width:var(--mdc-ripple-fg-size,100%);height:var(--mdc-ripple-fg-size,100%)}.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:#6200ee}@supports not (-ms-ime-align:auto){.mdc-tab__ripple:after,.mdc-tab__ripple:before{background-color:var(--mdc-theme-primary,#6200ee)}}.mdc-tab__ripple:hover:before{opacity:.04}.mdc-tab__ripple.mdc-ripple-upgraded--background-focused:before,.mdc-tab__ripple:not(.mdc-ripple-upgraded):focus:before{transition-duration:75ms;opacity:.12}.mdc-tab__ripple:not(.mdc-ripple-upgraded):after{transition:opacity .15s linear}.mdc-tab__ripple:not(.mdc-ripple-upgraded):active:after{transition-duration:75ms;opacity:.12}.mdc-tab__ripple.mdc-ripple-upgraded{--mdc-ripple-fg-opacity:0.12}.mdc-tab-indicator{display:flex;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-color:#6200ee;border-color:var(--mdc-theme-primary,#6200ee)}.mdc-tab-indicator .mdc-tab-indicator__content--icon{color:#018786;color:var(--mdc-theme-secondary,#018786)}.mdc-tab-indicator .mdc-tab-indicator__content--underline{border-top-width:2px}.mdc-tab-indicator .mdc-tab-indicator__content--icon{height:34px;font-size:34px}.mdc-tab-indicator__content{transform-origin:left;opacity:0}.mdc-tab-indicator__content--underline{align-self:flex-end;box-sizing:border-box;width:100%;border-top-style:solid}.mdc-tab-indicator__content--icon{align-self:center;margin:0 auto}.mdc-tab-indicator--active .mdc-tab-indicator__content{opacity:1}.mdc-tab-indicator .mdc-tab-indicator__content{transition:transform .25s cubic-bezier(.4,0,.2,1)}.mdc-tab-indicator--no-transition .mdc-tab-indicator__content{transition:none}.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition:opacity .15s linear}.mdc-tab-indicator--active.mdc-tab-indicator--fade .mdc-tab-indicator__content{transition-delay:.1s}";
+    styleInject(css$4);
 
     /**
      * @license
@@ -10721,12 +12305,12 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses$4 = {
+    var cssClasses$5 = {
         ACTIVE: 'mdc-tab-indicator--active',
         FADE: 'mdc-tab-indicator--fade',
         NO_TRANSITION: 'mdc-tab-indicator--no-transition',
     };
-    var strings$5 = {
+    var strings$6 = {
         CONTENT_SELECTOR: '.mdc-tab-indicator__content',
     };
     //# sourceMappingURL=constants.js.map
@@ -10760,14 +12344,14 @@ var app = (function () {
         }
         Object.defineProperty(MDCTabIndicatorFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$4;
+                return cssClasses$5;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCTabIndicatorFoundation, "strings", {
             get: function () {
-                return strings$5;
+                return strings$6;
             },
             enumerable: true,
             configurable: true
@@ -10973,10 +12557,10 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses$5 = {
+    var cssClasses$6 = {
         ACTIVE: 'mdc-tab--active',
     };
-    var strings$6 = {
+    var strings$7 = {
         ARIA_SELECTED: 'aria-selected',
         CONTENT_SELECTOR: '.mdc-tab__content',
         INTERACTED_EVENT: 'MDCTab:interacted',
@@ -11017,14 +12601,14 @@ var app = (function () {
         }
         Object.defineProperty(MDCTabFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$5;
+                return cssClasses$6;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCTabFoundation, "strings", {
             get: function () {
-                return strings$6;
+                return strings$7;
             },
             enumerable: true,
             configurable: true
@@ -11057,7 +12641,7 @@ var app = (function () {
             this.adapter_.notifyInteracted();
         };
         MDCTabFoundation.prototype.isActive = function () {
-            return this.adapter_.hasClass(cssClasses$5.ACTIVE);
+            return this.adapter_.hasClass(cssClasses$6.ACTIVE);
         };
         /**
          * Sets whether the tab should focus itself when activated
@@ -11069,9 +12653,9 @@ var app = (function () {
          * Activates the Tab
          */
         MDCTabFoundation.prototype.activate = function (previousIndicatorClientRect) {
-            this.adapter_.addClass(cssClasses$5.ACTIVE);
-            this.adapter_.setAttr(strings$6.ARIA_SELECTED, 'true');
-            this.adapter_.setAttr(strings$6.TABINDEX, '0');
+            this.adapter_.addClass(cssClasses$6.ACTIVE);
+            this.adapter_.setAttr(strings$7.ARIA_SELECTED, 'true');
+            this.adapter_.setAttr(strings$7.TABINDEX, '0');
             this.adapter_.activateIndicator(previousIndicatorClientRect);
             if (this.focusOnActivate_) {
                 this.adapter_.focus();
@@ -11085,9 +12669,9 @@ var app = (function () {
             if (!this.isActive()) {
                 return;
             }
-            this.adapter_.removeClass(cssClasses$5.ACTIVE);
-            this.adapter_.setAttr(strings$6.ARIA_SELECTED, 'false');
-            this.adapter_.setAttr(strings$6.TABINDEX, '-1');
+            this.adapter_.removeClass(cssClasses$6.ACTIVE);
+            this.adapter_.setAttr(strings$7.ARIA_SELECTED, 'false');
+            this.adapter_.setAttr(strings$7.TABINDEX, '-1');
             this.adapter_.deactivateIndicator();
         };
         /**
@@ -11232,9 +12816,9 @@ var app = (function () {
     //# sourceMappingURL=component.js.map
 
     /* node_modules\@smui\tab-indicator\TabIndicator.svelte generated by Svelte v3.18.1 */
-    const file$g = "node_modules\\@smui\\tab-indicator\\TabIndicator.svelte";
+    const file$i = "node_modules\\@smui\\tab-indicator\\TabIndicator.svelte";
 
-    function create_fragment$i(ctx) {
+    function create_fragment$k(ctx) {
     	let span1;
     	let span0;
     	let useActions_action;
@@ -11286,9 +12870,9 @@ var app = (function () {
     			span0 = element("span");
     			if (default_slot) default_slot.c();
     			set_attributes(span0, span0_data);
-    			add_location(span0, file$g, 12, 2, 322);
+    			add_location(span0, file$i, 12, 2, 322);
     			set_attributes(span1, span1_data);
-    			add_location(span1, file$g, 0, 0, 0);
+    			add_location(span1, file$i, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -11361,7 +12945,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$i.name,
+    		id: create_fragment$k.name,
     		type: "component",
     		source: "",
     		ctx
@@ -11370,7 +12954,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$i($$self, $$props, $$invalidate) {
+    function instance$k($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -11488,7 +13072,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$i, create_fragment$i, safe_not_equal, {
+    		init(this, options, instance$k, create_fragment$k, safe_not_equal, {
     			use: 0,
     			class: 1,
     			active: 2,
@@ -11505,7 +13089,7 @@ var app = (function () {
     			component: this,
     			tagName: "TabIndicator",
     			options,
-    			id: create_fragment$i.name
+    			id: create_fragment$k.name
     		});
     	}
 
@@ -11593,7 +13177,7 @@ var app = (function () {
     /* node_modules\@smui\tab\Tab.svelte generated by Svelte v3.18.1 */
 
     const { Error: Error_1 } = globals;
-    const file$h = "node_modules\\@smui\\tab\\Tab.svelte";
+    const file$j = "node_modules\\@smui\\tab\\Tab.svelte";
     const get_tab_indicator_slot_changes_1 = dirty => ({});
     const get_tab_indicator_slot_context_1 = ctx => ({});
     const get_tab_indicator_slot_changes = dirty => ({});
@@ -11841,7 +13425,7 @@ var app = (function () {
     		c: function create() {
     			span = element("span");
     			attr_dev(span, "class", "mdc-tab__ripple");
-    			add_location(span, file$h, 37, 4, 1093);
+    			add_location(span, file$j, 37, 4, 1093);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
@@ -11862,7 +13446,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$j(ctx) {
+    function create_fragment$l(ctx) {
     	let button;
     	let span;
     	let t0;
@@ -11932,9 +13516,9 @@ var app = (function () {
     			t2 = space();
     			if (if_block2) if_block2.c();
     			set_attributes(span, span_data);
-    			add_location(span, file$h, 17, 2, 517);
+    			add_location(span, file$j, 17, 2, 517);
     			set_attributes(button, button_data);
-    			add_location(button, file$h, 0, 0, 0);
+    			add_location(button, file$j, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -12077,7 +13661,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$j.name,
+    		id: create_fragment$l.name,
     		type: "component",
     		source: "",
     		ctx
@@ -12086,7 +13670,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$j($$self, $$props, $$invalidate) {
+    function instance$l($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, ["MDCTab:interacted"]);
     	let activeEntry = getContext("SMUI:tab:active");
     	let { use = [] } = $$props;
@@ -12286,7 +13870,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$j, create_fragment$j, safe_not_equal, {
+    		init(this, options, instance$l, create_fragment$l, safe_not_equal, {
     			use: 1,
     			class: 2,
     			tab: 13,
@@ -12309,7 +13893,7 @@ var app = (function () {
     			component: this,
     			tagName: "Tab",
     			options,
-    			id: create_fragment$j.name
+    			id: create_fragment$l.name
     		});
 
     		const { ctx } = this.$$;
@@ -12449,8 +14033,8 @@ var app = (function () {
     	}
     }
 
-    var css$4 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-tab-bar{width:100%}.mdc-tab-scroller{overflow-y:hidden}.mdc-tab-scroller__test{position:absolute;top:-9999px;width:100px;height:100px;overflow-x:scroll}.mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:touch;display:flex;overflow-x:hidden}.mdc-tab-scroller__scroll-area::-webkit-scrollbar,.mdc-tab-scroller__test::-webkit-scrollbar{display:none}.mdc-tab-scroller__scroll-area--scroll{overflow-x:scroll}.mdc-tab-scroller__scroll-content{position:relative;display:flex;flex:1 0 auto;transform:none;will-change:transform}.mdc-tab-scroller--align-start .mdc-tab-scroller__scroll-content{justify-content:flex-start}.mdc-tab-scroller--align-end .mdc-tab-scroller__scroll-content{justify-content:flex-end}.mdc-tab-scroller--align-center .mdc-tab-scroller__scroll-content{justify-content:center}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:auto}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-content{transition:transform .25s cubic-bezier(.4,0,.2,1)}";
-    styleInject(css$4);
+    var css$5 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}.mdc-tab-bar{width:100%}.mdc-tab-scroller{overflow-y:hidden}.mdc-tab-scroller__test{position:absolute;top:-9999px;width:100px;height:100px;overflow-x:scroll}.mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:touch;display:flex;overflow-x:hidden}.mdc-tab-scroller__scroll-area::-webkit-scrollbar,.mdc-tab-scroller__test::-webkit-scrollbar{display:none}.mdc-tab-scroller__scroll-area--scroll{overflow-x:scroll}.mdc-tab-scroller__scroll-content{position:relative;display:flex;flex:1 0 auto;transform:none;will-change:transform}.mdc-tab-scroller--align-start .mdc-tab-scroller__scroll-content{justify-content:flex-start}.mdc-tab-scroller--align-end .mdc-tab-scroller__scroll-content{justify-content:flex-end}.mdc-tab-scroller--align-center .mdc-tab-scroller__scroll-content{justify-content:center}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-area{-webkit-overflow-scrolling:auto}.mdc-tab-scroller--animating .mdc-tab-scroller__scroll-content{transition:transform .25s cubic-bezier(.4,0,.2,1)}";
+    styleInject(css$5);
 
     /**
      * @license
@@ -12474,12 +14058,12 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var cssClasses$6 = {
+    var cssClasses$7 = {
         ANIMATING: 'mdc-tab-scroller--animating',
         SCROLL_AREA_SCROLL: 'mdc-tab-scroller__scroll-area--scroll',
         SCROLL_TEST: 'mdc-tab-scroller__test',
     };
-    var strings$7 = {
+    var strings$8 = {
         AREA_SELECTOR: '.mdc-tab-scroller__scroll-area',
         CONTENT_SELECTOR: '.mdc-tab-scroller__scroll-content',
     };
@@ -12751,14 +14335,14 @@ var app = (function () {
         }
         Object.defineProperty(MDCTabScrollerFoundation, "cssClasses", {
             get: function () {
-                return cssClasses$6;
+                return cssClasses$7;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCTabScrollerFoundation, "strings", {
             get: function () {
-                return strings$7;
+                return strings$8;
             },
             enumerable: true,
             configurable: true
@@ -13080,7 +14664,7 @@ var app = (function () {
             return horizontalScrollbarHeight_;
         }
         var el = documentObj.createElement('div');
-        el.classList.add(cssClasses$6.SCROLL_TEST);
+        el.classList.add(cssClasses$7.SCROLL_TEST);
         documentObj.body.appendChild(el);
         var horizontalScrollbarHeight = el.offsetHeight - el.clientHeight;
         documentObj.body.removeChild(el);
@@ -13221,7 +14805,7 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var strings$8 = {
+    var strings$9 = {
         ARROW_LEFT_KEY: 'ArrowLeft',
         ARROW_RIGHT_KEY: 'ArrowRight',
         END_KEY: 'End',
@@ -13232,7 +14816,7 @@ var app = (function () {
         TAB_SCROLLER_SELECTOR: '.mdc-tab-scroller',
         TAB_SELECTOR: '.mdc-tab',
     };
-    var numbers$3 = {
+    var numbers$4 = {
         ARROW_LEFT_KEYCODE: 37,
         ARROW_RIGHT_KEYCODE: 39,
         END_KEYCODE: 35,
@@ -13267,20 +14851,20 @@ var app = (function () {
      */
     var ACCEPTABLE_KEYS = new Set();
     // IE11 has no support for new Set with iterable so we need to initialize this by hand
-    ACCEPTABLE_KEYS.add(strings$8.ARROW_LEFT_KEY);
-    ACCEPTABLE_KEYS.add(strings$8.ARROW_RIGHT_KEY);
-    ACCEPTABLE_KEYS.add(strings$8.END_KEY);
-    ACCEPTABLE_KEYS.add(strings$8.HOME_KEY);
-    ACCEPTABLE_KEYS.add(strings$8.ENTER_KEY);
-    ACCEPTABLE_KEYS.add(strings$8.SPACE_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.ARROW_LEFT_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.ARROW_RIGHT_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.END_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.HOME_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.ENTER_KEY);
+    ACCEPTABLE_KEYS.add(strings$9.SPACE_KEY);
     var KEYCODE_MAP = new Map();
     // IE11 has no support for new Map with iterable so we need to initialize this by hand
-    KEYCODE_MAP.set(numbers$3.ARROW_LEFT_KEYCODE, strings$8.ARROW_LEFT_KEY);
-    KEYCODE_MAP.set(numbers$3.ARROW_RIGHT_KEYCODE, strings$8.ARROW_RIGHT_KEY);
-    KEYCODE_MAP.set(numbers$3.END_KEYCODE, strings$8.END_KEY);
-    KEYCODE_MAP.set(numbers$3.HOME_KEYCODE, strings$8.HOME_KEY);
-    KEYCODE_MAP.set(numbers$3.ENTER_KEYCODE, strings$8.ENTER_KEY);
-    KEYCODE_MAP.set(numbers$3.SPACE_KEYCODE, strings$8.SPACE_KEY);
+    KEYCODE_MAP.set(numbers$4.ARROW_LEFT_KEYCODE, strings$9.ARROW_LEFT_KEY);
+    KEYCODE_MAP.set(numbers$4.ARROW_RIGHT_KEYCODE, strings$9.ARROW_RIGHT_KEY);
+    KEYCODE_MAP.set(numbers$4.END_KEYCODE, strings$9.END_KEY);
+    KEYCODE_MAP.set(numbers$4.HOME_KEYCODE, strings$9.HOME_KEY);
+    KEYCODE_MAP.set(numbers$4.ENTER_KEYCODE, strings$9.ENTER_KEY);
+    KEYCODE_MAP.set(numbers$4.SPACE_KEYCODE, strings$9.SPACE_KEY);
     var MDCTabBarFoundation = /** @class */ (function (_super) {
         __extends(MDCTabBarFoundation, _super);
         function MDCTabBarFoundation(adapter) {
@@ -13290,14 +14874,14 @@ var app = (function () {
         }
         Object.defineProperty(MDCTabBarFoundation, "strings", {
             get: function () {
-                return strings$8;
+                return strings$9;
             },
             enumerable: true,
             configurable: true
         });
         Object.defineProperty(MDCTabBarFoundation, "numbers", {
             get: function () {
-                return numbers$3;
+                return numbers$4;
             },
             enumerable: true,
             configurable: true
@@ -13418,9 +15002,9 @@ var app = (function () {
         MDCTabBarFoundation.prototype.determineTargetFromKey_ = function (origin, key) {
             var isRTL = this.isRTL_();
             var maxIndex = this.adapter_.getTabListLength() - 1;
-            var shouldGoToEnd = key === strings$8.END_KEY;
-            var shouldDecrement = key === strings$8.ARROW_LEFT_KEY && !isRTL || key === strings$8.ARROW_RIGHT_KEY && isRTL;
-            var shouldIncrement = key === strings$8.ARROW_RIGHT_KEY && !isRTL || key === strings$8.ARROW_LEFT_KEY && isRTL;
+            var shouldGoToEnd = key === strings$9.END_KEY;
+            var shouldDecrement = key === strings$9.ARROW_LEFT_KEY && !isRTL || key === strings$9.ARROW_RIGHT_KEY && isRTL;
+            var shouldIncrement = key === strings$9.ARROW_RIGHT_KEY && !isRTL || key === strings$9.ARROW_LEFT_KEY && isRTL;
             var index = origin;
             if (shouldGoToEnd) {
                 index = maxIndex;
@@ -13453,8 +15037,8 @@ var app = (function () {
             var nextTabDimensions = this.adapter_.getTabDimensionsAtIndex(nextIndex);
             var relativeContentLeft = nextTabDimensions.contentLeft - scrollPosition - barWidth;
             var relativeContentRight = nextTabDimensions.contentRight - scrollPosition;
-            var leftIncrement = relativeContentRight - numbers$3.EXTRA_SCROLL_AMOUNT;
-            var rightIncrement = relativeContentLeft + numbers$3.EXTRA_SCROLL_AMOUNT;
+            var leftIncrement = relativeContentRight - numbers$4.EXTRA_SCROLL_AMOUNT;
+            var rightIncrement = relativeContentLeft + numbers$4.EXTRA_SCROLL_AMOUNT;
             if (nextIndex < index) {
                 return Math.min(leftIncrement, 0);
             }
@@ -13472,8 +15056,8 @@ var app = (function () {
             var nextTabDimensions = this.adapter_.getTabDimensionsAtIndex(nextIndex);
             var relativeContentLeft = scrollContentWidth - nextTabDimensions.contentLeft - scrollPosition;
             var relativeContentRight = scrollContentWidth - nextTabDimensions.contentRight - scrollPosition - barWidth;
-            var leftIncrement = relativeContentRight + numbers$3.EXTRA_SCROLL_AMOUNT;
-            var rightIncrement = relativeContentLeft - numbers$3.EXTRA_SCROLL_AMOUNT;
+            var leftIncrement = relativeContentRight + numbers$4.EXTRA_SCROLL_AMOUNT;
+            var rightIncrement = relativeContentLeft - numbers$4.EXTRA_SCROLL_AMOUNT;
             if (nextIndex > index) {
                 return Math.max(leftIncrement, 0);
             }
@@ -13557,7 +15141,7 @@ var app = (function () {
             return KEYCODE_MAP.get(evt.keyCode);
         };
         MDCTabBarFoundation.prototype.isActivationKey_ = function (key) {
-            return key === strings$8.SPACE_KEY || key === strings$8.ENTER_KEY;
+            return key === strings$9.SPACE_KEY || key === strings$9.ENTER_KEY;
         };
         /**
          * Returns whether a given index is inclusively between the ends
@@ -13629,7 +15213,7 @@ var app = (function () {
      * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
      * THE SOFTWARE.
      */
-    var strings$9 = MDCTabBarFoundation.strings;
+    var strings$a = MDCTabBarFoundation.strings;
     var tabIdCounter = 0;
     var MDCTabBar = /** @class */ (function (_super) {
         __extends(MDCTabBar, _super);
@@ -13722,7 +15306,7 @@ var app = (function () {
                 },
                 getTabListLength: function () { return _this.tabList_.length; },
                 notifyTabActivated: function (index) {
-                    return _this.emit(strings$9.TAB_ACTIVATED_EVENT, { index: index }, true);
+                    return _this.emit(strings$a.TAB_ACTIVATED_EVENT, { index: index }, true);
                 },
             };
             // tslint:enable:object-literal-sort-keys
@@ -13746,7 +15330,7 @@ var app = (function () {
          * Returns all the tab elements in a nice clean array
          */
         MDCTabBar.prototype.getTabElements_ = function () {
-            return [].slice.call(this.root_.querySelectorAll(strings$9.TAB_SELECTOR));
+            return [].slice.call(this.root_.querySelectorAll(strings$a.TAB_SELECTOR));
         };
         /**
          * Instantiates tab components on all child tab elements
@@ -13761,7 +15345,7 @@ var app = (function () {
          * Instantiates tab scroller component on the child tab scroller element
          */
         MDCTabBar.prototype.instantiateTabScroller_ = function (tabScrollerFactory) {
-            var tabScrollerElement = this.root_.querySelector(strings$9.TAB_SCROLLER_SELECTOR);
+            var tabScrollerElement = this.root_.querySelector(strings$a.TAB_SCROLLER_SELECTOR);
             if (tabScrollerElement) {
                 return tabScrollerFactory(tabScrollerElement);
             }
@@ -13772,9 +15356,9 @@ var app = (function () {
     //# sourceMappingURL=component.js.map
 
     /* node_modules\@smui\tab-scroller\TabScroller.svelte generated by Svelte v3.18.1 */
-    const file$i = "node_modules\\@smui\\tab-scroller\\TabScroller.svelte";
+    const file$k = "node_modules\\@smui\\tab-scroller\\TabScroller.svelte";
 
-    function create_fragment$k(ctx) {
+    function create_fragment$m(ctx) {
     	let div2;
     	let div1;
     	let div0;
@@ -13833,11 +15417,11 @@ var app = (function () {
     			div0 = element("div");
     			if (default_slot) default_slot.c();
     			set_attributes(div0, div0_data);
-    			add_location(div0, file$i, 12, 4, 371);
+    			add_location(div0, file$k, 12, 4, 371);
     			set_attributes(div1, div1_data);
-    			add_location(div1, file$i, 7, 2, 188);
+    			add_location(div1, file$k, 7, 2, 188);
     			set_attributes(div2, div2_data);
-    			add_location(div2, file$i, 0, 0, 0);
+    			add_location(div2, file$k, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -13912,7 +15496,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$k.name,
+    		id: create_fragment$m.name,
     		type: "component",
     		source: "",
     		ctx
@@ -13921,7 +15505,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$k($$self, $$props, $$invalidate) {
+    function instance$m($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -14039,7 +15623,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$k, create_fragment$k, safe_not_equal, {
+    		init(this, options, instance$m, create_fragment$m, safe_not_equal, {
     			use: 0,
     			class: 1,
     			scrollArea$use: 2,
@@ -14056,7 +15640,7 @@ var app = (function () {
     			component: this,
     			tagName: "TabScroller",
     			options,
-    			id: create_fragment$k.name
+    			id: create_fragment$m.name
     		});
     	}
 
@@ -14142,7 +15726,7 @@ var app = (function () {
     }
 
     /* node_modules\@smui\tab-bar\TabBar.svelte generated by Svelte v3.18.1 */
-    const file$j = "node_modules\\@smui\\tab-bar\\TabBar.svelte";
+    const file$l = "node_modules\\@smui\\tab-bar\\TabBar.svelte";
     const get_default_slot_changes = dirty => ({ tab: dirty & /*tabs*/ 4 });
     const get_default_slot_context = ctx => ({ tab: /*tab*/ ctx[28] });
 
@@ -14283,7 +15867,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$l(ctx) {
+    function create_fragment$n(ctx) {
     	let div;
     	let useActions_action;
     	let forwardEvents_action;
@@ -14330,7 +15914,7 @@ var app = (function () {
     			div = element("div");
     			create_component(tabscroller.$$.fragment);
     			set_attributes(div, div_data);
-    			add_location(div, file$j, 0, 0, 0);
+    			add_location(div, file$l, 0, 0, 0);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -14396,7 +15980,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$l.name,
+    		id: create_fragment$n.name,
     		type: "component",
     		source: "",
     		ctx
@@ -14405,7 +15989,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$l($$self, $$props, $$invalidate) {
+    function instance$n($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, ["MDCTabBar:activated"]);
 
     	let uninitializedValue = () => {
@@ -14619,7 +16203,7 @@ var app = (function () {
     	constructor(options) {
     		super(options);
 
-    		init(this, options, instance$l, create_fragment$l, safe_not_equal, {
+    		init(this, options, instance$n, create_fragment$n, safe_not_equal, {
     			use: 0,
     			class: 1,
     			tabs: 2,
@@ -14636,7 +16220,7 @@ var app = (function () {
     			component: this,
     			tagName: "TabBar",
     			options,
-    			id: create_fragment$l.name
+    			id: create_fragment$n.name
     		});
     	}
 
@@ -14721,735 +16305,8 @@ var app = (function () {
     	}
     }
 
-    var css$5 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-menu{min-width:112px}.mdc-menu .mdc-list,.mdc-menu .mdc-list-item__graphic,.mdc-menu .mdc-list-item__meta{color:rgba(0,0,0,.87)}.mdc-menu .mdc-list-divider{margin:8px 0}.mdc-menu .mdc-list-item{user-select:none}.mdc-menu .mdc-list-item--disabled{cursor:auto}@media screen and (-ms-high-contrast:active){.mdc-menu .mdc-list-item--disabled{opacity:.38}}.mdc-menu a.mdc-list-item .mdc-list-item__graphic,.mdc-menu a.mdc-list-item .mdc-list-item__text{pointer-events:none}.mdc-menu__selection-group{padding:0;fill:currentColor}.mdc-menu__selection-group .mdc-list-item{padding-left:56px;padding-right:16px}.mdc-menu__selection-group .mdc-list-item[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-list-item{padding-left:16px;padding-right:56px}.mdc-menu__selection-group .mdc-menu__selection-group-icon{left:16px;right:auto;display:none;position:absolute;top:50%;transform:translateY(-50%)}.mdc-menu__selection-group .mdc-menu__selection-group-icon[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-menu__selection-group-icon{left:auto;right:16px}.mdc-menu-item--selected .mdc-menu__selection-group-icon{display:inline}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
-    styleInject(css$5);
-
-    /**
-     * @license
-     * Copyright 2018 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var cssClasses$7 = {
-        ANCHOR: 'mdc-menu-surface--anchor',
-        ANIMATING_CLOSED: 'mdc-menu-surface--animating-closed',
-        ANIMATING_OPEN: 'mdc-menu-surface--animating-open',
-        FIXED: 'mdc-menu-surface--fixed',
-        OPEN: 'mdc-menu-surface--open',
-        ROOT: 'mdc-menu-surface',
-    };
-    // tslint:disable:object-literal-sort-keys
-    var strings$a = {
-        CLOSED_EVENT: 'MDCMenuSurface:closed',
-        OPENED_EVENT: 'MDCMenuSurface:opened',
-        FOCUSABLE_ELEMENTS: [
-            'button:not(:disabled)', '[href]:not([aria-disabled="true"])', 'input:not(:disabled)',
-            'select:not(:disabled)', 'textarea:not(:disabled)', '[tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])',
-        ].join(', '),
-    };
-    // tslint:enable:object-literal-sort-keys
-    var numbers$4 = {
-        /** Total duration of menu-surface open animation. */
-        TRANSITION_OPEN_DURATION: 120,
-        /** Total duration of menu-surface close animation. */
-        TRANSITION_CLOSE_DURATION: 75,
-        /** Margin left to the edge of the viewport when menu-surface is at maximum possible height. */
-        MARGIN_TO_EDGE: 32,
-        /** Ratio of anchor width to menu-surface width for switching from corner positioning to center positioning. */
-        ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO: 0.67,
-    };
-    /**
-     * Enum for bits in the {@see Corner) bitmap.
-     */
-    var CornerBit;
-    (function (CornerBit) {
-        CornerBit[CornerBit["BOTTOM"] = 1] = "BOTTOM";
-        CornerBit[CornerBit["CENTER"] = 2] = "CENTER";
-        CornerBit[CornerBit["RIGHT"] = 4] = "RIGHT";
-        CornerBit[CornerBit["FLIP_RTL"] = 8] = "FLIP_RTL";
-    })(CornerBit || (CornerBit = {}));
-    /**
-     * Enum for representing an element corner for positioning the menu-surface.
-     *
-     * The START constants map to LEFT if element directionality is left
-     * to right and RIGHT if the directionality is right to left.
-     * Likewise END maps to RIGHT or LEFT depending on the directionality.
-     */
-    var Corner;
-    (function (Corner) {
-        Corner[Corner["TOP_LEFT"] = 0] = "TOP_LEFT";
-        Corner[Corner["TOP_RIGHT"] = 4] = "TOP_RIGHT";
-        Corner[Corner["BOTTOM_LEFT"] = 1] = "BOTTOM_LEFT";
-        Corner[Corner["BOTTOM_RIGHT"] = 5] = "BOTTOM_RIGHT";
-        Corner[Corner["TOP_START"] = 8] = "TOP_START";
-        Corner[Corner["TOP_END"] = 12] = "TOP_END";
-        Corner[Corner["BOTTOM_START"] = 9] = "BOTTOM_START";
-        Corner[Corner["BOTTOM_END"] = 13] = "BOTTOM_END";
-    })(Corner || (Corner = {}));
-    //# sourceMappingURL=constants.js.map
-
-    /**
-     * @license
-     * Copyright 2018 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var MDCMenuSurfaceFoundation = /** @class */ (function (_super) {
-        __extends(MDCMenuSurfaceFoundation, _super);
-        function MDCMenuSurfaceFoundation(adapter) {
-            var _this = _super.call(this, __assign({}, MDCMenuSurfaceFoundation.defaultAdapter, adapter)) || this;
-            _this.isOpen_ = false;
-            _this.isQuickOpen_ = false;
-            _this.isHoistedElement_ = false;
-            _this.isFixedPosition_ = false;
-            _this.openAnimationEndTimerId_ = 0;
-            _this.closeAnimationEndTimerId_ = 0;
-            _this.animationRequestId_ = 0;
-            _this.anchorCorner_ = Corner.TOP_START;
-            _this.anchorMargin_ = { top: 0, right: 0, bottom: 0, left: 0 };
-            _this.position_ = { x: 0, y: 0 };
-            return _this;
-        }
-        Object.defineProperty(MDCMenuSurfaceFoundation, "cssClasses", {
-            get: function () {
-                return cssClasses$7;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCMenuSurfaceFoundation, "strings", {
-            get: function () {
-                return strings$a;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCMenuSurfaceFoundation, "numbers", {
-            get: function () {
-                return numbers$4;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCMenuSurfaceFoundation, "Corner", {
-            get: function () {
-                return Corner;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(MDCMenuSurfaceFoundation, "defaultAdapter", {
-            /**
-             * @see {@link MDCMenuSurfaceAdapter} for typing information on parameters and return types.
-             */
-            get: function () {
-                // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
-                return {
-                    addClass: function () { return undefined; },
-                    removeClass: function () { return undefined; },
-                    hasClass: function () { return false; },
-                    hasAnchor: function () { return false; },
-                    isElementInContainer: function () { return false; },
-                    isFocused: function () { return false; },
-                    isRtl: function () { return false; },
-                    getInnerDimensions: function () { return ({ height: 0, width: 0 }); },
-                    getAnchorDimensions: function () { return null; },
-                    getWindowDimensions: function () { return ({ height: 0, width: 0 }); },
-                    getBodyDimensions: function () { return ({ height: 0, width: 0 }); },
-                    getWindowScroll: function () { return ({ x: 0, y: 0 }); },
-                    setPosition: function () { return undefined; },
-                    setMaxHeight: function () { return undefined; },
-                    setTransformOrigin: function () { return undefined; },
-                    saveFocus: function () { return undefined; },
-                    restoreFocus: function () { return undefined; },
-                    notifyClose: function () { return undefined; },
-                    notifyOpen: function () { return undefined; },
-                };
-                // tslint:enable:object-literal-sort-keys
-            },
-            enumerable: true,
-            configurable: true
-        });
-        MDCMenuSurfaceFoundation.prototype.init = function () {
-            var _a = MDCMenuSurfaceFoundation.cssClasses, ROOT = _a.ROOT, OPEN = _a.OPEN;
-            if (!this.adapter_.hasClass(ROOT)) {
-                throw new Error(ROOT + " class required in root element.");
-            }
-            if (this.adapter_.hasClass(OPEN)) {
-                this.isOpen_ = true;
-            }
-        };
-        MDCMenuSurfaceFoundation.prototype.destroy = function () {
-            clearTimeout(this.openAnimationEndTimerId_);
-            clearTimeout(this.closeAnimationEndTimerId_);
-            // Cancel any currently running animations.
-            cancelAnimationFrame(this.animationRequestId_);
-        };
-        /**
-         * @param corner Default anchor corner alignment of top-left menu surface corner.
-         */
-        MDCMenuSurfaceFoundation.prototype.setAnchorCorner = function (corner) {
-            this.anchorCorner_ = corner;
-        };
-        /**
-         * @param margin Set of margin values from anchor.
-         */
-        MDCMenuSurfaceFoundation.prototype.setAnchorMargin = function (margin) {
-            this.anchorMargin_.top = margin.top || 0;
-            this.anchorMargin_.right = margin.right || 0;
-            this.anchorMargin_.bottom = margin.bottom || 0;
-            this.anchorMargin_.left = margin.left || 0;
-        };
-        /** Used to indicate if the menu-surface is hoisted to the body. */
-        MDCMenuSurfaceFoundation.prototype.setIsHoisted = function (isHoisted) {
-            this.isHoistedElement_ = isHoisted;
-        };
-        /** Used to set the menu-surface calculations based on a fixed position menu. */
-        MDCMenuSurfaceFoundation.prototype.setFixedPosition = function (isFixedPosition) {
-            this.isFixedPosition_ = isFixedPosition;
-        };
-        /** Sets the menu-surface position on the page. */
-        MDCMenuSurfaceFoundation.prototype.setAbsolutePosition = function (x, y) {
-            this.position_.x = this.isFinite_(x) ? x : 0;
-            this.position_.y = this.isFinite_(y) ? y : 0;
-        };
-        MDCMenuSurfaceFoundation.prototype.setQuickOpen = function (quickOpen) {
-            this.isQuickOpen_ = quickOpen;
-        };
-        MDCMenuSurfaceFoundation.prototype.isOpen = function () {
-            return this.isOpen_;
-        };
-        /**
-         * Open the menu surface.
-         */
-        MDCMenuSurfaceFoundation.prototype.open = function () {
-            var _this = this;
-            this.adapter_.saveFocus();
-            if (!this.isQuickOpen_) {
-                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
-            }
-            this.animationRequestId_ = requestAnimationFrame(function () {
-                _this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
-                _this.dimensions_ = _this.adapter_.getInnerDimensions();
-                _this.autoPosition_();
-                if (_this.isQuickOpen_) {
-                    _this.adapter_.notifyOpen();
-                }
-                else {
-                    _this.openAnimationEndTimerId_ = setTimeout(function () {
-                        _this.openAnimationEndTimerId_ = 0;
-                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_OPEN);
-                        _this.adapter_.notifyOpen();
-                    }, numbers$4.TRANSITION_OPEN_DURATION);
-                }
-            });
-            this.isOpen_ = true;
-        };
-        /**
-         * Closes the menu surface.
-         */
-        MDCMenuSurfaceFoundation.prototype.close = function (skipRestoreFocus) {
-            var _this = this;
-            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
-            if (!this.isQuickOpen_) {
-                this.adapter_.addClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
-            }
-            requestAnimationFrame(function () {
-                _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.OPEN);
-                if (_this.isQuickOpen_) {
-                    _this.adapter_.notifyClose();
-                }
-                else {
-                    _this.closeAnimationEndTimerId_ = setTimeout(function () {
-                        _this.closeAnimationEndTimerId_ = 0;
-                        _this.adapter_.removeClass(MDCMenuSurfaceFoundation.cssClasses.ANIMATING_CLOSED);
-                        _this.adapter_.notifyClose();
-                    }, numbers$4.TRANSITION_CLOSE_DURATION);
-                }
-            });
-            this.isOpen_ = false;
-            if (!skipRestoreFocus) {
-                this.maybeRestoreFocus_();
-            }
-        };
-        /** Handle clicks and close if not within menu-surface element. */
-        MDCMenuSurfaceFoundation.prototype.handleBodyClick = function (evt) {
-            var el = evt.target;
-            if (this.adapter_.isElementInContainer(el)) {
-                return;
-            }
-            this.close();
-        };
-        /** Handle keys that close the surface. */
-        MDCMenuSurfaceFoundation.prototype.handleKeydown = function (evt) {
-            var keyCode = evt.keyCode, key = evt.key;
-            var isEscape = key === 'Escape' || keyCode === 27;
-            if (isEscape) {
-                this.close();
-            }
-        };
-        MDCMenuSurfaceFoundation.prototype.autoPosition_ = function () {
-            var _a;
-            // Compute measurements for autoposition methods reuse.
-            this.measurements_ = this.getAutoLayoutMeasurements_();
-            var corner = this.getOriginCorner_();
-            var maxMenuSurfaceHeight = this.getMenuSurfaceMaxHeight_(corner);
-            var verticalAlignment = this.hasBit_(corner, CornerBit.BOTTOM) ? 'bottom' : 'top';
-            var horizontalAlignment = this.hasBit_(corner, CornerBit.RIGHT) ? 'right' : 'left';
-            var horizontalOffset = this.getHorizontalOriginOffset_(corner);
-            var verticalOffset = this.getVerticalOriginOffset_(corner);
-            var _b = this.measurements_, anchorSize = _b.anchorSize, surfaceSize = _b.surfaceSize;
-            var position = (_a = {},
-                _a[horizontalAlignment] = horizontalOffset,
-                _a[verticalAlignment] = verticalOffset,
-                _a);
-            // Center align when anchor width is comparable or greater than menu surface, otherwise keep corner.
-            if (anchorSize.width / surfaceSize.width > numbers$4.ANCHOR_TO_MENU_SURFACE_WIDTH_RATIO) {
-                horizontalAlignment = 'center';
-            }
-            // If the menu-surface has been hoisted to the body, it's no longer relative to the anchor element
-            if (this.isHoistedElement_ || this.isFixedPosition_) {
-                this.adjustPositionForHoistedElement_(position);
-            }
-            this.adapter_.setTransformOrigin(horizontalAlignment + " " + verticalAlignment);
-            this.adapter_.setPosition(position);
-            this.adapter_.setMaxHeight(maxMenuSurfaceHeight ? maxMenuSurfaceHeight + 'px' : '');
-        };
-        /**
-         * @return Measurements used to position menu surface popup.
-         */
-        MDCMenuSurfaceFoundation.prototype.getAutoLayoutMeasurements_ = function () {
-            var anchorRect = this.adapter_.getAnchorDimensions();
-            var bodySize = this.adapter_.getBodyDimensions();
-            var viewportSize = this.adapter_.getWindowDimensions();
-            var windowScroll = this.adapter_.getWindowScroll();
-            if (!anchorRect) {
-                // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
-                anchorRect = {
-                    top: this.position_.y,
-                    right: this.position_.x,
-                    bottom: this.position_.y,
-                    left: this.position_.x,
-                    width: 0,
-                    height: 0,
-                };
-                // tslint:enable:object-literal-sort-keys
-            }
-            return {
-                anchorSize: anchorRect,
-                bodySize: bodySize,
-                surfaceSize: this.dimensions_,
-                viewportDistance: {
-                    // tslint:disable:object-literal-sort-keys Positional properties are more readable when they're grouped together
-                    top: anchorRect.top,
-                    right: viewportSize.width - anchorRect.right,
-                    bottom: viewportSize.height - anchorRect.bottom,
-                    left: anchorRect.left,
-                },
-                viewportSize: viewportSize,
-                windowScroll: windowScroll,
-            };
-        };
-        /**
-         * Computes the corner of the anchor from which to animate and position the menu surface.
-         */
-        MDCMenuSurfaceFoundation.prototype.getOriginCorner_ = function () {
-            // Defaults: open from the top left.
-            var corner = Corner.TOP_LEFT;
-            var _a = this.measurements_, viewportDistance = _a.viewportDistance, anchorSize = _a.anchorSize, surfaceSize = _a.surfaceSize;
-            var isBottomAligned = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
-            var availableTop = isBottomAligned ? viewportDistance.top + anchorSize.height + this.anchorMargin_.bottom
-                : viewportDistance.top + this.anchorMargin_.top;
-            var availableBottom = isBottomAligned ? viewportDistance.bottom - this.anchorMargin_.bottom
-                : viewportDistance.bottom + anchorSize.height - this.anchorMargin_.top;
-            var topOverflow = surfaceSize.height - availableTop;
-            var bottomOverflow = surfaceSize.height - availableBottom;
-            if (bottomOverflow > 0 && topOverflow < bottomOverflow) {
-                corner = this.setBit_(corner, CornerBit.BOTTOM);
-            }
-            var isRtl = this.adapter_.isRtl();
-            var isFlipRtl = this.hasBit_(this.anchorCorner_, CornerBit.FLIP_RTL);
-            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
-            var isAlignedRight = (avoidHorizontalOverlap && !isRtl) ||
-                (!avoidHorizontalOverlap && isFlipRtl && isRtl);
-            var availableLeft = isAlignedRight ? viewportDistance.left + anchorSize.width + this.anchorMargin_.right :
-                viewportDistance.left + this.anchorMargin_.left;
-            var availableRight = isAlignedRight ? viewportDistance.right - this.anchorMargin_.right :
-                viewportDistance.right + anchorSize.width - this.anchorMargin_.left;
-            var leftOverflow = surfaceSize.width - availableLeft;
-            var rightOverflow = surfaceSize.width - availableRight;
-            if ((leftOverflow < 0 && isAlignedRight && isRtl) ||
-                (avoidHorizontalOverlap && !isAlignedRight && leftOverflow < 0) ||
-                (rightOverflow > 0 && leftOverflow < rightOverflow)) {
-                corner = this.setBit_(corner, CornerBit.RIGHT);
-            }
-            return corner;
-        };
-        /**
-         * @param corner Origin corner of the menu surface.
-         * @return Maximum height of the menu surface, based on available space. 0 indicates should not be set.
-         */
-        MDCMenuSurfaceFoundation.prototype.getMenuSurfaceMaxHeight_ = function (corner) {
-            var viewportDistance = this.measurements_.viewportDistance;
-            var maxHeight = 0;
-            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
-            var isBottomAnchored = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
-            var MARGIN_TO_EDGE = MDCMenuSurfaceFoundation.numbers.MARGIN_TO_EDGE;
-            // When maximum height is not specified, it is handled from CSS.
-            if (isBottomAligned) {
-                maxHeight = viewportDistance.top + this.anchorMargin_.top - MARGIN_TO_EDGE;
-                if (!isBottomAnchored) {
-                    maxHeight += this.measurements_.anchorSize.height;
-                }
-            }
-            else {
-                maxHeight =
-                    viewportDistance.bottom - this.anchorMargin_.bottom + this.measurements_.anchorSize.height - MARGIN_TO_EDGE;
-                if (isBottomAnchored) {
-                    maxHeight -= this.measurements_.anchorSize.height;
-                }
-            }
-            return maxHeight;
-        };
-        /**
-         * @param corner Origin corner of the menu surface.
-         * @return Horizontal offset of menu surface origin corner from corresponding anchor corner.
-         */
-        MDCMenuSurfaceFoundation.prototype.getHorizontalOriginOffset_ = function (corner) {
-            var anchorSize = this.measurements_.anchorSize;
-            // isRightAligned corresponds to using the 'right' property on the surface.
-            var isRightAligned = this.hasBit_(corner, CornerBit.RIGHT);
-            var avoidHorizontalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.RIGHT);
-            if (isRightAligned) {
-                var rightOffset = avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.left : this.anchorMargin_.right;
-                // For hoisted or fixed elements, adjust the offset by the difference between viewport width and body width so
-                // when we calculate the right value (`adjustPositionForHoistedElement_`) based on the element position,
-                // the right property is correct.
-                if (this.isHoistedElement_ || this.isFixedPosition_) {
-                    return rightOffset - (this.measurements_.viewportSize.width - this.measurements_.bodySize.width);
-                }
-                return rightOffset;
-            }
-            return avoidHorizontalOverlap ? anchorSize.width - this.anchorMargin_.right : this.anchorMargin_.left;
-        };
-        /**
-         * @param corner Origin corner of the menu surface.
-         * @return Vertical offset of menu surface origin corner from corresponding anchor corner.
-         */
-        MDCMenuSurfaceFoundation.prototype.getVerticalOriginOffset_ = function (corner) {
-            var anchorSize = this.measurements_.anchorSize;
-            var isBottomAligned = this.hasBit_(corner, CornerBit.BOTTOM);
-            var avoidVerticalOverlap = this.hasBit_(this.anchorCorner_, CornerBit.BOTTOM);
-            var y = 0;
-            if (isBottomAligned) {
-                y = avoidVerticalOverlap ? anchorSize.height - this.anchorMargin_.top : -this.anchorMargin_.bottom;
-            }
-            else {
-                y = avoidVerticalOverlap ? (anchorSize.height + this.anchorMargin_.bottom) : this.anchorMargin_.top;
-            }
-            return y;
-        };
-        /** Calculates the offsets for positioning the menu-surface when the menu-surface has been hoisted to the body. */
-        MDCMenuSurfaceFoundation.prototype.adjustPositionForHoistedElement_ = function (position) {
-            var e_1, _a;
-            var _b = this.measurements_, windowScroll = _b.windowScroll, viewportDistance = _b.viewportDistance;
-            var props = Object.keys(position);
-            try {
-                for (var props_1 = __values(props), props_1_1 = props_1.next(); !props_1_1.done; props_1_1 = props_1.next()) {
-                    var prop = props_1_1.value;
-                    var value = position[prop] || 0;
-                    // Hoisted surfaces need to have the anchor elements location on the page added to the
-                    // position properties for proper alignment on the body.
-                    value += viewportDistance[prop];
-                    // Surfaces that are absolutely positioned need to have additional calculations for scroll
-                    // and bottom positioning.
-                    if (!this.isFixedPosition_) {
-                        if (prop === 'top') {
-                            value += windowScroll.y;
-                        }
-                        else if (prop === 'bottom') {
-                            value -= windowScroll.y;
-                        }
-                        else if (prop === 'left') {
-                            value += windowScroll.x;
-                        }
-                        else { // prop === 'right'
-                            value -= windowScroll.x;
-                        }
-                    }
-                    position[prop] = value;
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (props_1_1 && !props_1_1.done && (_a = props_1.return)) _a.call(props_1);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-        };
-        /**
-         * The last focused element when the menu surface was opened should regain focus, if the user is
-         * focused on or within the menu surface when it is closed.
-         */
-        MDCMenuSurfaceFoundation.prototype.maybeRestoreFocus_ = function () {
-            var isRootFocused = this.adapter_.isFocused();
-            var childHasFocus = document.activeElement && this.adapter_.isElementInContainer(document.activeElement);
-            if (isRootFocused || childHasFocus) {
-                this.adapter_.restoreFocus();
-            }
-        };
-        MDCMenuSurfaceFoundation.prototype.hasBit_ = function (corner, bit) {
-            return Boolean(corner & bit); // tslint:disable-line:no-bitwise
-        };
-        MDCMenuSurfaceFoundation.prototype.setBit_ = function (corner, bit) {
-            return corner | bit; // tslint:disable-line:no-bitwise
-        };
-        /**
-         * isFinite that doesn't force conversion to number type.
-         * Equivalent to Number.isFinite in ES2015, which is not supported in IE.
-         */
-        MDCMenuSurfaceFoundation.prototype.isFinite_ = function (num) {
-            return typeof num === 'number' && isFinite(num);
-        };
-        return MDCMenuSurfaceFoundation;
-    }(MDCFoundation));
-    //# sourceMappingURL=foundation.js.map
-
-    /**
-     * @license
-     * Copyright 2018 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var cachedCssTransformPropertyName_;
-    /**
-     * Returns the name of the correct transform property to use on the current browser.
-     */
-    function getTransformPropertyName(globalObj, forceRefresh) {
-        if (forceRefresh === void 0) { forceRefresh = false; }
-        if (cachedCssTransformPropertyName_ === undefined || forceRefresh) {
-            var el = globalObj.document.createElement('div');
-            cachedCssTransformPropertyName_ = 'transform' in el.style ? 'transform' : 'webkitTransform';
-        }
-        return cachedCssTransformPropertyName_;
-    }
-    //# sourceMappingURL=util.js.map
-
-    /**
-     * @license
-     * Copyright 2018 Google Inc.
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    var MDCMenuSurface = /** @class */ (function (_super) {
-        __extends(MDCMenuSurface, _super);
-        function MDCMenuSurface() {
-            return _super !== null && _super.apply(this, arguments) || this;
-        }
-        MDCMenuSurface.attachTo = function (root) {
-            return new MDCMenuSurface(root);
-        };
-        MDCMenuSurface.prototype.initialSyncWithDOM = function () {
-            var _this = this;
-            var parentEl = this.root_.parentElement;
-            this.anchorElement = parentEl && parentEl.classList.contains(cssClasses$7.ANCHOR) ? parentEl : null;
-            if (this.root_.classList.contains(cssClasses$7.FIXED)) {
-                this.setFixedPosition(true);
-            }
-            this.handleKeydown_ = function (evt) { return _this.foundation_.handleKeydown(evt); };
-            this.handleBodyClick_ = function (evt) { return _this.foundation_.handleBodyClick(evt); };
-            this.registerBodyClickListener_ = function () { return document.body.addEventListener('click', _this.handleBodyClick_); };
-            this.deregisterBodyClickListener_ = function () { return document.body.removeEventListener('click', _this.handleBodyClick_); };
-            this.listen('keydown', this.handleKeydown_);
-            this.listen(strings$a.OPENED_EVENT, this.registerBodyClickListener_);
-            this.listen(strings$a.CLOSED_EVENT, this.deregisterBodyClickListener_);
-        };
-        MDCMenuSurface.prototype.destroy = function () {
-            this.unlisten('keydown', this.handleKeydown_);
-            this.unlisten(strings$a.OPENED_EVENT, this.registerBodyClickListener_);
-            this.unlisten(strings$a.CLOSED_EVENT, this.deregisterBodyClickListener_);
-            _super.prototype.destroy.call(this);
-        };
-        MDCMenuSurface.prototype.isOpen = function () {
-            return this.foundation_.isOpen();
-        };
-        MDCMenuSurface.prototype.open = function () {
-            this.foundation_.open();
-        };
-        MDCMenuSurface.prototype.close = function (skipRestoreFocus) {
-            if (skipRestoreFocus === void 0) { skipRestoreFocus = false; }
-            this.foundation_.close(skipRestoreFocus);
-        };
-        Object.defineProperty(MDCMenuSurface.prototype, "quickOpen", {
-            set: function (quickOpen) {
-                this.foundation_.setQuickOpen(quickOpen);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        /**
-         * Removes the menu-surface from it's current location and appends it to the
-         * body to overcome any overflow:hidden issues.
-         */
-        MDCMenuSurface.prototype.hoistMenuToBody = function () {
-            document.body.appendChild(this.root_);
-            this.setIsHoisted(true);
-        };
-        /** Sets the foundation to use page offsets for an positioning when the menu is hoisted to the body. */
-        MDCMenuSurface.prototype.setIsHoisted = function (isHoisted) {
-            this.foundation_.setIsHoisted(isHoisted);
-        };
-        /** Sets the element that the menu-surface is anchored to. */
-        MDCMenuSurface.prototype.setMenuSurfaceAnchorElement = function (element) {
-            this.anchorElement = element;
-        };
-        /** Sets the menu-surface to position: fixed. */
-        MDCMenuSurface.prototype.setFixedPosition = function (isFixed) {
-            if (isFixed) {
-                this.root_.classList.add(cssClasses$7.FIXED);
-            }
-            else {
-                this.root_.classList.remove(cssClasses$7.FIXED);
-            }
-            this.foundation_.setFixedPosition(isFixed);
-        };
-        /** Sets the absolute x/y position to position based on. Requires the menu to be hoisted. */
-        MDCMenuSurface.prototype.setAbsolutePosition = function (x, y) {
-            this.foundation_.setAbsolutePosition(x, y);
-            this.setIsHoisted(true);
-        };
-        /**
-         * @param corner Default anchor corner alignment of top-left surface corner.
-         */
-        MDCMenuSurface.prototype.setAnchorCorner = function (corner) {
-            this.foundation_.setAnchorCorner(corner);
-        };
-        MDCMenuSurface.prototype.setAnchorMargin = function (margin) {
-            this.foundation_.setAnchorMargin(margin);
-        };
-        MDCMenuSurface.prototype.getDefaultFoundation = function () {
-            var _this = this;
-            // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.
-            // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.
-            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.
-            var adapter = {
-                addClass: function (className) { return _this.root_.classList.add(className); },
-                removeClass: function (className) { return _this.root_.classList.remove(className); },
-                hasClass: function (className) { return _this.root_.classList.contains(className); },
-                hasAnchor: function () { return !!_this.anchorElement; },
-                notifyClose: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.CLOSED_EVENT, {}); },
-                notifyOpen: function () { return _this.emit(MDCMenuSurfaceFoundation.strings.OPENED_EVENT, {}); },
-                isElementInContainer: function (el) { return _this.root_.contains(el); },
-                isRtl: function () { return getComputedStyle(_this.root_).getPropertyValue('direction') === 'rtl'; },
-                setTransformOrigin: function (origin) {
-                    var propertyName = getTransformPropertyName(window) + "-origin";
-                    _this.root_.style.setProperty(propertyName, origin);
-                },
-                isFocused: function () { return document.activeElement === _this.root_; },
-                saveFocus: function () {
-                    _this.previousFocus_ = document.activeElement;
-                },
-                restoreFocus: function () {
-                    if (_this.root_.contains(document.activeElement)) {
-                        if (_this.previousFocus_ && _this.previousFocus_.focus) {
-                            _this.previousFocus_.focus();
-                        }
-                    }
-                },
-                getInnerDimensions: function () {
-                    return { width: _this.root_.offsetWidth, height: _this.root_.offsetHeight };
-                },
-                getAnchorDimensions: function () { return _this.anchorElement ? _this.anchorElement.getBoundingClientRect() : null; },
-                getWindowDimensions: function () {
-                    return { width: window.innerWidth, height: window.innerHeight };
-                },
-                getBodyDimensions: function () {
-                    return { width: document.body.clientWidth, height: document.body.clientHeight };
-                },
-                getWindowScroll: function () {
-                    return { x: window.pageXOffset, y: window.pageYOffset };
-                },
-                setPosition: function (position) {
-                    _this.root_.style.left = 'left' in position ? position.left + "px" : '';
-                    _this.root_.style.right = 'right' in position ? position.right + "px" : '';
-                    _this.root_.style.top = 'top' in position ? position.top + "px" : '';
-                    _this.root_.style.bottom = 'bottom' in position ? position.bottom + "px" : '';
-                },
-                setMaxHeight: function (height) {
-                    _this.root_.style.maxHeight = height;
-                },
-            };
-            // tslint:enable:object-literal-sort-keys
-            return new MDCMenuSurfaceFoundation(adapter);
-        };
-        return MDCMenuSurface;
-    }(MDCComponent));
-    //# sourceMappingURL=component.js.map
+    var css$6 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-menu{max-width:450px}.mdc-menu-surface{top:50px!important}.mdc-tab-bar{position:static}.mdc-list{height:300px;overflow:hidden;overflow-y:scroll;scroll-behavior:smooth;scrollbar-width:5px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.3);-webkit-border-radius:5px;border-radius:5px}::-webkit-scrollbar-thumb{-webkit-border-radius:5px;border-radius:5px;background:rgba(196,183,183,.8);-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.5);box-shadow:inset 0 0 6px rgba(0,0,0,.5)}::-webkit-scrollbar-thumb:window-inactive{background:rgba(138,129,129,.4)}@keyframes mdc-ripple-fg-radius-in{0%{animation-timing-function:cubic-bezier(.4,0,.2,1);transform:translate(var(--mdc-ripple-fg-translate-start,0)) scale(1)}to{transform:translate(var(--mdc-ripple-fg-translate-end,0)) scale(var(--mdc-ripple-fg-scale,1))}}@keyframes mdc-ripple-fg-opacity-in{0%{animation-timing-function:linear;opacity:0}to{opacity:var(--mdc-ripple-fg-opacity,0)}}@keyframes mdc-ripple-fg-opacity-out{0%{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity,0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var:1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug:before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-menu{min-width:112px}.mdc-menu .mdc-list,.mdc-menu .mdc-list-item__graphic,.mdc-menu .mdc-list-item__meta{color:rgba(0,0,0,.87)}.mdc-menu .mdc-list-divider{margin:8px 0}.mdc-menu .mdc-list-item{user-select:none}.mdc-menu .mdc-list-item--disabled{cursor:auto}@media screen and (-ms-high-contrast:active){.mdc-menu .mdc-list-item--disabled{opacity:.38}}.mdc-menu a.mdc-list-item .mdc-list-item__graphic,.mdc-menu a.mdc-list-item .mdc-list-item__text{pointer-events:none}.mdc-menu__selection-group{padding:0;fill:currentColor}.mdc-menu__selection-group .mdc-list-item{padding-left:56px;padding-right:16px}.mdc-menu__selection-group .mdc-list-item[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-list-item{padding-left:16px;padding-right:56px}.mdc-menu__selection-group .mdc-menu__selection-group-icon{left:16px;right:auto;display:none;position:absolute;top:50%;transform:translateY(-50%)}.mdc-menu__selection-group .mdc-menu__selection-group-icon[dir=rtl],[dir=rtl] .mdc-menu__selection-group .mdc-menu__selection-group-icon{left:auto;right:16px}.mdc-menu-item--selected .mdc-menu__selection-group-icon{display:inline}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
+    styleInject(css$6);
 
     /**
      * @license
@@ -15653,11 +16510,11 @@ var app = (function () {
         MDCMenuFoundation.prototype.setEnabled = function (index, isEnabled) {
             this.validatedIndex_(index);
             if (isEnabled) {
-                this.adapter_.removeClassFromElementAtIndex(index, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.removeClassFromElementAtIndex(index, cssClasses$3.LIST_ITEM_DISABLED_CLASS);
                 this.adapter_.addAttributeToElementAtIndex(index, strings$b.ARIA_DISABLED_ATTR, 'false');
             }
             else {
-                this.adapter_.addClassToElementAtIndex(index, cssClasses$2.LIST_ITEM_DISABLED_CLASS);
+                this.adapter_.addClassToElementAtIndex(index, cssClasses$3.LIST_ITEM_DISABLED_CLASS);
                 this.adapter_.addAttributeToElementAtIndex(index, strings$b.ARIA_DISABLED_ATTR, 'true');
             }
         };
@@ -15891,548 +16748,6 @@ var app = (function () {
     }(MDCComponent));
     //# sourceMappingURL=component.js.map
 
-    /* node_modules\@smui\menu-surface\MenuSurface.svelte generated by Svelte v3.18.1 */
-    const file$k = "node_modules\\@smui\\menu-surface\\MenuSurface.svelte";
-
-    function create_fragment$m(ctx) {
-    	let div;
-    	let useActions_action;
-    	let forwardEvents_action;
-    	let current;
-    	let dispose;
-    	const default_slot_template = /*$$slots*/ ctx[27].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[26], null);
-
-    	let div_levels = [
-    		{
-    			class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
-    		},
-    		exclude(/*$$props*/ ctx[7], [
-    			"use",
-    			"class",
-    			"static",
-    			"anchor",
-    			"fixed",
-    			"open",
-    			"quickOpen",
-    			"anchorElement",
-    			"anchorCorner",
-    			"element"
-    		])
-    	];
-
-    	let div_data = {};
-
-    	for (let i = 0; i < div_levels.length; i += 1) {
-    		div_data = assign(div_data, div_levels[i]);
-    	}
-
-    	const block = {
-    		c: function create() {
-    			div = element("div");
-    			if (default_slot) default_slot.c();
-    			set_attributes(div, div_data);
-    			add_location(div, file$k, 0, 0, 0);
-    		},
-    		l: function claim(nodes) {
-    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-
-    			if (default_slot) {
-    				default_slot.m(div, null);
-    			}
-
-    			/*div_binding*/ ctx[28](div);
-    			current = true;
-
-    			dispose = [
-    				action_destroyer(useActions_action = useActions.call(null, div, /*use*/ ctx[2])),
-    				action_destroyer(forwardEvents_action = /*forwardEvents*/ ctx[5].call(null, div)),
-    				listen_dev(div, "MDCMenuSurface:closed", /*updateOpen*/ ctx[6], false, false, false),
-    				listen_dev(div, "MDCMenuSurface:opened", /*updateOpen*/ ctx[6], false, false, false)
-    			];
-    		},
-    		p: function update(ctx, [dirty]) {
-    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 67108864) {
-    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[26], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[26], dirty, null));
-    			}
-
-    			set_attributes(div, get_spread_update(div_levels, [
-    				dirty & /*className, fixed, isStatic*/ 25 && {
-    					class: "\n    mdc-menu-surface\n    " + /*className*/ ctx[3] + "\n    " + (/*fixed*/ ctx[0] ? "mdc-menu-surface--fixed" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "mdc-menu-surface--open" : "") + "\n    " + (/*isStatic*/ ctx[4] ? "smui-menu-surface--static" : "") + "\n  "
-    				},
-    				dirty & /*exclude, $$props*/ 128 && exclude(/*$$props*/ ctx[7], [
-    					"use",
-    					"class",
-    					"static",
-    					"anchor",
-    					"fixed",
-    					"open",
-    					"quickOpen",
-    					"anchorElement",
-    					"anchorCorner",
-    					"element"
-    				])
-    			]));
-
-    			if (useActions_action && is_function(useActions_action.update) && dirty & /*use*/ 4) useActions_action.update.call(null, /*use*/ ctx[2]);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(default_slot, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(default_slot, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			if (default_slot) default_slot.d(detaching);
-    			/*div_binding*/ ctx[28](null);
-    			run_all(dispose);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_fragment$m.name,
-    		type: "component",
-    		source: "",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function instance$m($$self, $$props, $$invalidate) {
-    	const forwardEvents = forwardEventsBuilder(current_component, ["MDCMenuSurface:closed", "MDCMenuSurface:opened"]);
-    	let { use = [] } = $$props;
-    	let { class: className = "" } = $$props;
-    	let { static: isStatic = false } = $$props;
-    	let { anchor = true } = $$props;
-    	let { fixed = false } = $$props;
-    	let { open = isStatic } = $$props;
-    	let { quickOpen = false } = $$props;
-    	let { anchorElement = null } = $$props;
-    	let { anchorCorner = null } = $$props;
-    	let { element = undefined } = $$props; // This is exported because Menu needs it.
-    	let menuSurface;
-    	let instantiate = getContext("SMUI:menu-surface:instantiate");
-    	let getInstance = getContext("SMUI:menu-surface:getInstance");
-    	setContext("SMUI:list:role", "menu");
-    	setContext("SMUI:list:item:role", "menuitem");
-    	let oldFixed = null;
-
-    	onMount(async () => {
-    		if (instantiate !== false) {
-    			$$invalidate(22, menuSurface = new MDCMenuSurface(element));
-    		} else {
-    			$$invalidate(22, menuSurface = await getInstance());
-    		}
-    	});
-
-    	onDestroy(() => {
-    		if (anchor) {
-    			element && element.parentNode.classList.remove("mdc-menu-surface--anchor");
-    		}
-
-    		let isHoisted = false;
-
-    		if (menuSurface) {
-    			isHoisted = menuSurface.foundation_.isHoistedElement_;
-
-    			if (instantiate !== false) {
-    				menuSurface.destroy();
-    			}
-    		}
-
-    		if (isHoisted) {
-    			element.parentNode.removeChild(element);
-    		}
-    	});
-
-    	function updateOpen() {
-    		if (menuSurface) {
-    			if (isStatic) {
-    				$$invalidate(8, open = true);
-    			} else {
-    				$$invalidate(8, open = menuSurface.isOpen());
-    			}
-    		}
-    	}
-
-    	function setOpen(value) {
-    		$$invalidate(8, open = value);
-    	}
-
-    	function setAnchorCorner(...args) {
-    		return menuSurface.setAnchorCorner(...args);
-    	}
-
-    	function setAnchorMargin(...args) {
-    		return menuSurface.setAnchorMargin(...args);
-    	}
-
-    	function setFixedPosition(isFixed, ...args) {
-    		$$invalidate(0, fixed = isFixed);
-    		return menuSurface.setFixedPosition(isFixed, ...args);
-    	}
-
-    	function setAbsolutePosition(...args) {
-    		return menuSurface.setAbsolutePosition(...args);
-    	}
-
-    	function setMenuSurfaceAnchorElement(...args) {
-    		return menuSurface.setMenuSurfaceAnchorElement(...args);
-    	}
-
-    	function hoistMenuToBody(...args) {
-    		return menuSurface.hoistMenuToBody(...args);
-    	}
-
-    	function setIsHoisted(...args) {
-    		return menuSurface.setIsHoisted(...args);
-    	}
-
-    	function getDefaultFoundation(...args) {
-    		return menuSurface.getDefaultFoundation(...args);
-    	}
-
-    	let { $$slots = {}, $$scope } = $$props;
-
-    	function div_binding($$value) {
-    		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(1, element = $$value);
-    		});
-    	}
-
-    	$$self.$set = $$new_props => {
-    		$$invalidate(7, $$props = assign(assign({}, $$props), exclude_internal_props($$new_props)));
-    		if ("use" in $$new_props) $$invalidate(2, use = $$new_props.use);
-    		if ("class" in $$new_props) $$invalidate(3, className = $$new_props.class);
-    		if ("static" in $$new_props) $$invalidate(4, isStatic = $$new_props.static);
-    		if ("anchor" in $$new_props) $$invalidate(10, anchor = $$new_props.anchor);
-    		if ("fixed" in $$new_props) $$invalidate(0, fixed = $$new_props.fixed);
-    		if ("open" in $$new_props) $$invalidate(8, open = $$new_props.open);
-    		if ("quickOpen" in $$new_props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
-    		if ("anchorElement" in $$new_props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
-    		if ("anchorCorner" in $$new_props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
-    		if ("element" in $$new_props) $$invalidate(1, element = $$new_props.element);
-    		if ("$$scope" in $$new_props) $$invalidate(26, $$scope = $$new_props.$$scope);
-    	};
-
-    	$$self.$capture_state = () => {
-    		return {
-    			use,
-    			className,
-    			isStatic,
-    			anchor,
-    			fixed,
-    			open,
-    			quickOpen,
-    			anchorElement,
-    			anchorCorner,
-    			element,
-    			menuSurface,
-    			instantiate,
-    			getInstance,
-    			oldFixed
-    		};
-    	};
-
-    	$$self.$inject_state = $$new_props => {
-    		$$invalidate(7, $$props = assign(assign({}, $$props), $$new_props));
-    		if ("use" in $$props) $$invalidate(2, use = $$new_props.use);
-    		if ("className" in $$props) $$invalidate(3, className = $$new_props.className);
-    		if ("isStatic" in $$props) $$invalidate(4, isStatic = $$new_props.isStatic);
-    		if ("anchor" in $$props) $$invalidate(10, anchor = $$new_props.anchor);
-    		if ("fixed" in $$props) $$invalidate(0, fixed = $$new_props.fixed);
-    		if ("open" in $$props) $$invalidate(8, open = $$new_props.open);
-    		if ("quickOpen" in $$props) $$invalidate(11, quickOpen = $$new_props.quickOpen);
-    		if ("anchorElement" in $$props) $$invalidate(9, anchorElement = $$new_props.anchorElement);
-    		if ("anchorCorner" in $$props) $$invalidate(12, anchorCorner = $$new_props.anchorCorner);
-    		if ("element" in $$props) $$invalidate(1, element = $$new_props.element);
-    		if ("menuSurface" in $$props) $$invalidate(22, menuSurface = $$new_props.menuSurface);
-    		if ("instantiate" in $$props) instantiate = $$new_props.instantiate;
-    		if ("getInstance" in $$props) getInstance = $$new_props.getInstance;
-    		if ("oldFixed" in $$props) $$invalidate(23, oldFixed = $$new_props.oldFixed);
-    	};
-
-    	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*element, anchor*/ 1026) {
-    			 if (element && anchor && !element.parentNode.classList.contains("mdc-menu-surface--anchor")) {
-    				element.parentNode.classList.add("mdc-menu-surface--anchor");
-    				$$invalidate(9, anchorElement = element.parentNode);
-    			}
-    		}
-
-    		if ($$self.$$.dirty & /*menuSurface, quickOpen*/ 4196352) {
-    			 if (menuSurface && menuSurface.quickOpen !== quickOpen) {
-    				$$invalidate(22, menuSurface.quickOpen = quickOpen, menuSurface);
-    			}
-    		}
-
-    		if ($$self.$$.dirty & /*menuSurface, anchorElement*/ 4194816) {
-    			 if (menuSurface && menuSurface.anchorElement !== anchorElement) {
-    				$$invalidate(22, menuSurface.anchorElement = anchorElement, menuSurface);
-    			}
-    		}
-
-    		if ($$self.$$.dirty & /*menuSurface, open*/ 4194560) {
-    			 if (menuSurface && menuSurface.isOpen() !== open) {
-    				if (open) {
-    					menuSurface.open();
-    				} else {
-    					menuSurface.close();
-    				}
-    			}
-    		}
-
-    		if ($$self.$$.dirty & /*menuSurface, oldFixed, fixed*/ 12582913) {
-    			 if (menuSurface && oldFixed !== fixed) {
-    				menuSurface.setFixedPosition(fixed);
-    				$$invalidate(23, oldFixed = fixed);
-    			}
-    		}
-
-    		if ($$self.$$.dirty & /*menuSurface, anchorCorner*/ 4198400) {
-    			 if (menuSurface && anchorCorner != null) {
-    				if (Corner.hasOwnProperty(anchorCorner)) {
-    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
-    				} else if (CornerBit.hasOwnProperty(anchorCorner)) {
-    					menuSurface.setAnchorCorner(Corner[anchorCorner]);
-    				} else {
-    					menuSurface.setAnchorCorner(anchorCorner);
-    				}
-    			}
-    		}
-    	};
-
-    	$$props = exclude_internal_props($$props);
-
-    	return [
-    		fixed,
-    		element,
-    		use,
-    		className,
-    		isStatic,
-    		forwardEvents,
-    		updateOpen,
-    		$$props,
-    		open,
-    		anchorElement,
-    		anchor,
-    		quickOpen,
-    		anchorCorner,
-    		setOpen,
-    		setAnchorCorner,
-    		setAnchorMargin,
-    		setFixedPosition,
-    		setAbsolutePosition,
-    		setMenuSurfaceAnchorElement,
-    		hoistMenuToBody,
-    		setIsHoisted,
-    		getDefaultFoundation,
-    		menuSurface,
-    		oldFixed,
-    		instantiate,
-    		getInstance,
-    		$$scope,
-    		$$slots,
-    		div_binding
-    	];
-    }
-
-    class MenuSurface extends SvelteComponentDev {
-    	constructor(options) {
-    		super(options);
-
-    		init(this, options, instance$m, create_fragment$m, safe_not_equal, {
-    			use: 2,
-    			class: 3,
-    			static: 4,
-    			anchor: 10,
-    			fixed: 0,
-    			open: 8,
-    			quickOpen: 11,
-    			anchorElement: 9,
-    			anchorCorner: 12,
-    			element: 1,
-    			setOpen: 13,
-    			setAnchorCorner: 14,
-    			setAnchorMargin: 15,
-    			setFixedPosition: 16,
-    			setAbsolutePosition: 17,
-    			setMenuSurfaceAnchorElement: 18,
-    			hoistMenuToBody: 19,
-    			setIsHoisted: 20,
-    			getDefaultFoundation: 21
-    		});
-
-    		dispatch_dev("SvelteRegisterComponent", {
-    			component: this,
-    			tagName: "MenuSurface",
-    			options,
-    			id: create_fragment$m.name
-    		});
-    	}
-
-    	get use() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set use(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get class() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set class(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get static() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set static(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get anchor() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set anchor(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get fixed() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set fixed(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get open() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set open(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get quickOpen() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set quickOpen(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get anchorElement() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set anchorElement(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get anchorCorner() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set anchorCorner(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get element() {
-    		throw new Error("<MenuSurface>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set element(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setOpen() {
-    		return this.$$.ctx[13];
-    	}
-
-    	set setOpen(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setAnchorCorner() {
-    		return this.$$.ctx[14];
-    	}
-
-    	set setAnchorCorner(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setAnchorMargin() {
-    		return this.$$.ctx[15];
-    	}
-
-    	set setAnchorMargin(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setFixedPosition() {
-    		return this.$$.ctx[16];
-    	}
-
-    	set setFixedPosition(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setAbsolutePosition() {
-    		return this.$$.ctx[17];
-    	}
-
-    	set setAbsolutePosition(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setMenuSurfaceAnchorElement() {
-    		return this.$$.ctx[18];
-    	}
-
-    	set setMenuSurfaceAnchorElement(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get hoistMenuToBody() {
-    		return this.$$.ctx[19];
-    	}
-
-    	set hoistMenuToBody(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get setIsHoisted() {
-    		return this.$$.ctx[20];
-    	}
-
-    	set setIsHoisted(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get getDefaultFoundation() {
-    		return this.$$.ctx[21];
-    	}
-
-    	set getDefaultFoundation(value) {
-    		throw new Error("<MenuSurface>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-    }
-
     /* node_modules\@smui\menu\Menu.svelte generated by Svelte v3.18.1 */
 
     // (1:0) <MenuSurface   bind:element   use={[forwardEvents, ...use]}   class="mdc-menu {className}"   on:MDCMenu:selected={updateOpen}   on:MDCMenuSurface:closed={updateOpen} on:MDCMenuSurface:opened={updateOpen}   {...exclude($$props, ['use', 'class', 'wrapFocus'])} >
@@ -16482,7 +16797,7 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$n(ctx) {
+    function create_fragment$o(ctx) {
     	let updating_element;
     	let current;
 
@@ -16571,7 +16886,7 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$n.name,
+    		id: create_fragment$o.name,
     		type: "component",
     		source: "",
     		ctx
@@ -16580,7 +16895,7 @@ var app = (function () {
     	return block;
     }
 
-    function instance$n($$self, $$props, $$invalidate) {
+    function instance$o($$self, $$props, $$invalidate) {
     	const forwardEvents = forwardEventsBuilder(current_component, ["MDCMenu:selected", "MDCMenuSurface:closed", "MDCMenuSurface:opened"]);
     	let { use = [] } = $$props;
     	let { class: className = "" } = $$props;
@@ -16831,8 +17146,8 @@ var app = (function () {
     		init(
     			this,
     			options,
-    			instance$n,
-    			create_fragment$n,
+    			instance$o,
+    			create_fragment$o,
     			safe_not_equal,
     			{
     				use: 0,
@@ -16864,7 +17179,7 @@ var app = (function () {
     			component: this,
     			tagName: "Menu",
     			options,
-    			id: create_fragment$n.name
+    			id: create_fragment$o.name
     		});
     	}
 
@@ -17043,24 +17358,12 @@ var app = (function () {
       contexts: {}
     });
 
-    var css$6 = ".mdc-button{padding:0;min-width:24px}.mdc-button:after,.mdc-button:before{background:none}.mdc-list,.mdc-menu{width:400px}.emojicontainer>.mdc-button{min-width:10px}.mdc-list{height:300px}.mdc-menu-surface{display:none;position:absolute;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);margin:0;padding:0;transform:scale(1);transform-origin:top left;opacity:0;overflow:auto;will-change:transform,opacity;z-index:8;transition:opacity .03s linear,transform .12s cubic-bezier(0,0,.2,1);box-shadow:0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);background-color:#fff;background-color:var(--mdc-theme-surface,#fff);color:#000;color:var(--mdc-theme-on-surface,#000);border-radius:4px;transform-origin-left:top left;transform-origin-right:top right}.mdc-menu-surface:focus{outline:none}.mdc-menu-surface--open{display:inline-block;transform:scale(1);opacity:1}.mdc-menu-surface--animating-open{display:inline-block;transform:scale(.8);opacity:0}.mdc-menu-surface--animating-closed{display:inline-block;opacity:0;transition:opacity 75ms linear}.mdc-menu-surface[dir=rtl],[dir=rtl] .mdc-menu-surface{transform-origin-left:top right;transform-origin-right:top left}.mdc-menu-surface--anchor{position:relative;overflow:visible}.mdc-menu-surface--fixed{position:fixed}.smui-menu-surface--static{position:static;z-index:0;display:inline-block;transform:scale(1);opacity:1}";
-    styleInject(css$6);
-
-    function Anchor(node) {
-      node.classList.add('mdc-menu-surface--anchor');
-
-      return {
-        destroy() {
-          node.classList.remove('mdc-menu-surface--anchor');
-        }
-      }
-    }
-
     /* src\components\emoji.svelte generated by Svelte v3.18.1 */
 
-    const file$l = "src\\components\\emoji.svelte";
+    const { console: console_1 } = globals;
+    const file$m = "src\\components\\emoji.svelte";
 
-    // (64:6) <Button on:click={() => menu2.setOpen(true)}>
+    // (160:0) <Button on:click={() => {menu2.setOpen(true); dispatch("windowrz",{detail:"sdsf"}); console.log('sdfs');}}>
     function create_default_slot_5$1(ctx) {
     	let img;
     	let img_src_value;
@@ -17070,7 +17373,7 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = "/icons8-batman-emoji-30.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Emoji");
-    			add_location(img, file$l, 63, 51, 1413);
+    			add_location(img, file$m, 160, 2, 3724);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, img, anchor);
@@ -17084,14 +17387,14 @@ var app = (function () {
     		block,
     		id: create_default_slot_5$1.name,
     		type: "slot",
-    		source: "(64:6) <Button on:click={() => menu2.setOpen(true)}>",
+    		source: "(160:0) <Button on:click={() => {menu2.setOpen(true); dispatch(\\\"windowrz\\\",{detail:\\\"sdsf\\\"}); console.log('sdfs');}}>",
     		ctx
     	});
 
     	return block;
     }
 
-    // (69:16) <Icon class="material-icons" >
+    // (180:3) <Icon class="material-icons">
     function create_default_slot_4$1(ctx) {
     	let t_value = /*tab*/ ctx[11].icon + "";
     	let t;
@@ -17115,14 +17418,14 @@ var app = (function () {
     		block,
     		id: create_default_slot_4$1.name,
     		type: "slot",
-    		source: "(69:16) <Icon class=\\\"material-icons\\\" >",
+    		source: "(180:3) <Icon class=\\\"material-icons\\\">",
     		ctx
     	});
 
     	return block;
     }
 
-    // (68:14) <Tab {tab} stacked={false} indicatorSpanOnlyContent={false} tabIndicator$transition="fade" >
+    // (175:1) <Tab     {tab}     stacked={false}     indicatorSpanOnlyContent={false}     tabIndicator$transition="slide">
     function create_default_slot_3$1(ctx) {
     	let current;
 
@@ -17170,14 +17473,14 @@ var app = (function () {
     		block,
     		id: create_default_slot_3$1.name,
     		type: "slot",
-    		source: "(68:14) <Tab {tab} stacked={false} indicatorSpanOnlyContent={false} tabIndicator$transition=\\\"fade\\\" >",
+    		source: "(175:1) <Tab     {tab}     stacked={false}     indicatorSpanOnlyContent={false}     tabIndicator$transition=\\\"slide\\\">",
     		ctx
     	});
 
     	return block;
     }
 
-    // (67:12) <TabBar tabs={keyedTabs} let:tab key={tab => tab.k} bind:active={keyedTabsActive} >
+    // (170:2) <TabBar   tabs={keyedTabs}   let:tab   key={tab => tab.k}   bind:active={keyedTabsActive}>
     function create_default_slot_2$1(ctx) {
     	let current;
 
@@ -17186,7 +17489,7 @@ var app = (function () {
     				tab: /*tab*/ ctx[11],
     				stacked: false,
     				indicatorSpanOnlyContent: false,
-    				tabIndicator$transition: "fade",
+    				tabIndicator$transition: "slide",
     				$$slots: { default: [create_default_slot_3$1] },
     				$$scope: { ctx }
     			},
@@ -17229,25 +17532,80 @@ var app = (function () {
     		block,
     		id: create_default_slot_2$1.name,
     		type: "slot",
-    		source: "(67:12) <TabBar tabs={keyedTabs} let:tab key={tab => tab.k} bind:active={keyedTabsActive} >",
+    		source: "(170:2) <TabBar   tabs={keyedTabs}   let:tab   key={tab => tab.k}   bind:active={keyedTabsActive}>",
     		ctx
     	});
 
     	return block;
     }
 
-    // (66:8) <List>
+    // (186:3) <List>
     function create_default_slot_1$2(ctx) {
+    	let div;
+    	let current;
+
+    	const emojitab = new Emojitab({
+    			props: { emoji: /*Filterlist*/ ctx[3] },
+    			$$inline: true
+    		});
+
+    	emojitab.$on("emojiClicked", /*emojiClicked_handler*/ ctx[8]);
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			create_component(emojitab.$$.fragment);
+    			attr_dev(div, "class", "divasd");
+    			add_location(div, file$m, 185, 10, 4263);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			mount_component(emojitab, div, null);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const emojitab_changes = {};
+    			if (dirty & /*Filterlist*/ 8) emojitab_changes.emoji = /*Filterlist*/ ctx[3];
+    			emojitab.$set(emojitab_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(emojitab.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(emojitab.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			destroy_component(emojitab);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot_1$2.name,
+    		type: "slot",
+    		source: "(186:3) <List>",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (163:0) <Menu    bind:this={menu2}    anchor={true}    bind:anchorElement={anchor}    anchorCorner="BOTTOM_END">
+    function create_default_slot$6(ctx) {
     	let updating_active;
     	let t;
     	let current;
 
     	function tabbar_active_binding(value) {
-    		/*tabbar_active_binding*/ ctx[6].call(null, value);
+    		/*tabbar_active_binding*/ ctx[7].call(null, value);
     	}
 
     	let tabbar_props = {
-    		tabs: /*keyedTabs*/ ctx[4],
+    		tabs: /*keyedTabs*/ ctx[5],
     		key: func,
     		$$slots: {
     			default: [
@@ -17266,23 +17624,24 @@ var app = (function () {
     	const tabbar = new TabBar({ props: tabbar_props, $$inline: true });
     	binding_callbacks.push(() => bind(tabbar, "active", tabbar_active_binding));
 
-    	const emojitab = new Emojitab({
-    			props: { emoji: /*Filterlist*/ ctx[3] },
+    	const list = new List({
+    			props: {
+    				$$slots: { default: [create_default_slot_1$2] },
+    				$$scope: { ctx }
+    			},
     			$$inline: true
     		});
-
-    	emojitab.$on("emojiClicked", /*emojiClicked_handler*/ ctx[7]);
 
     	const block = {
     		c: function create() {
     			create_component(tabbar.$$.fragment);
     			t = space();
-    			create_component(emojitab.$$.fragment);
+    			create_component(list.$$.fragment);
     		},
     		m: function mount(target, anchor) {
     			mount_component(tabbar, target, anchor);
     			insert_dev(target, t, anchor);
-    			mount_component(emojitab, target, anchor);
+    			mount_component(list, target, anchor);
     			current = true;
     		},
     		p: function update(ctx, dirty) {
@@ -17299,63 +17658,9 @@ var app = (function () {
     			}
 
     			tabbar.$set(tabbar_changes);
-    			const emojitab_changes = {};
-    			if (dirty & /*Filterlist*/ 8) emojitab_changes.emoji = /*Filterlist*/ ctx[3];
-    			emojitab.$set(emojitab_changes);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(tabbar.$$.fragment, local);
-    			transition_in(emojitab.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(tabbar.$$.fragment, local);
-    			transition_out(emojitab.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			destroy_component(tabbar, detaching);
-    			if (detaching) detach_dev(t);
-    			destroy_component(emojitab, detaching);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_1$2.name,
-    		type: "slot",
-    		source: "(66:8) <List>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (65:6) <Menu bind:this={menu2} anchor={true} bind:anchorElement={anchor2} anchorCorner="BOTTOM_RIGHT">
-    function create_default_slot$6(ctx) {
-    	let current;
-
-    	const list = new List({
-    			props: {
-    				$$slots: { default: [create_default_slot_1$2] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	const block = {
-    		c: function create() {
-    			create_component(list.$$.fragment);
-    		},
-    		m: function mount(target, anchor) {
-    			mount_component(list, target, anchor);
-    			current = true;
-    		},
-    		p: function update(ctx, dirty) {
     			const list_changes = {};
 
-    			if (dirty & /*$$scope, Filterlist, keyedTabsActive*/ 4108) {
+    			if (dirty & /*$$scope, Filterlist*/ 4104) {
     				list_changes.$$scope = { dirty, ctx };
     			}
 
@@ -17363,14 +17668,18 @@ var app = (function () {
     		},
     		i: function intro(local) {
     			if (current) return;
+    			transition_in(tabbar.$$.fragment, local);
     			transition_in(list.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
+    			transition_out(tabbar.$$.fragment, local);
     			transition_out(list.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
+    			destroy_component(tabbar, detaching);
+    			if (detaching) detach_dev(t);
     			destroy_component(list, detaching);
     		}
     	};
@@ -17379,20 +17688,17 @@ var app = (function () {
     		block,
     		id: create_default_slot$6.name,
     		type: "slot",
-    		source: "(65:6) <Menu bind:this={menu2} anchor={true} bind:anchorElement={anchor2} anchorCorner=\\\"BOTTOM_RIGHT\\\">",
+    		source: "(163:0) <Menu    bind:this={menu2}    anchor={true}    bind:anchorElement={anchor}    anchorCorner=\\\"BOTTOM_END\\\">",
     		ctx
     	});
 
     	return block;
     }
 
-    function create_fragment$o(ctx) {
-    	let div;
+    function create_fragment$p(ctx) {
     	let t;
     	let updating_anchorElement;
-    	let Anchor_action;
     	let current;
-    	let dispose;
 
     	const button = new Button_1({
     			props: {
@@ -17402,46 +17708,41 @@ var app = (function () {
     			$$inline: true
     		});
 
-    	button.$on("click", /*click_handler*/ ctx[5]);
+    	button.$on("click", /*click_handler*/ ctx[6]);
 
     	function menu_anchorElement_binding(value) {
-    		/*menu_anchorElement_binding*/ ctx[9].call(null, value);
+    		/*menu_anchorElement_binding*/ ctx[10].call(null, value);
     	}
 
     	let menu_props = {
     		anchor: true,
-    		anchorCorner: "BOTTOM_RIGHT",
+    		anchorCorner: "BOTTOM_END",
     		$$slots: { default: [create_default_slot$6] },
     		$$scope: { ctx }
     	};
 
-    	if (/*anchor2*/ ctx[0] !== void 0) {
-    		menu_props.anchorElement = /*anchor2*/ ctx[0];
+    	if (/*anchor*/ ctx[0] !== void 0) {
+    		menu_props.anchorElement = /*anchor*/ ctx[0];
     	}
 
     	const menu = new Menu({ props: menu_props, $$inline: true });
-    	/*menu_binding*/ ctx[8](menu);
+    	/*menu_binding*/ ctx[9](menu);
     	binding_callbacks.push(() => bind(menu, "anchorElement", menu_anchorElement_binding));
 
     	const block = {
     		c: function create() {
-    			div = element("div");
     			create_component(button.$$.fragment);
     			t = space();
     			create_component(menu.$$.fragment);
-    			add_location(div, file$l, 62, 0, 1324);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-    			mount_component(button, div, null);
-    			append_dev(div, t);
-    			mount_component(menu, div, null);
-    			/*div_binding*/ ctx[10](div);
+    			mount_component(button, target, anchor);
+    			insert_dev(target, t, anchor);
+    			mount_component(menu, target, anchor);
     			current = true;
-    			dispose = action_destroyer(Anchor_action = Anchor.call(null, div));
     		},
     		p: function update(ctx, [dirty]) {
     			const button_changes = {};
@@ -17457,9 +17758,9 @@ var app = (function () {
     				menu_changes.$$scope = { dirty, ctx };
     			}
 
-    			if (!updating_anchorElement && dirty & /*anchor2*/ 1) {
+    			if (!updating_anchorElement && dirty & /*anchor*/ 1) {
     				updating_anchorElement = true;
-    				menu_changes.anchorElement = /*anchor2*/ ctx[0];
+    				menu_changes.anchorElement = /*anchor*/ ctx[0];
     				add_flush_callback(() => updating_anchorElement = false);
     			}
 
@@ -17477,18 +17778,16 @@ var app = (function () {
     			current = false;
     		},
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			destroy_component(button);
-    			/*menu_binding*/ ctx[8](null);
-    			destroy_component(menu);
-    			/*div_binding*/ ctx[10](null);
-    			dispose();
+    			destroy_component(button, detaching);
+    			if (detaching) detach_dev(t);
+    			/*menu_binding*/ ctx[9](null);
+    			destroy_component(menu, detaching);
     		}
     	};
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$o.name,
+    		id: create_fragment$p.name,
     		type: "component",
     		source: "",
     		ctx
@@ -17499,8 +17798,9 @@ var app = (function () {
 
     const func = tab => tab.k;
 
-    function instance$o($$self, $$props, $$invalidate) {
-    	let anchor2;
+    function instance$p($$self, $$props, $$invalidate) {
+    	let dispatch = createEventDispatcher();
+    	let { anchor } = $$props;
     	let menu2;
 
     	let keyedTabs = [
@@ -17523,11 +17823,22 @@ var app = (function () {
     			k: "Travel & Places",
     			icon: "c4",
     			label: "Code"
-    		}
+    		},
+    		{ k: "delete", icon: "Delete" }
     	];
 
     	let keyedTabsActive = keyedTabs[0];
-    	const click_handler = () => menu2.setOpen(true);
+    	const writable_props = ["anchor"];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console_1.warn(`<Emoji> was created with unknown prop '${key}'`);
+    	});
+
+    	const click_handler = () => {
+    		menu2.setOpen(true);
+    		dispatch("windowrz", { detail: "sdsf" });
+    		console.log("sdfs");
+    	};
 
     	function tabbar_active_binding(value) {
     		keyedTabsActive = value;
@@ -17545,24 +17856,30 @@ var app = (function () {
     	}
 
     	function menu_anchorElement_binding(value) {
-    		anchor2 = value;
-    		$$invalidate(0, anchor2);
+    		anchor = value;
+    		$$invalidate(0, anchor);
     	}
 
-    	function div_binding($$value) {
-    		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(0, anchor2 = $$value);
-    		});
-    	}
+    	$$self.$set = $$props => {
+    		if ("anchor" in $$props) $$invalidate(0, anchor = $$props.anchor);
+    	};
 
     	$$self.$capture_state = () => {
-    		return {};
+    		return {
+    			dispatch,
+    			anchor,
+    			menu2,
+    			keyedTabs,
+    			keyedTabsActive,
+    			Filterlist
+    		};
     	};
 
     	$$self.$inject_state = $$props => {
-    		if ("anchor2" in $$props) $$invalidate(0, anchor2 = $$props.anchor2);
+    		if ("dispatch" in $$props) $$invalidate(4, dispatch = $$props.dispatch);
+    		if ("anchor" in $$props) $$invalidate(0, anchor = $$props.anchor);
     		if ("menu2" in $$props) $$invalidate(1, menu2 = $$props.menu2);
-    		if ("keyedTabs" in $$props) $$invalidate(4, keyedTabs = $$props.keyedTabs);
+    		if ("keyedTabs" in $$props) $$invalidate(5, keyedTabs = $$props.keyedTabs);
     		if ("keyedTabsActive" in $$props) $$invalidate(2, keyedTabsActive = $$props.keyedTabsActive);
     		if ("Filterlist" in $$props) $$invalidate(3, Filterlist = $$props.Filterlist);
     	};
@@ -17576,31 +17893,46 @@ var app = (function () {
     	};
 
     	return [
-    		anchor2,
+    		anchor,
     		menu2,
     		keyedTabsActive,
     		Filterlist,
+    		dispatch,
     		keyedTabs,
     		click_handler,
     		tabbar_active_binding,
     		emojiClicked_handler,
     		menu_binding,
-    		menu_anchorElement_binding,
-    		div_binding
+    		menu_anchorElement_binding
     	];
     }
 
     class Emoji extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$o, create_fragment$o, safe_not_equal, {});
+    		init(this, options, instance$p, create_fragment$p, safe_not_equal, { anchor: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "Emoji",
     			options,
-    			id: create_fragment$o.name
+    			id: create_fragment$p.name
     		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*anchor*/ ctx[0] === undefined && !("anchor" in props)) {
+    			console_1.warn("<Emoji> was created without expected prop 'anchor'");
+    		}
+    	}
+
+    	get anchor() {
+    		throw new Error("<Emoji>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set anchor(value) {
+    		throw new Error("<Emoji>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
 
@@ -25601,33 +25933,36 @@ var app = (function () {
 
     const { document: document_1 } = globals;
 
-    const file$m = "src\\App.svelte";
+    const file$n = "src\\App.svelte";
 
     function get_each_context$2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[14] = list[i];
-    	child_ctx[16] = i;
+    	child_ctx[17] = list[i];
+    	child_ctx[19] = i;
     	return child_ctx;
     }
 
-    // (282:2) {:else}
+    // (433:6) {:else}
     function create_else_block_2(ctx) {
     	let center;
     	let p;
+    	let t1;
 
     	const block = {
     		c: function create() {
     			center = element("center");
     			p = element("p");
     			p.textContent = "Comments are loading...";
-    			attr_dev(p, "class", "svelte-1urw7wo");
-    			add_location(p, file$m, 284, 11, 7108);
-    			attr_dev(center, "class", "svelte-1urw7wo");
-    			add_location(center, file$m, 284, 3, 7100);
+    			t1 = space();
+    			attr_dev(p, "class", "svelte-tur9y2");
+    			add_location(p, file$n, 435, 10, 9384);
+    			attr_dev(center, "class", "svelte-tur9y2");
+    			add_location(center, file$n, 434, 8, 9365);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, center, anchor);
     			append_dev(center, p);
+    			append_dev(center, t1);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(center);
@@ -25638,33 +25973,34 @@ var app = (function () {
     		block,
     		id: create_else_block_2.name,
     		type: "else",
-    		source: "(282:2) {:else}",
+    		source: "(433:6) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (253:3) {:else}
+    // (406:8) {:else}
     function create_else_block$2(ctx) {
     	let t0;
     	let article;
     	let current_block_type_index;
     	let if_block1;
-    	let input;
     	let t1;
-    	let div_1;
-    	let t2_value = /*comment*/ ctx[14].time + "";
+    	let input;
     	let t2;
+    	let div_1;
+    	let t3_value = /*comment*/ ctx[17].time + "";
     	let t3;
+    	let t4;
     	let article_class_value;
     	let current;
-    	let if_block0 = /*i*/ ctx[16] != 0 && /*comment*/ ctx[14].author != /*comments*/ ctx[3][/*i*/ ctx[16] - 1].author && create_if_block_2$1(ctx);
+    	let if_block0 = /*i*/ ctx[19] != 0 && /*comment*/ ctx[17].author != /*comments*/ ctx[4][/*i*/ ctx[19] - 1].author && create_if_block_2$1(ctx);
     	const if_block_creators = [create_if_block_1$2, create_else_block_1];
     	const if_blocks = [];
 
     	function select_block_type_2(ctx, dirty) {
-    		if (/*comment*/ ctx[14].type === "link") return 0;
+    		if (/*comment*/ ctx[17].type === "link") return 0;
     		return 1;
     	}
 
@@ -25677,38 +26013,40 @@ var app = (function () {
     			t0 = space();
     			article = element("article");
     			if_block1.c();
-    			input = element("input");
     			t1 = space();
+    			input = element("input");
+    			t2 = space();
     			div_1 = element("div");
-    			t2 = text(t2_value);
-    			t3 = space();
-    			attr_dev(input, "class", "nothing svelte-1urw7wo");
+    			t3 = text(t3_value);
+    			t4 = space();
+    			attr_dev(input, "class", "nothing svelte-tur9y2");
     			attr_dev(input, "type", "button");
-    			add_location(input, file$m, 275, 10, 6907);
+    			add_location(input, file$n, 428, 12, 9152);
     			attr_dev(div_1, "id", "commentdate");
-    			attr_dev(div_1, "class", "svelte-1urw7wo");
-    			add_location(div_1, file$m, 276, 5, 6950);
+    			attr_dev(div_1, "class", "svelte-tur9y2");
+    			add_location(div_1, file$n, 429, 12, 9204);
 
-    			attr_dev(article, "class", article_class_value = "" + (null_to_empty(/*comment*/ ctx[14].author === /*name*/ ctx[0]
+    			attr_dev(article, "class", article_class_value = "" + (null_to_empty(/*comment*/ ctx[17].author === /*name*/ ctx[1]
     			? "user"
-    			: "other") + " svelte-1urw7wo"));
+    			: "other") + " svelte-tur9y2"));
 
-    			add_location(article, file$m, 261, 4, 6544);
+    			add_location(article, file$n, 413, 10, 8674);
     		},
     		m: function mount(target, anchor) {
     			if (if_block0) if_block0.m(target, anchor);
     			insert_dev(target, t0, anchor);
     			insert_dev(target, article, anchor);
     			if_blocks[current_block_type_index].m(article, null);
-    			append_dev(article, input);
     			append_dev(article, t1);
+    			append_dev(article, input);
+    			append_dev(article, t2);
     			append_dev(article, div_1);
-    			append_dev(div_1, t2);
-    			append_dev(article, t3);
+    			append_dev(div_1, t3);
+    			append_dev(article, t4);
     			current = true;
     		},
     		p: function update(ctx, dirty) {
-    			if (/*i*/ ctx[16] != 0 && /*comment*/ ctx[14].author != /*comments*/ ctx[3][/*i*/ ctx[16] - 1].author) {
+    			if (/*i*/ ctx[19] != 0 && /*comment*/ ctx[17].author != /*comments*/ ctx[4][/*i*/ ctx[19] - 1].author) {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     				} else {
@@ -25742,14 +26080,14 @@ var app = (function () {
     				}
 
     				transition_in(if_block1, 1);
-    				if_block1.m(article, input);
+    				if_block1.m(article, t1);
     			}
 
-    			if ((!current || dirty & /*comments*/ 8) && t2_value !== (t2_value = /*comment*/ ctx[14].time + "")) set_data_dev(t2, t2_value);
+    			if ((!current || dirty & /*comments*/ 16) && t3_value !== (t3_value = /*comment*/ ctx[17].time + "")) set_data_dev(t3, t3_value);
 
-    			if (!current || dirty & /*comments, name*/ 9 && article_class_value !== (article_class_value = "" + (null_to_empty(/*comment*/ ctx[14].author === /*name*/ ctx[0]
+    			if (!current || dirty & /*comments, name*/ 18 && article_class_value !== (article_class_value = "" + (null_to_empty(/*comment*/ ctx[17].author === /*name*/ ctx[1]
     			? "user"
-    			: "other") + " svelte-1urw7wo"))) {
+    			: "other") + " svelte-tur9y2"))) {
     				attr_dev(article, "class", article_class_value);
     			}
     		},
@@ -25774,32 +26112,32 @@ var app = (function () {
     		block,
     		id: create_else_block$2.name,
     		type: "else",
-    		source: "(253:3) {:else}",
+    		source: "(406:8) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (251:3) {#if comment.author==="system"}
+    // (404:8) {#if comment.author === 'system'}
     function create_if_block$3(ctx) {
     	let span;
-    	let t_value = /*comment*/ ctx[14].text + "";
+    	let t_value = /*comment*/ ctx[17].text + "";
     	let t;
 
     	const block = {
     		c: function create() {
     			span = element("span");
     			t = text(t_value);
-    			attr_dev(span, "class", "systemsg svelte-1urw7wo");
-    			add_location(span, file$m, 251, 4, 6226);
+    			attr_dev(span, "class", "systemsg svelte-tur9y2");
+    			add_location(span, file$n, 404, 10, 8298);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
     			append_dev(span, t);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t_value !== (t_value = /*comment*/ ctx[14].text + "")) set_data_dev(t, t_value);
+    			if (dirty & /*comments*/ 16 && t_value !== (t_value = /*comment*/ ctx[17].text + "")) set_data_dev(t, t_value);
     		},
     		i: noop,
     		o: noop,
@@ -25812,20 +26150,20 @@ var app = (function () {
     		block,
     		id: create_if_block$3.name,
     		type: "if",
-    		source: "(251:3) {#if comment.author===\\\"system\\\"}",
+    		source: "(404:8) {#if comment.author === 'system'}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (254:4) {#if i!=0 && comment.author != comments[i-1].author}
+    // (407:10) {#if i != 0 && comment.author != comments[i - 1].author}
     function create_if_block_2$1(ctx) {
     	let if_block_anchor;
 
     	function select_block_type_1(ctx, dirty) {
-    		if (/*comment*/ ctx[14].type === "bot") return create_if_block_3;
-    		if (/*comment*/ ctx[14].author != /*name*/ ctx[0]) return create_if_block_4;
+    		if (/*comment*/ ctx[17].type === "bot") return create_if_block_3;
+    		if (/*comment*/ ctx[17].author != /*name*/ ctx[1]) return create_if_block_4;
     	}
 
     	let current_block_type = select_block_type_1(ctx);
@@ -25866,17 +26204,17 @@ var app = (function () {
     		block,
     		id: create_if_block_2$1.name,
     		type: "if",
-    		source: "(254:4) {#if i!=0 && comment.author != comments[i-1].author}",
+    		source: "(407:10) {#if i != 0 && comment.author != comments[i - 1].author}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (257:38) 
+    // (410:45) 
     function create_if_block_4(ctx) {
     	let p;
-    	let t0_value = /*comment*/ ctx[14].author + "";
+    	let t0_value = /*comment*/ ctx[17].author + "";
     	let t0;
     	let t1;
 
@@ -25885,8 +26223,8 @@ var app = (function () {
     			p = element("p");
     			t0 = text(t0_value);
     			t1 = text(":");
-    			attr_dev(p, "class", "otherusert svelte-1urw7wo");
-    			add_location(p, file$m, 257, 6, 6469);
+    			attr_dev(p, "class", "otherusert svelte-tur9y2");
+    			add_location(p, file$n, 410, 14, 8586);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -25894,7 +26232,7 @@ var app = (function () {
     			append_dev(p, t1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[14].author + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*comments*/ 16 && t0_value !== (t0_value = /*comment*/ ctx[17].author + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(p);
@@ -25905,17 +26243,17 @@ var app = (function () {
     		block,
     		id: create_if_block_4.name,
     		type: "if",
-    		source: "(257:38) ",
+    		source: "(410:45) ",
     		ctx
     	});
 
     	return block;
     }
 
-    // (255:5) {#if comment.type ==="bot"}
+    // (408:12) {#if comment.type === 'bot'}
     function create_if_block_3(ctx) {
     	let p;
-    	let t0_value = /*comment*/ ctx[14].author + "";
+    	let t0_value = /*comment*/ ctx[17].author + "";
     	let t0;
     	let t1;
 
@@ -25924,8 +26262,8 @@ var app = (function () {
     			p = element("p");
     			t0 = text(t0_value);
     			t1 = text(":");
-    			attr_dev(p, "class", "bot_respond svelte-1urw7wo");
-    			add_location(p, file$m, 255, 6, 6379);
+    			attr_dev(p, "class", "bot_respond svelte-tur9y2");
+    			add_location(p, file$n, 408, 14, 8481);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -25933,7 +26271,7 @@ var app = (function () {
     			append_dev(p, t1);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && t0_value !== (t0_value = /*comment*/ ctx[14].author + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*comments*/ 16 && t0_value !== (t0_value = /*comment*/ ctx[17].author + "")) set_data_dev(t0, t0_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(p);
@@ -25944,38 +26282,34 @@ var app = (function () {
     		block,
     		id: create_if_block_3.name,
     		type: "if",
-    		source: "(255:5) {#if comment.type ===\\\"bot\\\"}",
+    		source: "(408:12) {#if comment.type === 'bot'}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (273:5) {:else}
+    // (424:12) {:else}
     function create_else_block_1(ctx) {
     	let span;
-    	let raw_value = /*comment*/ ctx[14].text + "";
-    	let t;
+    	let raw_value = /*comment*/ ctx[17].text + "";
 
     	const block = {
     		c: function create() {
     			span = element("span");
-    			t = space();
-    			attr_dev(span, "class", "svelte-1urw7wo");
-    			add_location(span, file$m, 273, 6, 6856);
+    			attr_dev(span, "class", "svelte-tur9y2");
+    			add_location(span, file$n, 424, 14, 9056);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
     			span.innerHTML = raw_value;
-    			insert_dev(target, t, anchor);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*comments*/ 8 && raw_value !== (raw_value = /*comment*/ ctx[14].text + "")) span.innerHTML = raw_value;		},
+    			if (dirty & /*comments*/ 16 && raw_value !== (raw_value = /*comment*/ ctx[17].text + "")) span.innerHTML = raw_value;		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(span);
-    			if (detaching) detach_dev(t);
     		}
     	};
 
@@ -25983,25 +26317,24 @@ var app = (function () {
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(273:5) {:else}",
+    		source: "(424:12) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (263:5) {#if comment.type ==="link"}
+    // (415:12) {#if comment.type === 'link'}
     function create_if_block_1$2(ctx) {
     	let span;
-    	let t;
     	let current;
 
     	const linkpreview = new Linkpreview({
     			props: {
-    				title: /*comment*/ ctx[14].title,
-    				image: /*comment*/ ctx[14].image,
-    				description: /*comment*/ ctx[14].description,
-    				url: /*comment*/ ctx[14].text
+    				title: /*comment*/ ctx[17].title,
+    				image: /*comment*/ ctx[17].image,
+    				description: /*comment*/ ctx[17].description,
+    				url: /*comment*/ ctx[17].text
     			},
     			$$inline: true
     		});
@@ -26010,22 +26343,20 @@ var app = (function () {
     		c: function create() {
     			span = element("span");
     			create_component(linkpreview.$$.fragment);
-    			t = space();
-    			attr_dev(span, "class", "svelte-1urw7wo");
-    			add_location(span, file$m, 263, 6, 6643);
+    			attr_dev(span, "class", "svelte-tur9y2");
+    			add_location(span, file$n, 415, 14, 8791);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, span, anchor);
     			mount_component(linkpreview, span, null);
-    			insert_dev(target, t, anchor);
     			current = true;
     		},
     		p: function update(ctx, dirty) {
     			const linkpreview_changes = {};
-    			if (dirty & /*comments*/ 8) linkpreview_changes.title = /*comment*/ ctx[14].title;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.image = /*comment*/ ctx[14].image;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.description = /*comment*/ ctx[14].description;
-    			if (dirty & /*comments*/ 8) linkpreview_changes.url = /*comment*/ ctx[14].text;
+    			if (dirty & /*comments*/ 16) linkpreview_changes.title = /*comment*/ ctx[17].title;
+    			if (dirty & /*comments*/ 16) linkpreview_changes.image = /*comment*/ ctx[17].image;
+    			if (dirty & /*comments*/ 16) linkpreview_changes.description = /*comment*/ ctx[17].description;
+    			if (dirty & /*comments*/ 16) linkpreview_changes.url = /*comment*/ ctx[17].text;
     			linkpreview.$set(linkpreview_changes);
     		},
     		i: function intro(local) {
@@ -26040,7 +26371,6 @@ var app = (function () {
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(span);
     			destroy_component(linkpreview);
-    			if (detaching) detach_dev(t);
     		}
     	};
 
@@ -26048,14 +26378,14 @@ var app = (function () {
     		block,
     		id: create_if_block_1$2.name,
     		type: "if",
-    		source: "(263:5) {#if comment.type ===\\\"link\\\"}",
+    		source: "(415:12) {#if comment.type === 'link'}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (250:2) {#each comments as comment, i}
+    // (403:6) {#each comments as comment, i}
     function create_each_block$2(ctx) {
     	let current_block_type_index;
     	let if_block;
@@ -26065,7 +26395,7 @@ var app = (function () {
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
-    		if (/*comment*/ ctx[14].author === "system") return 0;
+    		if (/*comment*/ ctx[17].author === "system") return 0;
     		return 1;
     	}
 
@@ -26126,58 +26456,47 @@ var app = (function () {
     		block,
     		id: create_each_block$2.name,
     		type: "each",
-    		source: "(250:2) {#each comments as comment, i}",
+    		source: "(403:6) {#each comments as comment, i}",
     		ctx
     	});
 
     	return block;
     }
 
-    function create_fragment$p(ctx) {
+    function create_fragment$q(ctx) {
     	let script0;
     	let script0_src_value;
     	let script1;
-    	let script1_src_value;
-    	let script2;
     	let link;
     	let t1;
     	let main;
-    	let div0;
-    	let h1;
+    	let updating_name;
     	let t2;
+    	let div3;
+    	let div0;
     	let t3;
-    	let t4;
-    	let t5;
     	let div2;
     	let div1;
-    	let p0;
-    	let t7;
-    	let p1;
-    	let t9;
-    	let p2;
-    	let t11;
-    	let div4;
-    	let center;
-    	let label;
-    	let h4;
-    	let t13;
-    	let input;
-    	let t14;
-    	let div3;
-    	let t15;
-    	let div9;
-    	let div5;
-    	let t16;
-    	let div8;
-    	let div6;
-    	let t17;
+    	let t4;
+    	let t5;
     	let button;
-    	let t19;
-    	let div7;
+    	let Anchor_action;
     	let current;
     	let dispose;
-    	const theme = new Theme({ $$inline: true });
-    	let each_value = /*comments*/ ctx[3];
+
+    	function headdiv_name_binding(value) {
+    		/*headdiv_name_binding*/ ctx[13].call(null, value);
+    	}
+
+    	let headdiv_props = {};
+
+    	if (/*name*/ ctx[1] !== void 0) {
+    		headdiv_props.name = /*name*/ ctx[1];
+    	}
+
+    	const headdiv = new Headdiv({ props: headdiv_props, $$inline: true });
+    	binding_callbacks.push(() => bind(headdiv, "name", headdiv_name_binding));
+    	let each_value = /*comments*/ ctx[4];
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value.length; i += 1) {
@@ -26195,47 +26514,20 @@ var app = (function () {
     	}
 
     	const emoji = new Emoji({ $$inline: true });
-    	emoji.$on("emojiClicked", /*alertmsg*/ ctx[5]);
+    	emoji.$on("emojiClicked", /*alertmsg*/ ctx[6]);
 
     	const block = {
     		c: function create() {
     			script0 = element("script");
     			script1 = element("script");
-    			script2 = element("script");
-    			script2.textContent = "window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'UA-158899098-1');\n";
+    			script1.textContent = "window.dataLayer = window.dataLayer || [];\n    function gtag() {\n      dataLayer.push(arguments);\n    }\n    gtag(\"js\", new Date());\n\n    gtag(\"config\", \"UA-158899098-1\");\n  ";
     			link = element("link");
     			t1 = space();
     			main = element("main");
-    			div0 = element("div");
-    			h1 = element("h1");
-    			t2 = text("Hello ");
-    			t3 = text(/*name*/ ctx[0]);
-    			t4 = text(" !");
-    			t5 = space();
-    			div2 = element("div");
-    			div1 = element("div");
-    			p0 = element("p");
-    			p0.textContent = "* Please insert your name as your username";
-    			t7 = space();
-    			p1 = element("p");
-    			p1.textContent = "* This is an open chat";
-    			t9 = space();
-    			p2 = element("p");
-    			p2.textContent = "* AI bot in trainning. Currently offline.";
-    			t11 = space();
-    			div4 = element("div");
-    			center = element("center");
-    			label = element("label");
-    			h4 = element("h4");
-    			h4.textContent = "Name:";
-    			t13 = space();
-    			input = element("input");
-    			t14 = space();
+    			create_component(headdiv.$$.fragment);
+    			t2 = space();
     			div3 = element("div");
-    			create_component(theme.$$.fragment);
-    			t15 = space();
-    			div9 = element("div");
-    			div5 = element("div");
+    			div0 = element("div");
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].c();
@@ -26245,75 +26537,38 @@ var app = (function () {
     				each_1_else.c();
     			}
 
-    			t16 = space();
-    			div8 = element("div");
-    			div6 = element("div");
-    			t17 = space();
+    			t3 = space();
+    			div2 = element("div");
+    			div1 = element("div");
+    			t4 = space();
+    			create_component(emoji.$$.fragment);
+    			t5 = space();
     			button = element("button");
     			button.textContent = "Send";
-    			t19 = space();
-    			div7 = element("div");
-    			create_component(emoji.$$.fragment);
-    			if (script0.src !== (script0_src_value = "https://twemoji.maxcdn.com/v/latest/twemoji.min.js")) attr_dev(script0, "src", script0_src_value);
-    			attr_dev(script0, "crossorigin", "anonymous");
-    			attr_dev(script0, "class", "svelte-1urw7wo");
-    			add_location(script0, file$m, 217, 0, 5133);
-    			script1.async = true;
-    			if (script1.src !== (script1_src_value = "https://www.googletagmanager.com/gtag/js?id=UA-158899098-1")) attr_dev(script1, "src", script1_src_value);
-    			attr_dev(script1, "class", "svelte-1urw7wo");
-    			add_location(script1, file$m, 219, 0, 5286);
-    			attr_dev(script2, "class", "svelte-1urw7wo");
-    			add_location(script2, file$m, 220, 0, 5375);
+    			script0.async = true;
+    			if (script0.src !== (script0_src_value = "https://www.googletagmanager.com/gtag/js?id=UA-158899098-1")) attr_dev(script0, "src", script0_src_value);
+    			add_location(script0, file$n, 376, 2, 7681);
+    			add_location(script1, file$n, 381, 2, 7784);
     			attr_dev(link, "href", "https://fonts.googleapis.com/css?family=Roboto&display=swap");
     			attr_dev(link, "rel", "stylesheet");
-    			attr_dev(link, "class", "svelte-1urw7wo");
-    			add_location(link, file$m, 228, 0, 5549);
-    			attr_dev(h1, "class", "svelte-1urw7wo");
-    			add_location(h1, file$m, 231, 20, 5682);
-    			attr_dev(div0, "class", "title svelte-1urw7wo");
-    			add_location(div0, file$m, 231, 0, 5662);
-    			attr_dev(p0, "class", "svelte-1urw7wo");
-    			add_location(p0, file$m, 234, 1, 5760);
-    			attr_dev(p1, "class", "svelte-1urw7wo");
-    			add_location(p1, file$m, 235, 1, 5811);
-    			attr_dev(p2, "class", "svelte-1urw7wo");
-    			add_location(p2, file$m, 236, 1, 5842);
-    			attr_dev(div1, "class", "side_note svelte-1urw7wo");
-    			add_location(div1, file$m, 233, 0, 5735);
-    			attr_dev(div2, "id", "typewriter");
-    			attr_dev(div2, "class", "svelte-1urw7wo");
-    			add_location(div2, file$m, 232, 0, 5712);
-    			attr_dev(h4, "class", "svelte-1urw7wo");
-    			add_location(h4, file$m, 240, 16, 5943);
-    			attr_dev(label, "class", "svelte-1urw7wo");
-    			add_location(label, file$m, 240, 9, 5936);
-    			attr_dev(center, "class", "svelte-1urw7wo");
-    			add_location(center, file$m, 240, 1, 5928);
-    			attr_dev(input, "type", "text");
-    			attr_dev(input, "class", "user_input svelte-1urw7wo");
-    			add_location(input, file$m, 241, 1, 5977);
-    			attr_dev(div3, "class", "theme svelte-1urw7wo");
-    			add_location(div3, file$m, 242, 1, 6036);
-    			attr_dev(div4, "class", "headdiv svelte-1urw7wo");
-    			add_location(div4, file$m, 239, 0, 5905);
-    			attr_dev(div5, "class", "scrollable svelte-1urw7wo");
-    			add_location(div5, file$m, 248, 1, 6113);
-    			attr_dev(div6, "contenteditable", "true");
-    			attr_dev(div6, "class", "svelte-1urw7wo");
-    			add_location(div6, file$m, 288, 2, 7210);
+    			add_location(link, file$n, 390, 2, 7982);
+    			attr_dev(div0, "class", "scrollable svelte-tur9y2");
+    			add_location(div0, file$n, 401, 4, 8168);
+    			attr_dev(div1, "contenteditable", "true");
+    			attr_dev(div1, "class", "svelte-tur9y2");
+    			if (/*input1*/ ctx[3] === void 0) add_render_callback(() => /*div1_input_handler*/ ctx[15].call(div1));
+    			add_location(div1, file$n, 441, 6, 9539);
     			attr_dev(button, "type", "submit");
-    			attr_dev(button, "class", "svelte-1urw7wo");
-    			add_location(button, file$m, 290, 2, 7361);
-    			attr_dev(div7, "class", "emojicontainer svelte-1urw7wo");
-    			add_location(div7, file$m, 292, 2, 7426);
-    			attr_dev(div8, "class", "msg-input svelte-1urw7wo");
-    			attr_dev(div8, "id", "msg-input");
-    			add_location(div8, file$m, 287, 1, 7167);
-    			attr_dev(div9, "class", "chat svelte-1urw7wo");
-    			attr_dev(div9, "id", "chat");
-    			add_location(div9, file$m, 247, 0, 6083);
-    			attr_dev(main, "class", "svelte-1urw7wo");
-    			add_location(main, file$m, 230, 0, 5655);
+    			attr_dev(button, "class", "svelte-tur9y2");
+    			add_location(button, file$n, 448, 6, 9767);
+    			attr_dev(div2, "class", "msg-input svelte-tur9y2");
+    			attr_dev(div2, "id", "msg-input");
+    			add_location(div2, file$n, 440, 4, 9463);
+    			attr_dev(div3, "class", "chat svelte-tur9y2");
+    			attr_dev(div3, "id", "chat");
+    			add_location(div3, file$n, 400, 2, 8135);
+    			attr_dev(main, "class", "svelte-tur9y2");
+    			add_location(main, file$n, 396, 0, 8100);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -26321,73 +26576,58 @@ var app = (function () {
     		m: function mount(target, anchor) {
     			append_dev(document_1.head, script0);
     			append_dev(document_1.head, script1);
-    			append_dev(document_1.head, script2);
     			append_dev(document_1.head, link);
     			insert_dev(target, t1, anchor);
     			insert_dev(target, main, anchor);
-    			append_dev(main, div0);
-    			append_dev(div0, h1);
-    			append_dev(h1, t2);
-    			append_dev(h1, t3);
-    			append_dev(h1, t4);
-    			append_dev(main, t5);
-    			append_dev(main, div2);
-    			append_dev(div2, div1);
-    			append_dev(div1, p0);
-    			append_dev(div1, t7);
-    			append_dev(div1, p1);
-    			append_dev(div1, t9);
-    			append_dev(div1, p2);
-    			append_dev(main, t11);
-    			append_dev(main, div4);
-    			append_dev(div4, center);
-    			append_dev(center, label);
-    			append_dev(label, h4);
-    			append_dev(div4, t13);
-    			append_dev(div4, input);
-    			set_input_value(input, /*name*/ ctx[0]);
-    			append_dev(div4, t14);
-    			append_dev(div4, div3);
-    			mount_component(theme, div3, null);
-    			append_dev(main, t15);
-    			append_dev(main, div9);
-    			append_dev(div9, div5);
+    			mount_component(headdiv, main, null);
+    			append_dev(main, t2);
+    			append_dev(main, div3);
+    			append_dev(div3, div0);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(div5, null);
+    				each_blocks[i].m(div0, null);
     			}
 
     			if (each_1_else) {
-    				each_1_else.m(div5, null);
+    				each_1_else.m(div0, null);
     			}
 
-    			/*div5_binding*/ ctx[12](div5);
-    			append_dev(div9, t16);
-    			append_dev(div9, div8);
-    			append_dev(div8, div6);
-    			/*div6_binding*/ ctx[13](div6);
-    			append_dev(div8, t17);
-    			append_dev(div8, button);
-    			append_dev(div8, t19);
-    			append_dev(div8, div7);
-    			mount_component(emoji, div7, null);
+    			/*div0_binding*/ ctx[14](div0);
+    			append_dev(div3, t3);
+    			append_dev(div3, div2);
+    			append_dev(div2, div1);
+
+    			if (/*input1*/ ctx[3] !== void 0) {
+    				div1.innerHTML = /*input1*/ ctx[3];
+    			}
+
+    			append_dev(div2, t4);
+    			mount_component(emoji, div2, null);
+    			append_dev(div2, t5);
+    			append_dev(div2, button);
+    			/*div2_binding*/ ctx[16](div2);
     			current = true;
 
     			dispose = [
-    				listen_dev(input, "input", /*input_input_handler*/ ctx[11]),
-    				listen_dev(div6, "keydown", /*handleKeydown*/ ctx[4], false, false, false),
-    				listen_dev(button, "click", /*handleKeydown*/ ctx[4], false, false, false)
+    				listen_dev(div1, "input", /*div1_input_handler*/ ctx[15]),
+    				listen_dev(div1, "keydown", /*handleKeydown*/ ctx[5], false, false, false),
+    				listen_dev(button, "click", /*handleKeydown*/ ctx[5], false, false, false),
+    				action_destroyer(Anchor_action = Anchor.call(null, div2))
     			];
     		},
     		p: function update(ctx, [dirty]) {
-    			if (!current || dirty & /*name*/ 1) set_data_dev(t3, /*name*/ ctx[0]);
+    			const headdiv_changes = {};
 
-    			if (dirty & /*name*/ 1 && input.value !== /*name*/ ctx[0]) {
-    				set_input_value(input, /*name*/ ctx[0]);
+    			if (!updating_name && dirty & /*name*/ 2) {
+    				updating_name = true;
+    				headdiv_changes.name = /*name*/ ctx[1];
+    				add_flush_callback(() => updating_name = false);
     			}
 
-    			if (dirty & /*comments, name*/ 9) {
-    				each_value = /*comments*/ ctx[3];
+    			headdiv.$set(headdiv_changes);
+
+    			if (dirty & /*comments, name*/ 18) {
+    				each_value = /*comments*/ ctx[4];
     				let i;
 
     				for (i = 0; i < each_value.length; i += 1) {
@@ -26400,7 +26640,7 @@ var app = (function () {
     						each_blocks[i] = create_each_block$2(child_ctx);
     						each_blocks[i].c();
     						transition_in(each_blocks[i], 1);
-    						each_blocks[i].m(div5, null);
+    						each_blocks[i].m(div0, null);
     					}
     				}
 
@@ -26421,12 +26661,16 @@ var app = (function () {
     			} else if (!each_1_else) {
     				each_1_else = create_else_block_2(ctx);
     				each_1_else.c();
-    				each_1_else.m(div5, null);
+    				each_1_else.m(div0, null);
+    			}
+
+    			if (dirty & /*input1*/ 8 && /*input1*/ ctx[3] !== div1.innerHTML) {
+    				div1.innerHTML = /*input1*/ ctx[3];
     			}
     		},
     		i: function intro(local) {
     			if (current) return;
-    			transition_in(theme.$$.fragment, local);
+    			transition_in(headdiv.$$.fragment, local);
 
     			for (let i = 0; i < each_value.length; i += 1) {
     				transition_in(each_blocks[i]);
@@ -26436,7 +26680,7 @@ var app = (function () {
     			current = true;
     		},
     		o: function outro(local) {
-    			transition_out(theme.$$.fragment, local);
+    			transition_out(headdiv.$$.fragment, local);
     			each_blocks = each_blocks.filter(Boolean);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -26449,23 +26693,22 @@ var app = (function () {
     		d: function destroy(detaching) {
     			detach_dev(script0);
     			detach_dev(script1);
-    			detach_dev(script2);
     			detach_dev(link);
     			if (detaching) detach_dev(t1);
     			if (detaching) detach_dev(main);
-    			destroy_component(theme);
+    			destroy_component(headdiv);
     			destroy_each(each_blocks, detaching);
     			if (each_1_else) each_1_else.d();
-    			/*div5_binding*/ ctx[12](null);
-    			/*div6_binding*/ ctx[13](null);
+    			/*div0_binding*/ ctx[14](null);
     			destroy_component(emoji);
+    			/*div2_binding*/ ctx[16](null);
     			run_all(dispose);
     		}
     	};
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_fragment$p.name,
+    		id: create_fragment$q.name,
     		type: "component",
     		source: "",
     		ctx
@@ -26498,80 +26741,9 @@ var app = (function () {
     	return str;
     }
 
-    function setupTypewriter(t) {
-    	var HTML = t.innerHTML;
-    	t.innerHTML = "";
-
-    	var cursorPosition = 0,
-    		tag = "",
-    		writingTag = true,
-    		tagOpen = true,
-    		typeSpeed = 10,
-    		tempTypeSpeed = 0;
-
-    	var type = function () {
-    		if (writingTag === true) {
-    			tag += HTML[cursorPosition];
-    		}
-
-    		if (HTML[cursorPosition] === "<") {
-    			tempTypeSpeed = 0;
-
-    			if (tagOpen) {
-    				tagOpen = false;
-    				writingTag = true;
-    			} else {
-    				tag = "";
-    				tagOpen = true;
-    				writingTag = true;
-    				tag += HTML[cursorPosition];
-    			}
-    		}
-
-    		if (!writingTag && tagOpen) {
-    			tag.innerHTML += HTML[cursorPosition];
-    		}
-
-    		if (!writingTag && !tagOpen) {
-    			if (HTML[cursorPosition] === " ") {
-    				tempTypeSpeed = 0;
-    			} else {
-    				tempTypeSpeed = Math.random() * typeSpeed + 50;
-    			}
-
-    			t.innerHTML += HTML[cursorPosition];
-    		}
-
-    		if (writingTag === true && HTML[cursorPosition] === ">") {
-    			tempTypeSpeed = Math.random() * typeSpeed + 50;
-    			writingTag = false;
-
-    			if (tagOpen) {
-    				var newSpan = document.createElement("span");
-    				t.appendChild(newSpan);
-    				newSpan.innerHTML = tag;
-    				tag = newSpan.firstChild;
-    				tag.style.margin = 0;
-    				tag.style.color = "var(--default-text-color)";
-    				tag.style.letterSpacing = "1px";
-    				tag.style.alignItems = "center";
-    			}
-    		}
-
-    		cursorPosition += 1;
-
-    		if (cursorPosition < HTML.length - 1) {
-    			setTimeout(type, tempTypeSpeed);
-    		}
-    	};
-
-    	return { type };
-    }
-
-    function instance$p($$self, $$props, $$invalidate) {
+    function instance$q($$self, $$props, $$invalidate) {
+    	let anchor2;
     	let name;
-    	
-    	
     	var currentuser;
     	let div;
     	let autoscroll;
@@ -26586,39 +26758,43 @@ var app = (function () {
     		if (autoscroll) div.scrollTo(0, div.scrollHeight);
     	});
 
-    	
-
     	function handleKeydown() {
     		if (event.which === 13 || event.type === "click") {
-    			console.log("dasdasd");
-    			const text = input1.innerHTML;
-    			if (!text) return;
+    			event.preventDefault();
+
+    			if (!name) {
+    				alert("Please insert your name");
+    				return;
+    			}
+
+    			
+    			const text = input1;
+    			if (text) return;
     			console.log(text);
 
     			socket.emit("chat message", {
-    				"author": name,
-    				"commend": text,
-    				"clienttime": dateformat(Date())
+    				author: name,
+    				commend: text,
+    				clienttime: new Date().toLocaleString()
     			});
 
     			console.log(comments);
-    			$$invalidate(2, input1.innerHTML = "", input1);
+    			$$invalidate(3, input1 = "");
     		}
-
-    		
     	}
 
     	
     	var formdata = new FormData();
     	var requestOptions = { method: "GET", redirect: "follow" };
     	let comments = [];
+    	let uuser = [];
 
     	onMount(async () => {
     		const res = await fetch(serveradd + "/api/chat", requestOptions);
     		let results = await res.json();
 
     		await results.reverse().forEach(result => {
-    			$$invalidate(3, comments = comments.concat({
+    			$$invalidate(4, comments = comments.concat({
     				author: result.author,
     				text: result.commend,
     				time: dateformat(result.time),
@@ -26627,14 +26803,22 @@ var app = (function () {
     				description: result.description,
     				image: result.image
     			}));
+
+    			if (!uuser.includes(result.author)) {
+    				uuser.push(result.author);
+    			}
+
+    			
     		});
+
+    		console.log(uuser);
     	});
 
     	socket.on("chat message", function (json) {
     		json = JSON.parse(json);
     		console.log(json);
 
-    		$$invalidate(3, comments = comments.concat({
+    		$$invalidate(4, comments = comments.concat({
     			author: json.author,
     			text: json.commend,
     			time: dateformat(json.time),
@@ -26645,43 +26829,30 @@ var app = (function () {
     		}));
     	});
 
-    	window.onload = () => {
-    		var tyy = document.getElementById("typewriter");
-    		var typewriter = setupTypewriter(tyy);
-    		typewriter.type();
-
-    		window.addEventListener("resize", function () {
-    			console.log(window.innerHeight);
-
-    			if (window.innerHeight < 680) {
-    				tyy.style.height = "0";
-    				div.scrollTo(0, div.scrollHeight);
-    			} else {
-    				tyy.style.height = "70px";
-    				document.getElementById("chat").style.height = "70vh";
-    			}
-    		});
-    	};
-
     	function alertmsg(event) {
-    		$$invalidate(2, input1.innerHTML += event.detail.detail, input1);
-    		console.log(input1);
+    		$$invalidate(3, input1 += event.detail.detail);
+    		console.log(input1.length);
     	}
 
-    	function input_input_handler() {
-    		name = this.value;
-    		$$invalidate(0, name);
+    	function headdiv_name_binding(value) {
+    		name = value;
+    		$$invalidate(1, name);
     	}
 
-    	function div5_binding($$value) {
+    	function div0_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(1, div = $$value);
+    			$$invalidate(2, div = $$value);
     		});
     	}
 
-    	function div6_binding($$value) {
+    	function div1_input_handler() {
+    		input1 = this.innerHTML;
+    		$$invalidate(3, input1);
+    	}
+
+    	function div2_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(2, input1 = $$value);
+    			$$invalidate(0, anchor2 = $$value);
     		});
     	}
 
@@ -26690,25 +26861,28 @@ var app = (function () {
     	};
 
     	$$self.$inject_state = $$props => {
-    		if ("name" in $$props) $$invalidate(0, name = $$props.name);
+    		if ("anchor2" in $$props) $$invalidate(0, anchor2 = $$props.anchor2);
+    		if ("name" in $$props) $$invalidate(1, name = $$props.name);
     		if ("currentuser" in $$props) currentuser = $$props.currentuser;
-    		if ("div" in $$props) $$invalidate(1, div = $$props.div);
+    		if ("div" in $$props) $$invalidate(2, div = $$props.div);
     		if ("autoscroll" in $$props) autoscroll = $$props.autoscroll;
-    		if ("input1" in $$props) $$invalidate(2, input1 = $$props.input1);
+    		if ("input1" in $$props) $$invalidate(3, input1 = $$props.input1);
     		if ("formdata" in $$props) formdata = $$props.formdata;
     		if ("requestOptions" in $$props) requestOptions = $$props.requestOptions;
-    		if ("comments" in $$props) $$invalidate(3, comments = $$props.comments);
+    		if ("comments" in $$props) $$invalidate(4, comments = $$props.comments);
+    		if ("uuser" in $$props) uuser = $$props.uuser;
     	};
 
     	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*name*/ 1) {
+    		if ($$self.$$.dirty & /*name*/ 2) {
     			 addCookie(name);
     		}
     	};
 
-    	 $$invalidate(0, name = asda());
+    	 $$invalidate(1, name = asda());
 
     	return [
+    		anchor2,
     		name,
     		div,
     		input1,
@@ -26720,22 +26894,24 @@ var app = (function () {
     		socket,
     		formdata,
     		requestOptions,
-    		input_input_handler,
-    		div5_binding,
-    		div6_binding
+    		uuser,
+    		headdiv_name_binding,
+    		div0_binding,
+    		div1_input_handler,
+    		div2_binding
     	];
     }
 
     class App extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$p, create_fragment$p, safe_not_equal, {});
+    		init(this, options, instance$q, create_fragment$q, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
     			tagName: "App",
     			options,
-    			id: create_fragment$p.name
+    			id: create_fragment$q.name
     		});
     	}
     }

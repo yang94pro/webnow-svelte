@@ -2,25 +2,27 @@
     import {createEventDispatcher} from 'svelte';
     export let emoji;
     const dispatch = createEventDispatcher();
+    import { slide } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 
 
 
 </script>
-    <div id='emojii'>
-                {#each emoji as emo}
-                       <span on:click={()=> dispatch('emojiClicked',{detail:emo.code})}>{@html emo.code}</span> 
-                {/each} 
+    <div id='emojii'  >
+        {#each emoji as emo}
+            <span  on:click={()=> dispatch('emojiClicked',{detail:emo.code})}>{@html emo.code}</span> 
+        {/each} 
     </div>
 
 <style>
 
     #emojii{
         display: flex;
-        width: 95%;
+        justify-content: center;
         flex-wrap: wrap;
         flex-direction: row;
         position: relative;
-        margin: auto; 
+       
 
 
     }
@@ -33,7 +35,7 @@
     }
 
     :global().emoji{
-        width:36px;
+        width:24px;
     }
     
 </style>
