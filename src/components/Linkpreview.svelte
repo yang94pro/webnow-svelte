@@ -46,10 +46,19 @@
         margin: 0;
     }
 
+    :global().lazyload,
+    :global().lazyloading {
+        opacity: 0;
+    }
+    :global().lazyloaded {
+        opacity: 1;
+        transition: opacity 300ms;
+    }
+
 </style>
 <a href={url} target="_blank">
 <span class="linkp" href={url}>
-    <img await src={image} class ='lazyload'alt="Web logo">
+    <img data-src={image} class ='lazyload'alt="Web logo">
     <h3 class="webtitle">{title}</h3>
     <p>{description}</p>
     <h5>{url}</h5>

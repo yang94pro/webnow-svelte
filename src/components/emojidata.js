@@ -32181,7 +32181,7 @@ var datas =[
 var twemoji = (function() {
   "use strict";
   var twemoji = {
-      base: "https://twemoji.maxcdn.com/v/12.1.5/",
+      base: "https://twemoji.maxcdn.com/v/latest/",
       ext: ".png",
       size: "72x72",
       className: "emoji",

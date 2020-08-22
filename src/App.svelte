@@ -17,6 +17,16 @@
 	let anchor2;
 	let name;
 
+	//Server connection
+		//for production use:
+		//const serveradd = "https://webchay.herokuapp.com";
+		//const serveradd = "https://secret-bucksaw-283807.uc.r.appspot.com";
+		//for development use:
+		const serveradd = "http://127.0.0.1:5000";
+		//const serveradd ="https://35.239.251.192"
+
+
+
 	$: name = getUsername();
 	$: addCookie(name);
 
@@ -38,12 +48,6 @@
 	}
 
 
-
-	//Server connection
-		//for production use:
-		const serveradd = "https://webchay.herokuapp.com";
-		//for development use:
-		// const serveradd = "http://127.0.0.1:5000";
 
 
 	//Check the div height, autoscroll return true if condition fullfilled
@@ -75,12 +79,13 @@
 				return
 			};
 			const text = input1;
-			if (text) return;
+			if (!text) return;
 			console.log(text);
 			socket.emit("chat message", {
 				author: name,
 				commend: text,
 				clienttime: new Date().toLocaleString()
+				
 			});
 			console.log(comments);	
 			input1 = "";
@@ -91,15 +96,20 @@
 	var formdata = new FormData();
 	var requestOptions = {
 		method: "GET",
-		redirect: "follow"
-	};
+		redirect: "follow",
+		mode:"no-cors",
+
+
+		};
 	let comments = [];
 	let uuser =[];
+	var networkData = false;
 	onMount(async () => {
-		const res = await fetch(serveradd + "/api/chat", requestOptions);
-		let results = await res.json();
-		await results.reverse().forEach(result => {
-			comments = comments.concat({
+		const res = await fetch(serveradd + "/api/chat")
+		.then (res =>res.json())
+		.then(data => data.reverse().forEach(
+			result => {
+				comments = comments.concat({
 				author: result.author,
 				text: result.commend,
 				time: dateformat(result.time),
@@ -112,10 +122,46 @@
 			if (!uuser.includes(result.author)){
 				uuser.push(result.author);
 			};
-		});
+			networkData = true;
+		}));
 	
 		console.log(uuser)
-  	});
+	  });
+
+
+	  
+
+
+	// if ('serviceWorker' in navigator) {
+	// 	window.addEventListener('load', function() {
+	// 		navigator.serviceWorker.register('./sw.js').then(function(registration) {
+	// 			// Registration was successful
+	// 			console.log('ServiceWorker registration successful with scope: ', registration.scope);
+	// 		}, function(err) {
+	// 			// registration failed :(
+	// 			console.log('ServiceWorker registration failed: ', err);
+	// 		});
+	// 		caches.match(serveradd + "/api/chat")
+	// 			.then((respon)=> {if(!respon) {console.log("No data"); return respon.json()}})
+	// 			.then((data)=> {if (!networkData) { 
+	// 				data.reverse().forEach(result => {
+	// 					comments = comments.concat({
+	// 						author: result.author,
+	// 						text: result.commend,
+	// 						time: dateformat(result.time),
+	// 						type: result.type,
+	// 						title: result.title,
+	// 						description: result.description,
+	// 						image: result.image
+	// 					});c
+			
+	// 	})}})
+	// 	  });
+		  
+		
+
+	// };
+	
 
 	//receive msg from other user including self
 	socket.on("chat message", function(json) {
@@ -134,7 +180,7 @@
 
  
 	//Append emoji in div contenteditable 
-	function alertmsg(event) {
+	function insertEmoji(event) {
 		input1 += event.detail.detail;
 		console.log(input1.length);
 	};
@@ -156,8 +202,7 @@
 	margin: 0;
 	padding: 0;
 	background: var(--default-bg-color);
-	height: 100%;
-
+	height: 100vh;
 	align-items: center;
   }
   input {
@@ -175,8 +220,8 @@
   main {
 	display: grid;
 	justify-items: center;
-	height: 100%;
-	width: 98vw;
+		
+	position: relative;
 	margin: auto;
 	padding: auto;
 	background: var(--default-bg-color);
@@ -199,12 +244,12 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	height: 70vh;
+	height: 60vh;
 
 	border-radius: 15px;
 	margin: 0;
 	max-width: 450px;
-	width: 95%;
+	width: 95vw;
 	justify-content: center;
 	word-wrap: break-word;
 	margin-bottom: 10px;
@@ -218,9 +263,14 @@
 	word-wrap: break-word;
 	font-size: 1em;
 	position: relative;
-	margin-bottom: 10px;
-
+	margin-bottom: 5px;
 	overscroll-behavior: contain;
+  }
+  .loading-msg{
+	  display: block;
+	  text-align: center;
+	  position: relative;
+	  top:40%;
   }
 
   .chat ::-webkit-scrollbar {
@@ -311,7 +361,7 @@
 	position: relative;
 	float: right;
 
-	margin: auto 5px;
+	margin: 0 5px;
 	background: none;
 	cursor: pointer;
 	display: block;
@@ -329,10 +379,17 @@
 	border: 2px solid var(--default-text-color);
 	display: flex;
 	max-width: 446px;
-	height: 40px;
+	
 	justify-items: space-around;
 	position: relative;
 	border-radius: 10px;
+	margin-bottom: 10px;
+	border-radius: 15px;
+	margin: 0;
+	width: 95vw;
+	justify-content: center;
+	word-wrap: break-word;
+
   }
   /* .emojicontainer{
 		float: right;
@@ -343,9 +400,13 @@
 	} */
   .msg-input > [contenteditable] {
 	position: relative;
-	width: 100%;
+	width: 90%;
 	border: none;
 	outline: none;
+
+	margin: auto;
+	text-align: left;
+	
   }
   [contenteditable] {
 	display:inline-block;
@@ -353,7 +414,6 @@
 	margin: auto 10px;
 	text-align: left;
 	padding: 0.1em;
-  
 	background: none;
 	position: relative;
 	color: var(--default-text-color);
@@ -361,6 +421,19 @@
 	font-size: 1.1em;
 
 	text-overflow: ellipsis;
+	left:2%;
+
+  }
+  .footer{
+	  position: relative;
+	  margin:0;
+	  text-align: center;
+	  bottom:0;
+
+  }
+  .footer p {
+	  font-size:0.8em;
+	  margin:0;
   }
   :global([contenteditable] > .emoji) {
 	height: 1em;
@@ -444,24 +517,24 @@
 		{/if}
 	  {:else}
 		<!-- this block renders when photos.length === 0 -->
-		<center>
-		  <p>Comments are loading...</p>
-		</center>
+
+		  <p class='loading-msg'>Conducting database maintenance...</p>
+
 	  {/each}
 	</div>
 
+  </div>
 	<div class="msg-input" id="msg-input" use:Anchor bind:this={anchor2}>
 	  <div
 		contenteditable="true"
 		bind:innerHTML ={input1}
 		on:keydown={handleKeydown} />
-	  <!-- <input bind:this={input1} on:keydown={handleKeydown} /> -->
-
-	  <Emoji on:emojiClicked={alertmsg} />
+	  <Emoji on:emojiClicked={insertEmoji} />
 	  <button type="submit" on:click={handleKeydown}>Send</button>
-
+	
 	</div>
-
-  </div>
+	<div class="footer">
+		<p> The emoji is licensed under MIT open source powered by Twemoji/CC-BY 4.0</p>
+	</div>
 
 </main>

@@ -2,13 +2,14 @@
     import {createEventDispatcher} from 'svelte';
     export let emoji;
     const dispatch = createEventDispatcher();
+    import 'lazysizes'
 
 
 
 </script>
     <div id='emojii'  >
         {#each emoji as emo}
-            <span  on:click={()=> dispatch('emojiClicked',{detail:emo.code})}>{@html emo.code}</span> 
+            <span on:click={()=> dispatch('emojiClicked',{detail:emo.code})}>{@html emo.code}</span> 
         {/each} 
     </div>
 

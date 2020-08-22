@@ -126,7 +126,7 @@
 
 	}
 	#typewriter{
-		margin-top: 1em;
+		
 		overflow: hidden;
 		padding:0;	
 		align-self: center;
