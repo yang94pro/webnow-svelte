@@ -22,8 +22,8 @@
 		//const serveradd = "https://webchay.herokuapp.com";
 		//const serveradd = "https://secret-bucksaw-283807.uc.r.appspot.com";
 		//for development use:
-		const serveradd = "http://127.0.0.1:5000";
-		//const serveradd ="https://35.239.251.192"
+		//const serveradd = "http://127.0.0.1:5000";
+		const serveradd ="https://jactoo.tk"
 
 
 
