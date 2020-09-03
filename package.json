@@ -17,7 +17,7 @@
     "@smui/dialog": "^1.0.0-beta.20",
     "@smui/list": "^1.0.0-beta.20",
     "@smui/radio": "^1.0.0-beta.20",
-    "lazysizes": "^5.2.0",
+    "lazysizes": "^5.2.1",
     "node-sass": "^4.13.1",
     "now": "^19.2.0",
     "rollup": "^1.12.0",
